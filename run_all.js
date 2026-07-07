@@ -37,9 +37,18 @@ async function runScraperWithRetry(scraperModule, retries = 2) {
   return { source: scraperModule.SOURCE, status: 'error', picks: [], attempt: retries + 1 };
 }
 
+function teamsOverlap(n1, n2) {
+  if (n1 === n2) return true;
+  if (n1.includes(n2) || n2.includes(n1)) return true;
+  const w1 = n1.split(' ');
+  const w2 = n2.split(' ');
+  const common = w1.filter(w => w2.includes(w));
+  const maxLen = Math.max(w1.length, w2.length);
+  return maxLen > 0 && common.length / maxLen >= 0.6;
+}
+
 function computeIntersection(allResults) {
-  // Group picks by normalized team names
-  const matches = {}; // matchKey => { display, home, away, picks: { pickVal => [sources] } }
+  const matches = {};
 
   for (const result of allResults) {
     if (result.status !== 'ok') continue;
@@ -59,8 +68,8 @@ function computeIntersection(allResults) {
         matches[matchKey] = {
           display: `${home} vs ${away}`,
           home, away, nHome, nAway,
-          picks: {}, // pickValue => [sources]
-          sources: {}, // source => { pick, odds, league, time }
+          picks: {},
+          sources: {},
         };
       }
 
@@ -72,9 +81,44 @@ function computeIntersection(allResults) {
     }
   }
 
+  // Fuzzy merge: if two match keys differ but have ≥60% word overlap, merge them
+  const keys = Object.keys(matches);
+  for (let i = 0; i < keys.length; i++) {
+    if (!matches[keys[i]]) continue;
+    for (let j = i + 1; j < keys.length; j++) {
+      if (!matches[keys[j]]) continue;
+      const a = matches[keys[i]];
+      const b = matches[keys[j]];
+      // Check both (home/away) and (away/home) orderings
+      const matchAB = teamsOverlap(a.nHome, b.nHome) && teamsOverlap(a.nAway, b.nAway);
+      const matchBA = teamsOverlap(a.nHome, b.nAway) && teamsOverlap(a.nAway, b.nHome);
+      if (matchAB || matchBA) {
+        // Merge b into a
+        for (const [pick, srcs] of Object.entries(b.picks)) {
+          if (!a.picks[pick]) a.picks[pick] = [];
+          for (const src of srcs) {
+            if (!a.picks[pick].includes(src)) a.picks[pick].push(src);
+          }
+        }
+        for (const [src, info] of Object.entries(b.sources)) {
+          if (!a.sources[src]) a.sources[src] = info;
+        }
+        if (matchBA) {
+          // Teams were swapped — update display to original home/away
+          if (!a.sources[b.home]) {
+            a.display = `${b.home} vs ${b.away}`;
+            a.home = b.home;
+            a.away = b.away;
+          }
+        }
+        delete matches[keys[j]];
+      }
+    }
+  }
+
   // Find intersections with enough agreement
   const intersections = [];
-  for (const [key, m] of Object.entries(matches)) {
+  for (const m of Object.values(matches)) {
     for (const [pick, srcs] of Object.entries(m.picks)) {
       if (srcs.length >= MIN_AGREEMENT) {
         intersections.push({
@@ -92,9 +136,7 @@ function computeIntersection(allResults) {
     }
   }
 
-  // Sort by agreement count descending
   intersections.sort((a, b) => b.source_count - a.source_count);
-
   return intersections;
 }
 

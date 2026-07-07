@@ -89,11 +89,38 @@ const normalizeTeam = (name) => {
   const subs = {
     'manchester': 'man', 'united': 'utd', 'city': 'cty',
     'athletic': 'ath', 'athletico': 'ath', 'internacional': 'inter',
+    'internazionale': 'inter',
     'paris saint germain': 'psg', 'real madrid': 'realmadrid',
     'barcelona': 'barca', 'chelsea': 'chelsea',
     'liverpool': 'liverpool', 'arsenal': 'arsenal',
     'juvenil': 'juv', 'sao': 'sao', 'bologna': 'bol',
     'deportivo': 'dep', 'sportivo': 'sport',
+    // City name variants (English ↔ native)
+    'praha': 'prague', 'praga': 'prague',
+    'muenchen': 'munich', 'münchen': 'munich',
+    'koeln': 'cologne', 'köln': 'cologne',
+    'roma': 'rome', 'romae': 'rome',
+    'milano': 'milan',
+    'torino': 'turin',
+    'napoli': 'naples',
+    'firenze': 'florence',
+    'wien': 'vienna',
+    'basel': 'basel',
+    'geneve': 'geneva', 'genf': 'geneva',
+    'beograd': 'belgrade',
+    'warszawa': 'warsaw',
+    'moskva': 'moscow',
+    'kiev': 'kyiv',
+    'bruxelles': 'brussels', 'brussel': 'brussels',
+    'bucuresti': 'bucharest',
+    'lisboa': 'lisbon',
+    'porto': 'porto',
+    'sevilla': 'seville',
+    'quebec': 'quebec',
+    // Common club suffixes/nicknames
+    'utd': 'utd', 'fc': 'fc', 'ac': 'ac',
+    'juventus': 'juve',
+    'levski': 'levski',
   };
   for (const [from, to] of Object.entries(subs)) {
     s = s.replace(from, to);
