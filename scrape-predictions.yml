@@ -1,0 +1,52 @@
+name: Scrape Predictions & Compute Intersection
+
+on:
+  schedule:
+    # Every 4 hours — covers morning, afternoon, evening updates
+    - cron: '0 6,10,14,18,22 * * *'
+  workflow_dispatch:  # manual trigger
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: cron/scrapers/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: cron/scrapers
+
+      - name: Install system dependencies for Chromium
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgbm-dev libnss3 libatk-bridge2.0-0 \
+            libdrm-dev libxkbcommon-dev libxcomposite-dev libxdamage-dev \
+            libxrandr-dev libxshmfence-dev libasound2
+
+      - name: Run scrapers
+        run: node run_all.js
+        working-directory: cron/scrapers
+
+      - name: Upload scraped picks as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: scraped-picks
+          path: cron/scrapers/output/picks.json
+          retention-days: 7
+
+      - name: Commit intersection output back to repo (if changed)
+        run: |
+          git config user.name "pred-bot"
+          git config user.email "bot@predixa.co.tz"
+          git add cron/scrapers/output/picks.json
+          git diff --quiet && git diff --staged --quiet || \
+            git commit -m "chore: update picks.json from scrapers [$(date +%Y-%m-%d-%H:%M)]"
+          git push
