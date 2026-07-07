@@ -1,108 +1,97 @@
-const puppeteer = require('puppeteer-extra');
-const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-puppeteer.use(StealthPlugin());
-
+const fetch = require('node-fetch');
 const { normalizePick } = require('./normalizer');
 
 const SOURCE = 'adibet';
 const URL = 'https://www.adibet.com/';
 
 async function scrape() {
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-  });
-  const page = await browser.newPage();
-  await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
-
   const picks = [];
 
   try {
-    await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: 20000 });
-    await new Promise(r => setTimeout(r, 1000));
+    const res = await fetch(URL, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+      timeout: 15000,
+    });
+    const html = await res.text();
 
-    // Adibet uses tables with bgcolor="#272727" on highlighted (predicted) cells
-    // Columns: 0=flag, 1=match, 2=1, 3=X, 4=2, 5=+1.5, 6=GG, 7=+2.5
-    const tableData = await page.evaluate(() => {
-      const results = [];
-      const tables = document.querySelectorAll('table');
-      for (const table of tables) {
-        if (!table.innerText.includes('-') && !table.innerText.includes('vs')) continue;
-        const rows = table.querySelectorAll('tr');
-        for (const row of rows) {
-          const cells = row.querySelectorAll('td');
-          if (cells.length < 6) continue;
+    // Parse tables — each row has cells: flag, match, 1, X, 2, +1.5, GG, +2.5
+    // Highlighted cells have bgcolor="#272727"
+    const tableRegex = /<table[^>]*>(.*?)<\/table>/gsi;
+    let tableMatch;
 
-          // Get cell text and background color
-          const cellInfo = Array.from(cells).map(cell => ({
-            text: cell.innerText.replace(/\s+/g, ' ').trim(),
-            bg: (cell.getAttribute('bgcolor') || '').toLowerCase(),
-          }));
+    while ((tableMatch = tableRegex.exec(html)) !== null) {
+      const tbl = tableMatch[1];
+      if (!/[-–]/.test(tbl) && !/vs/i.test(tbl)) continue;
 
-          // Skip header rows (first row or rows with different bg pattern)
-          if (cellInfo[0].bg === '#666666') continue;
+      const rowRegex = /<tr[^>]*>(.*?)<\/tr>/gsi;
+      let rowMatch;
+      while ((rowMatch = rowRegex.exec(tbl)) !== null) {
+        const row = rowMatch[1];
 
-          const matchText = cellInfo[1]?.text || '';
-          const parts = matchText.split(' - ');
-          if (parts.length !== 2) continue;
-          const home = parts[0].trim();
-          const away = parts[1].trim();
-          if (!home || !away) continue;
+        const cellRegex = /<t[dh][^>]*>(.*?)<\/t[dh]>/gsi;
+        const cellHtml = [];
+        let cellMatch;
+        while ((cellMatch = cellRegex.exec(row)) !== null) {
+          cellHtml.push(cellMatch[0]);
+        }
+        if (cellHtml.length < 6) continue;
 
-          // Determine league from flag image alt text
-          const flagCell = cells[0];
-          const img = flagCell.querySelector('img');
-          const league = img ? (img.getAttribute('alt') || '') : '';
+        // Extract text and bgcolor per cell
+        const cells = cellHtml.map(ch => ({
+          text: ch.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim(),
+          bg: ((ch.match(/bgcolor=(["'])([^"']+?)\1/i) || [])[2] || '').toLowerCase(),
+        }));
 
-          // Check which prediction columns are highlighted
-          const colMap = [null, null, '1', 'X', '2', '+1.5', 'GG', '+2.5'];
-          const highlighted = [];
-          for (let ci = 2; ci <= 7 && ci < cellInfo.length; ci++) {
-            if (cellInfo[ci].bg === '#272727') {
-              highlighted.push(colMap[ci]);
-            }
-          }
-          if (!highlighted.length) continue;
+        // Skip header row
+        if (cells[0].bg === '#666666') continue;
 
-          // Split into categories
-          const resultPicks = highlighted.filter(h => ['1', 'X', '2'].includes(h));
-          const ouPicks = highlighted.filter(h => ['+1.5', '+2.5'].includes(h));
-          const bttsPicks = highlighted.filter(h => h === 'GG');
+        // Parse "Home - Away"
+        const matchText = cells[1].text || '';
+        const sepIdx = matchText.indexOf(' - ');
+        if (sepIdx < 1) continue;
+        const home = matchText.slice(0, sepIdx).trim();
+        const away = matchText.slice(sepIdx + 3).trim();
+        if (!home || !away) continue;
 
-          if (resultPicks.length) {
-            const pick = normalizePick(resultPicks.join(''));
-            if (pick) results.push({ match: `${home} vs ${away}`, home, away, pick, odds: '', league, time: '' });
-          }
-          for (const ou of ouPicks) {
-            const pick = normalizePick(ou);
-            if (pick) results.push({ match: `${home} vs ${away}`, home, away, pick, odds: '', league, time: '' });
-          }
-          for (const b of bttsPicks) {
-            const pick = normalizePick(b);
-            if (pick) results.push({ match: `${home} vs ${away}`, home, away, pick, odds: '', league, time: '' });
-          }
+        // League from flag alt
+        const flagMatch = cellHtml[0].match(/alt=(["'])([^"']+?)\1/i);
+        const league = flagMatch ? flagMatch[2] : '';
+
+        // Which columns are highlighted?
+        const colLabels = [null, null, '1', 'X', '2', '+1.5', 'GG', '+2.5'];
+        const highlighted = [];
+        for (let ci = 2; ci <= 7 && ci < cells.length; ci++) {
+          if (cells[ci].bg === '#272727') highlighted.push(colLabels[ci]);
+        }
+        if (!highlighted.length) continue;
+
+        const resultPicks = highlighted.filter(h => ['1', 'X', '2'].includes(h));
+        const ouPicks = highlighted.filter(h => ['+1.5', '+2.5'].includes(h));
+        const bttsPicks = highlighted.filter(h => h === 'GG');
+
+        if (resultPicks.length) {
+          const pick = normalizePick(resultPicks.join(''));
+          if (pick) picks.push({ match: `${home} vs ${away}`, home, away, pick, odds: '', league, time: '' });
+        }
+        for (const ou of ouPicks) {
+          const pick = normalizePick(ou);
+          if (pick) picks.push({ match: `${home} vs ${away}`, home, away, pick, odds: '', league, time: '' });
+        }
+        for (const b of bttsPicks) {
+          const pick = normalizePick(b);
+          if (pick) picks.push({ match: `${home} vs ${away}`, home, away, pick, odds: '', league, time: '' });
         }
       }
-      return results;
-    });
-
-    picks.push(...tableData);
+    }
   } catch (e) {
     console.error(`[${SOURCE}] Error: ${e.message}`);
-  } finally {
-    await browser.close();
   }
 
   return picks;
 }
 
 if (require.main === module) {
-  scrape().then(picks => {
-    console.log(JSON.stringify({ source: SOURCE, generated_at: new Date().toISOString(), picks }));
-  }).catch(e => {
-    console.error(e.message);
-    process.exit(1);
-  });
+  scrape().then(p => console.log(JSON.stringify({ source: SOURCE, picks: p })));
 }
 
 module.exports = { scrape, SOURCE };

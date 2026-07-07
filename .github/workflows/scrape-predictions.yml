@@ -1,4 +1,4 @@
-name: Scrape Predictions & Compute Intersection
+name: Scrape Predictions & Intersection
 
 on:
   schedule:
@@ -9,49 +9,38 @@ jobs:
   scrape:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
           cache-dependency-path: package-lock.json
 
-      - name: Install dependencies
+      - name: Install deps
         run: npm ci
-
-      - name: Install system dependencies for Chromium
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgbm-dev libnss3 libatk-bridge2.0-0 \
-            libdrm-dev libxkbcommon-dev libxcomposite-dev libxdamage-dev \
-            libxrandr-dev libxshmfence-dev libasound2
 
       - name: Run scrapers
         run: node run_all.js
 
-      - name: Upload picks artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: scraped-picks
           path: output/picks.json
           retention-days: 7
 
-      - name: Post intersection data to predixa.co.tz
+      - name: Post intersection to predixa.co.tz
         run: |
-          curl -s -X POST \
-            -H "Content-Type: application/json" \
+          curl -s -X POST -H "Content-Type: application/json" \
             -d @output/picks.json \
             "https://predixa.co.tz/cron/receiver.php?key=pred-tz"
         continue-on-error: true
 
-      - name: Commit picks.json back to repo
+      - name: Commit picks.json
         run: |
           git config user.name "pred-bot"
           git config user.email "bot@predixa.co.tz"
           git add --force output/picks.json
           git diff --quiet && git diff --staged --quiet || \
-            git commit -m "chore: update picks.json [$(date +%Y-%m-%d-%H:%M)]"
+            git commit -m "chore: picks.json [$(date +%Y-%m-%d-%H:%M)]"
           git push

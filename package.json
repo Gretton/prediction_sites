@@ -1,19 +1,13 @@
 {
-  "name": "pred-scrapers",
+  "name": "prediction-sites",
   "version": "1.0.0",
   "private": true,
   "description": "Multi-source prediction scrapers for Predixa intersection",
   "scripts": {
-    "scrape": "node run_all.js",
-    "scrape:pp": "node scrape_passionpredict.js",
-    "scrape:r2": "node scrape_r2bet.js",
-    "scrape:vp": "node scrape_victorspredict.js",
-    "scrape:anf": "node scrape_allnigeriafootball.js",
-    "scrape:adi": "node scrape_adibet.js"
+    "scrape": "node run_all.js"
   },
   "dependencies": {
-    "puppeteer": "^22.0.0",
-    "puppeteer-extra": "^3.3.6",
-    "puppeteer-extra-plugin-stealth": "^2.11.2"
+    "node-fetch": "^2.7.0",
+    "fuse.js": "^7.0.0"
   }
 }
