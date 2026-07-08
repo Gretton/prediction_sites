@@ -33,7 +33,8 @@ jobs:
 
       - name: Post intersection to predixa.co.tz
         run: |
-          curl -s -X POST -H "Content-Type: application/json" \
+          curl -s -X POST -A "Mozilla/5.0 (compatible; PREDIXA-Bot)" \
+            -H "Content-Type: application/json" \
             -d @output/picks.json \
             "https://predixa.co.tz/cron/receiver.php?key=pred-tz"
         continue-on-error: true

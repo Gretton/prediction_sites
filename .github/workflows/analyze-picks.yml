@@ -11,5 +11,5 @@ jobs:
     steps:
       - name: Trigger analysis on predixa.co.tz
         run: |
-          curl -s -X POST "https://predixa.co.tz/cron/analyze.php?key=pred-tz" || \
+          curl -s -X POST -A "Mozilla/5.0 (compatible; PREDIXA-Bot)" "https://predixa.co.tz/cron/analyze.php?key=pred-tz" || \
             echo "Analysis trigger failed (will retry next schedule)"
