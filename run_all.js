@@ -7,6 +7,8 @@ const SCRAPERS = [
   require('./scrape_allnigeriafootball'),
   require('./scrape_adibet'),
   require('./scrape_zulubet'),
+  require('./scrape_bet_sites'),
+  require('./scrape_wp_tables'),
 ];
 
 const MIN_AGREEMENT = 2;
