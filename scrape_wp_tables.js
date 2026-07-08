@@ -6,8 +6,7 @@ const SITES = [
   { name: 'donnbet',         url: 'https://donnbet.com/' },
   { name: 'guzzbet',         url: 'https://guzzbet.com/' },
   { name: 'freesoccertips.asia',  url: 'https://freesoccertips.asia/' },
-  { name: 'freesoccerpredictions', url: 'https://freesoccerpredictions.eu/' },
-  { name: 'freesoccertips.today', url: 'https://freesoccertips.today/' },
+
   { name: 'freetipsdaily',   url: 'https://freetipsdaily.com/' },
 ];
 
