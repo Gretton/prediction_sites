@@ -101,10 +101,21 @@ function computeIntersection(allResults) {
   for (const m of Object.values(matches)) {
     for (const [pick, srcs] of Object.entries(m.picks)) {
       if (srcs.length >= MIN_AGREEMENT) {
+        // Carry over time/odds/league from first source that has the data
+        let ixTime = '', ixOdds = '', ixLeague = '';
+        for (const src of srcs) {
+          const info = m.sources[src];
+          if (info) {
+            if (!ixTime && info.time) ixTime = info.time;
+            if (!ixOdds && info.odds) ixOdds = info.odds;
+            if (!ixLeague && info.league) ixLeague = info.league;
+            if (ixTime && ixOdds && ixLeague) break;
+          }
+        }
         intersections.push({
           match: m.display, home: m.home, away: m.away, pick,
           sources: srcs, source_count: srcs.length,
-          odds: '', league: '', time: '',
+          odds: ixOdds, league: ixLeague, time: ixTime,
         });
       }
     }
