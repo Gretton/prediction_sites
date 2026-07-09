@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-07-09T12:30:48.233Z",
-  "started_at": "2026-07-09T12:30:27.053Z",
+  "generated_at": "2026-07-09T13:40:05.282Z",
+  "started_at": "2026-07-09T13:39:40.421Z",
   "min_agreement": 2,
   "sources": {
     "allnigeriafootball": {
@@ -21,7 +21,7 @@
     },
     "wp_tables": {
       "status": "ok",
-      "count": 22
+      "count": 26
     }
   },
   "sources_detail": [
@@ -1099,6 +1099,42 @@
           "pick": "Draw(X)",
           "odds": "",
           "league": "Europa League Qualifications",
+          "time": ""
+        },
+        {
+          "match": "Grau vs Carlos Mannucci",
+          "home": "Grau",
+          "away": "Carlos Mannucci",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Jaiyq vs Tobol 2",
+          "home": "Jaiyq",
+          "away": "Tobol 2",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Cuenca Juniors vs LDU Portoviejo",
+          "home": "Cuenca Juniors",
+          "away": "LDU Portoviejo",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Arseneault M. vs Colby R.",
+          "home": "Arseneault M.",
+          "away": "Colby R.",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "",
           "time": ""
         }
       ]
