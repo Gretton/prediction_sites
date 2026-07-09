@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-07-09T14:10:25.785Z",
-  "started_at": "2026-07-09T14:10:01.370Z",
+  "generated_at": "2026-07-09T15:49:44.216Z",
+  "started_at": "2026-07-09T15:49:24.360Z",
   "min_agreement": 2,
   "sources": {
     "allnigeriafootball": {
@@ -1154,8 +1154,8 @@
       ],
       "source_count": 4,
       "odds": "",
-      "league": "",
-      "time": ""
+      "league": "UEFA Europa League",
+      "time": "19:00"
     },
     {
       "match": "Qarabag vs IF Vestri",
@@ -1168,7 +1168,7 @@
       ],
       "source_count": 2,
       "odds": "",
-      "league": "",
+      "league": "Euro Competitions",
       "time": ""
     },
     {
@@ -1182,8 +1182,8 @@
       ],
       "source_count": 2,
       "odds": "",
-      "league": "",
-      "time": ""
+      "league": "UEFA Europa League",
+      "time": "19:00"
     },
     {
       "match": "Hajduk Split vs MSK Zilina",
@@ -1196,7 +1196,7 @@
       ],
       "source_count": 2,
       "odds": "",
-      "league": "",
+      "league": "Euro Competitions",
       "time": ""
     },
     {
@@ -1210,8 +1210,8 @@
       ],
       "source_count": 2,
       "odds": "",
-      "league": "",
-      "time": ""
+      "league": "UEFA Conference League",
+      "time": "17:00"
     },
     {
       "match": "US Mondorf-Les-Bains vs FC Dinamo Tbilisi",
@@ -1224,8 +1224,8 @@
       ],
       "source_count": 2,
       "odds": "",
-      "league": "",
-      "time": ""
+      "league": "UEFA Conference League",
+      "time": "18:15"
     }
   ]
 }
