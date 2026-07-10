@@ -1,0 +1,18 @@
+name: Bayesian Predict
+
+on:
+  schedule:
+    - cron: '0 7,13,19 * * *'
+  workflow_dispatch:
+
+jobs:
+  bayesian:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Bayesian prediction on predixa.co.tz
+        run: |
+          curl -s -X POST -A "Mozilla/5.0 (compatible; PREDIXA-Bot)" \
+            -H "Content-Type: application/json" \
+            -d '{"trigger":"gh-action"}' \
+            "https://predixa.co.tz/cron/bayesian_predict.php?key=pred-tz" || \
+            echo "Bayesian predict failed (will retry next schedule)"
