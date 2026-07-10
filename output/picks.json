@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-07-10T10:03:30.260Z",
-  "started_at": "2026-07-10T10:03:07.990Z",
+  "generated_at": "2026-07-10T12:24:29.157Z",
+  "started_at": "2026-07-10T12:24:06.366Z",
   "min_agreement": 2,
   "sources": {
     "allnigeriafootball": {
@@ -17,7 +17,7 @@
     },
     "bet_sites": {
       "status": "ok",
-      "count": 48
+      "count": 54
     },
     "wp_tables": {
       "status": "ok",
@@ -458,6 +458,33 @@
       "source": "bet_sites",
       "picks": [
         {
+          "match": "Spain vs Belgium",
+          "home": "Spain",
+          "away": "Belgium",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "KTP vs JaPS",
+          "home": "KTP",
+          "away": "JaPS",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Cork City vs Longford",
+          "home": "Cork City",
+          "away": "Longford",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
           "match": "Dyn. Kyiv vs U. Cluj",
           "home": "Dyn. Kyiv",
           "away": "U. Cluj",
@@ -669,6 +696,33 @@
           "home": "Tukums",
           "away": "Super Nova",
           "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Spain vs Beligum",
+          "home": "Spain",
+          "away": "Beligum",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "KTP vs JaPS",
+          "home": "KTP",
+          "away": "JaPS",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Cork City vs Longford",
+          "home": "Cork City",
+          "away": "Longford",
+          "pick": "1 Ov 1.5",
           "odds": "",
           "league": "",
           "time": ""
