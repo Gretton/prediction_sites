@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-07-11T15:40:29.227Z",
-  "started_at": "2026-07-11T15:40:09.294Z",
+  "generated_at": "2026-07-11T16:45:34.000Z",
+  "started_at": "2026-07-11T16:45:16.195Z",
   "min_agreement": 2,
   "sources": {
     "allnigeriafootball": {
@@ -9,7 +9,7 @@
     },
     "adibet": {
       "status": "ok",
-      "count": 0
+      "count": 38
     },
     "zulubet": {
       "status": "ok",
@@ -17,11 +17,11 @@
     },
     "bet_sites": {
       "status": "ok",
-      "count": 0
+      "count": 60
     },
     "wp_tables": {
       "status": "ok",
-      "count": 22
+      "count": 26
     }
   },
   "sources_detail": [
@@ -212,7 +212,350 @@
     },
     {
       "source": "adibet",
-      "picks": []
+      "picks": [
+        {
+          "match": "Baranovici vs Zhodino",
+          "home": "Baranovici",
+          "away": "Zhodino",
+          "pick": "X2",
+          "odds": "",
+          "league": "Belarus",
+          "time": ""
+        },
+        {
+          "match": "Chengdu Rongcheng vs Changqing",
+          "home": "Chengdu Rongcheng",
+          "away": "Changqing",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "China",
+          "time": ""
+        },
+        {
+          "match": "Vimsii JK vs Nomme Kalju U21",
+          "home": "Vimsii JK",
+          "away": "Nomme Kalju U21",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "Estonia",
+          "time": ""
+        },
+        {
+          "match": "Gnistan vs Mariehamn",
+          "home": "Gnistan",
+          "away": "Mariehamn",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "Finland",
+          "time": ""
+        },
+        {
+          "match": "Gnistan vs Mariehamn",
+          "home": "Gnistan",
+          "away": "Mariehamn",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "Finland",
+          "time": ""
+        },
+        {
+          "match": "Volsungur vs Afturelding",
+          "home": "Volsungur",
+          "away": "Afturelding",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "Iceland",
+          "time": ""
+        },
+        {
+          "match": "Volsungur vs Afturelding",
+          "home": "Volsungur",
+          "away": "Afturelding",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "Iceland",
+          "time": ""
+        },
+        {
+          "match": "Selfoss vs Hviti",
+          "home": "Selfoss",
+          "away": "Hviti",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "Iceland",
+          "time": ""
+        },
+        {
+          "match": "Selfoss vs Hviti",
+          "home": "Selfoss",
+          "away": "Hviti",
+          "pick": "GG(BTTS)",
+          "odds": "",
+          "league": "Iceland",
+          "time": ""
+        },
+        {
+          "match": "Kaspij Aktau vs Ordabasy",
+          "home": "Kaspij Aktau",
+          "away": "Ordabasy",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "Kazakhstan",
+          "time": ""
+        },
+        {
+          "match": "Kauno Zalgiris vs FK Panevezys",
+          "home": "Kauno Zalgiris",
+          "away": "FK Panevezys",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "Lithuania",
+          "time": ""
+        },
+        {
+          "match": "Fredrikstad vs Lillestrom",
+          "home": "Fredrikstad",
+          "away": "Lillestrom",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "Norway",
+          "time": ""
+        },
+        {
+          "match": "Fredrikstad vs Lillestrom",
+          "home": "Fredrikstad",
+          "away": "Lillestrom",
+          "pick": "GG(BTTS)",
+          "odds": "",
+          "league": "Norway",
+          "time": ""
+        },
+        {
+          "match": "Aalesund vs Molde",
+          "home": "Aalesund",
+          "away": "Molde",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "Norway",
+          "time": ""
+        },
+        {
+          "match": "Aalesund vs Molde",
+          "home": "Aalesund",
+          "away": "Molde",
+          "pick": "GG(BTTS)",
+          "odds": "",
+          "league": "Norway",
+          "time": ""
+        },
+        {
+          "match": "Tromso vs Valerenga",
+          "home": "Tromso",
+          "away": "Valerenga",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "Norway",
+          "time": ""
+        },
+        {
+          "match": "Annan vs Ross County",
+          "home": "Annan",
+          "away": "Ross County",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "Scotland",
+          "time": ""
+        },
+        {
+          "match": "Dumbarton vs St. Mirren",
+          "home": "Dumbarton",
+          "away": "St. Mirren",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "Scotland",
+          "time": ""
+        },
+        {
+          "match": "Dumbarton vs St. Mirren",
+          "home": "Dumbarton",
+          "away": "St. Mirren",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "Scotland",
+          "time": ""
+        },
+        {
+          "match": "Edinburgh City vs Falkirk",
+          "home": "Edinburgh City",
+          "away": "Falkirk",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "Scotland",
+          "time": ""
+        },
+        {
+          "match": "Queen&#39;&#39;s Park vs Brora Rangers",
+          "home": "Queen&#39;&#39;s Park",
+          "away": "Brora Rangers",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "Scotland",
+          "time": ""
+        },
+        {
+          "match": "Raith vs Elgin City",
+          "home": "Raith",
+          "away": "Elgin City",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "Scotland",
+          "time": ""
+        },
+        {
+          "match": "Raith vs Elgin City",
+          "home": "Raith",
+          "away": "Elgin City",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "Scotland",
+          "time": ""
+        },
+        {
+          "match": "Mjallby vs AIK",
+          "home": "Mjallby",
+          "away": "AIK",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "Sweden",
+          "time": ""
+        },
+        {
+          "match": "Orgryte vs Hacken",
+          "home": "Orgryte",
+          "away": "Hacken",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "Sweden",
+          "time": ""
+        },
+        {
+          "match": "Arsenal Sarandi vs Defensores Unidos",
+          "home": "Arsenal Sarandi",
+          "away": "Defensores Unidos",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "Argentina",
+          "time": ""
+        },
+        {
+          "match": "Peninsula vs Wynnum Wolves",
+          "home": "Peninsula",
+          "away": "Wynnum Wolves",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "Australia",
+          "time": ""
+        },
+        {
+          "match": "Launceston United vs Riverside Olympic",
+          "home": "Launceston United",
+          "away": "Riverside Olympic",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "Australia",
+          "time": ""
+        },
+        {
+          "match": "Launceston United vs Riverside Olympic",
+          "home": "Launceston United",
+          "away": "Riverside Olympic",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "Australia",
+          "time": ""
+        },
+        {
+          "match": "Shandong Taishan vs Yunnan Yukun",
+          "home": "Shandong Taishan",
+          "away": "Yunnan Yukun",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "China",
+          "time": ""
+        },
+        {
+          "match": "Shandong Taishan vs Yunnan Yukun",
+          "home": "Shandong Taishan",
+          "away": "Yunnan Yukun",
+          "pick": "GG(BTTS)",
+          "odds": "",
+          "league": "China",
+          "time": ""
+        },
+        {
+          "match": "Harju JK Laagri vs Narva",
+          "home": "Harju JK Laagri",
+          "away": "Narva",
+          "pick": "1X",
+          "odds": "",
+          "league": "Estonia",
+          "time": ""
+        },
+        {
+          "match": "VPS vs SJK",
+          "home": "VPS",
+          "away": "SJK",
+          "pick": "1X",
+          "odds": "",
+          "league": "Finland",
+          "time": ""
+        },
+        {
+          "match": "KTP vs JaPS",
+          "home": "KTP",
+          "away": "JaPS",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "Finland",
+          "time": ""
+        },
+        {
+          "match": "Aegir vs Kopavogur",
+          "home": "Aegir",
+          "away": "Kopavogur",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "Iceland",
+          "time": ""
+        },
+        {
+          "match": "Njardvik vs Grindavik",
+          "home": "Njardvik",
+          "away": "Grindavik",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "Iceland",
+          "time": ""
+        },
+        {
+          "match": "Cork City vs Longford",
+          "home": "Cork City",
+          "away": "Longford",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "Ireland",
+          "time": ""
+        },
+        {
+          "match": "Alianza Atl. vs Pirata",
+          "home": "Alianza Atl.",
+          "away": "Pirata",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "Peru",
+          "time": ""
+        }
+      ]
     },
     {
       "source": "zulubet",
@@ -230,7 +573,548 @@
     },
     {
       "source": "bet_sites",
-      "picks": []
+      "picks": [
+        {
+          "match": "Fredrikstad vs Lillestrom",
+          "home": "Fredrikstad",
+          "away": "Lillestrom",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Tromso vs Valerenga",
+          "home": "Tromso",
+          "away": "Valerenga",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Mjallby vs AIK",
+          "home": "Mjallby",
+          "away": "AIK",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Spain vs Belgium",
+          "home": "Spain",
+          "away": "Belgium",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "KTP vs JaPS",
+          "home": "KTP",
+          "away": "JaPS",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Cork City vs Longford",
+          "home": "Cork City",
+          "away": "Longford",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Dyn. Kyiv vs U. Cluj",
+          "home": "Dyn. Kyiv",
+          "away": "U. Cluj",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "CSKA Sofia vs Derry City",
+          "home": "CSKA Sofia",
+          "away": "Derry City",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Hajduk Split vs Zilina",
+          "home": "Hajduk Split",
+          "away": "Zilina",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "K. Almaty vs Sutjeska",
+          "home": "K. Almaty",
+          "away": "Sutjeska",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Flora vs Iberia 1999",
+          "home": "Flora",
+          "away": "Iberia 1999",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Connahs Q. vs FC Ballkani",
+          "home": "Connahs Q.",
+          "away": "FC Ballkani",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Argentina vs Egypt",
+          "home": "Argentina",
+          "away": "Egypt",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Sabah Baku vs TNS",
+          "home": "Sabah Baku",
+          "away": "TNS",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Vikingur vs Gyor",
+          "home": "Vikingur",
+          "away": "Gyor",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Siauliai vs Zalgiris",
+          "home": "Siauliai",
+          "away": "Zalgiris",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Odd vs Haugesund",
+          "home": "Odd",
+          "away": "Haugesund",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Elfsborg vs Hammarby",
+          "home": "Elfsborg",
+          "away": "Hammarby",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Akranes vs Breidablik",
+          "home": "Akranes",
+          "away": "Breidablik",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Hodd vs Stromsgodset",
+          "home": "Hodd",
+          "away": "Stromsgodset",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Degerfors vs Malmoo FF",
+          "home": "Degerfors",
+          "away": "Malmoo FF",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "GrIFK vs NJS",
+          "home": "GrIFK",
+          "away": "NJS",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Riga FC vs Jelgava",
+          "home": "Riga FC",
+          "away": "Jelgava",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Kongsvinger vs Sogndal",
+          "home": "Kongsvinger",
+          "away": "Sogndal",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Kuressaare vs Flora",
+          "home": "Kuressaare",
+          "away": "Flora",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "EBK vs Abo",
+          "home": "EBK",
+          "away": "Abo",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Vikingur R. vs KA Akureyri",
+          "home": "Vikingur R.",
+          "away": "KA Akureyri",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "HJK vs Ilves",
+          "home": "HJK",
+          "away": "Ilves",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Haukar vs Kari",
+          "home": "Haukar",
+          "away": "Kari",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Tukums vs Super Nova",
+          "home": "Tukums",
+          "away": "Super Nova",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Gnistan vs Mariehamn",
+          "home": "Gnistan",
+          "away": "Mariehamn",
+          "pick": "1 Ov 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Volsungur vs Afturelding",
+          "home": "Volsungur",
+          "away": "Afturelding",
+          "pick": "2 Ov 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Fredrikstad vs Lillestrom",
+          "home": "Fredrikstad",
+          "away": "Lillestrom",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Spain vs Beligum",
+          "home": "Spain",
+          "away": "Beligum",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "KTP vs JaPS",
+          "home": "KTP",
+          "away": "JaPS",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Cork City vs Longford",
+          "home": "Cork City",
+          "away": "Longford",
+          "pick": "1 Ov 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Dyn. Kyiv vs U. Cluj",
+          "home": "Dyn. Kyiv",
+          "away": "U. Cluj",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "CSKA Sofia vs Derry City",
+          "home": "CSKA Sofia",
+          "away": "Derry City",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Dila Gori vs Virtus",
+          "home": "Dila Gori",
+          "away": "Virtus",
+          "pick": "1 Ov 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "K. Almaty vs Sutjeska",
+          "home": "K. Almaty",
+          "away": "Sutjeska",
+          "pick": "1 Ov 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Flora vs FC Iberia 1999",
+          "home": "Flora",
+          "away": "FC Iberia 1999",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "ML Vitebsk vs U. Craiova",
+          "home": "ML Vitebsk",
+          "away": "U. Craiova",
+          "pick": "X2",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Argentina vs Egypt",
+          "home": "Argentina",
+          "away": "Egypt",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Sabah Baku vs TNS",
+          "home": "Sabah Baku",
+          "away": "TNS",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Borac vs Levski",
+          "home": "Borac",
+          "away": "Levski",
+          "pick": "X2",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Ordabasy vs FK Ulytau",
+          "home": "Ordabasy",
+          "away": "FK Ulytau",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Odd vs Haugesund",
+          "home": "Odd",
+          "away": "Haugesund",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Elfsborg vs Hammarby",
+          "home": "Elfsborg",
+          "away": "Hammarby",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "VPS vs Mariehamn",
+          "home": "VPS",
+          "away": "Mariehamn",
+          "pick": "1 Ov 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Akranes vs Breidablik",
+          "home": "Akranes",
+          "away": "Breidablik",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Hodd vs Stromsgodset",
+          "home": "Hodd",
+          "away": "Stromsgodset",
+          "pick": "X2 &amp; Ov 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "St. Patricks vs Galway",
+          "home": "St. Patricks",
+          "away": "Galway",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Riga FC vs Jelgava",
+          "home": "Riga FC",
+          "away": "Jelgava",
+          "pick": "1 &amp; Ov 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Kongsvinger vs Sogndal",
+          "home": "Kongsvinger",
+          "away": "Sogndal",
+          "pick": "1 Ov 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Spain vs Austria",
+          "home": "Spain",
+          "away": "Austria",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Kuressaare vs Flora",
+          "home": "Kuressaare",
+          "away": "Flora",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Vikingur vs KA Akureyri",
+          "home": "Vikingur",
+          "away": "KA Akureyri",
+          "pick": "1 (-1 AH)",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Wales U19 vs Germany U19",
+          "home": "Wales U19",
+          "away": "Germany U19",
+          "pick": "2 &amp; Ov 2.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Tukums vs Super Nova",
+          "home": "Tukums",
+          "away": "Super Nova",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Husqvarna vs Lidkoping",
+          "home": "Husqvarna",
+          "away": "Lidkoping",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "",
+          "time": ""
+        }
+      ]
     },
     {
       "source": "wp_tables",
@@ -432,9 +1316,89 @@
           "odds": "",
           "league": "",
           "time": ""
+        },
+        {
+          "match": "Viimsi JK vs Nomme Kalju U21",
+          "home": "Viimsi JK",
+          "away": "Nomme Kalju U21",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Palestino vs CD Santa Cruz",
+          "home": "Palestino",
+          "away": "CD Santa Cruz",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Resende vs Marica",
+          "home": "Resende",
+          "away": "Marica",
+          "pick": "1X",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Gombos N. vs Sanchez Izquierdo N.",
+          "home": "Gombos N.",
+          "away": "Sanchez Izquierdo N.",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "",
+          "time": ""
         }
       ]
     }
   ],
-  "intersections": []
+  "intersections": [
+    {
+      "match": "Mjallby AIF vs AIK",
+      "home": "Mjallby AIF",
+      "away": "AIK",
+      "pick": "Over 1.5",
+      "sources": [
+        "allnigeriafootball",
+        "adibet",
+        "bet_sites"
+      ],
+      "source_count": 3,
+      "odds": "",
+      "league": "Sweden Allsvenskan",
+      "time": "14:00"
+    },
+    {
+      "match": "Orgryte IS vs BK Hacken",
+      "home": "Orgryte IS",
+      "away": "BK Hacken",
+      "pick": "Away(2)",
+      "sources": [
+        "adibet",
+        "wp_tables"
+      ],
+      "source_count": 2,
+      "odds": "",
+      "league": "Sweden",
+      "time": ""
+    },
+    {
+      "match": "Volsungur vs Afturelding",
+      "home": "Volsungur",
+      "away": "Afturelding",
+      "pick": "Away(2)",
+      "sources": [
+        "adibet",
+        "wp_tables"
+      ],
+      "source_count": 2,
+      "odds": "",
+      "league": "Iceland",
+      "time": ""
+    }
+  ]
 }
