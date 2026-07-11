@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-07-11T07:52:10.448Z",
-  "started_at": "2026-07-11T07:51:50.819Z",
+  "generated_at": "2026-07-11T09:47:12.358Z",
+  "started_at": "2026-07-11T09:46:52.231Z",
   "min_agreement": 2,
   "sources": {
     "allnigeriafootball": {
       "status": "ok",
-      "count": 3
+      "count": 20
     },
     "adibet": {
       "status": "ok",
@@ -17,7 +17,7 @@
     },
     "bet_sites": {
       "status": "ok",
-      "count": 54
+      "count": 60
     },
     "wp_tables": {
       "status": "ok",
@@ -29,19 +29,163 @@
       "source": "allnigeriafootball",
       "picks": [
         {
-          "match": "SC Recife PE vs Botafogo FC",
-          "home": "SC Recife PE",
-          "away": "Botafogo FC",
-          "pick": "Under 3.5",
+          "match": "Norway vs England",
+          "home": "Norway",
+          "away": "England",
+          "pick": "Over 1.5",
           "odds": "",
-          "league": "Brazil Brasileiro Serie B",
+          "league": "FIFA World Cup",
+          "time": "22:00"
+        },
+        {
+          "match": "Argentina vs Switzerland",
+          "home": "Argentina",
+          "away": "Switzerland",
+          "pick": "Home(DNB)Argentina",
+          "odds": "",
+          "league": "FIFA World Cup",
+          "time": "02:00"
+        },
+        {
+          "match": "Fredrikstad FK vs Lillestroem SK",
+          "home": "Fredrikstad FK",
+          "away": "Lillestroem SK",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "Norway Eliteserien",
+          "time": "13:00"
+        },
+        {
+          "match": "Aalesunds FK vs Molde",
+          "home": "Aalesunds FK",
+          "away": "Molde",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "Norway Eliteserien",
+          "time": "15:00"
+        },
+        {
+          "match": "Tromsoe IL vs Vaalerenga IF",
+          "home": "Tromsoe IL",
+          "away": "Vaalerenga IF",
+          "pick": "1X",
+          "odds": "",
+          "league": "Norway Eliteserien",
+          "time": "17:00"
+        },
+        {
+          "match": "Spain vs Germany",
+          "home": "Spain",
+          "away": "Germany",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "Women&#8217;s European Championship",
+          "time": "19:00"
+        },
+        {
+          "match": "Mjallby AIF vs AIK",
+          "home": "Mjallby AIF",
+          "away": "AIK",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "Sweden Allsvenskan",
+          "time": "14:00"
+        },
+        {
+          "match": "Orgryte IS vs BK Hacken",
+          "home": "Orgryte IS",
+          "away": "BK Hacken",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "Sweden Allsvenskan",
+          "time": "16:30"
+        },
+        {
+          "match": "Shenzhen Peng City vs Qingdao West Coast",
+          "home": "Shenzhen Peng City",
+          "away": "Qingdao West Coast",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "Chinese Super League",
+          "time": "12:35"
+        },
+        {
+          "match": "Chengdu Rongcheng vs Chongqing Tonglianglong",
+          "home": "Chengdu Rongcheng",
+          "away": "Chongqing Tonglianglong",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "Chinese Super League",
+          "time": "13:00"
+        },
+        {
+          "match": "Juventud Unida vs Cipolletti",
+          "home": "Juventud Unida",
+          "away": "Cipolletti",
+          "pick": "Under 2.5",
+          "odds": "",
+          "league": "Argentina Torneo Federal A",
+          "time": "19:00"
+        },
+        {
+          "match": "CD Santamarina Tandil vs CA Alvarado",
+          "home": "CD Santamarina Tandil",
+          "away": "CA Alvarado",
+          "pick": "Under 2.5",
+          "odds": "",
+          "league": "Argentina Torneo Federal A",
+          "time": "19:30"
+        },
+        {
+          "match": "Houston Dynamo 2 vs Saint Louis City 2",
+          "home": "Houston Dynamo 2",
+          "away": "Saint Louis City 2",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "USA MLS Next Pro",
           "time": "00:00"
+        },
+        {
+          "match": "CA All Boys vs Club Almirante Brown",
+          "home": "CA All Boys",
+          "away": "Club Almirante Brown",
+          "pick": "Under 2.5",
+          "odds": "",
+          "league": "Argentina Primera Nacional",
+          "time": "19:00"
+        },
+        {
+          "match": "CA Estudiantes vs Mitre Santiago del Estero",
+          "home": "CA Estudiantes",
+          "away": "Mitre Santiago del Estero",
+          "pick": "Under 2.5",
+          "odds": "",
+          "league": "Argentina Primera Nacional",
+          "time": "19:00"
+        },
+        {
+          "match": "Club Atlético Los Andes vs Ciudad de Bolívar",
+          "home": "Club Atlético Los Andes",
+          "away": "Ciudad de Bolívar",
+          "pick": "Under 2.5",
+          "odds": "",
+          "league": "Argentina Primera Nacional",
+          "time": "19:00"
+        },
+        {
+          "match": "CSD Tristán Suárez vs Nueva Chicago",
+          "home": "CSD Tristán Suárez",
+          "away": "Nueva Chicago",
+          "pick": "Under 2.5",
+          "odds": "",
+          "league": "Argentina Primera Nacional",
+          "time": "19:00"
         },
         {
           "match": "Oakland County vs Midwest United",
           "home": "Oakland County",
           "away": "Midwest United",
-          "pick": "Over 1.5",
+          "pick": "Over 1.5 Won",
           "odds": "",
           "league": "USA USL League Two",
           "time": "00:00"
@@ -50,9 +194,18 @@
           "match": "Western Mass Pioneers vs Vermont Green",
           "home": "Western Mass Pioneers",
           "away": "Vermont Green",
-          "pick": "Over 1.5",
+          "pick": "Over 1.5 Won",
           "odds": "",
           "league": "USA USL League Two",
+          "time": "00:00"
+        },
+        {
+          "match": "SC Recife PE vs Botafogo FC",
+          "home": "SC Recife PE",
+          "away": "Botafogo FC",
+          "pick": "Under 3.5 Lost",
+          "odds": "",
+          "league": "Brazil Brasileiro Serie B",
           "time": "00:00"
         }
       ]
@@ -422,6 +575,33 @@
       "source": "bet_sites",
       "picks": [
         {
+          "match": "Fredrikstad vs Lillestrom",
+          "home": "Fredrikstad",
+          "away": "Lillestrom",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Tromso vs Valerenga",
+          "home": "Tromso",
+          "away": "Valerenga",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Mjallby vs AIK",
+          "home": "Mjallby",
+          "away": "AIK",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
           "match": "Spain vs Belgium",
           "home": "Spain",
           "away": "Belgium",
@@ -659,6 +839,33 @@
           "match": "Tukums vs Super Nova",
           "home": "Tukums",
           "away": "Super Nova",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Gnistan vs Mariehamn",
+          "home": "Gnistan",
+          "away": "Mariehamn",
+          "pick": "1 Ov 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Volsungur vs Afturelding",
+          "home": "Volsungur",
+          "away": "Afturelding",
+          "pick": "2 Ov 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Fredrikstad vs Lillestrom",
+          "home": "Fredrikstad",
+          "away": "Lillestrom",
           "pick": "Over 1.5",
           "odds": "",
           "league": "",
@@ -1115,6 +1322,35 @@
   ],
   "intersections": [
     {
+      "match": "Mjallby AIF vs AIK",
+      "home": "Mjallby AIF",
+      "away": "AIK",
+      "pick": "Over 1.5",
+      "sources": [
+        "allnigeriafootball",
+        "adibet",
+        "bet_sites"
+      ],
+      "source_count": 3,
+      "odds": "",
+      "league": "Sweden Allsvenskan",
+      "time": "14:00"
+    },
+    {
+      "match": "Orgryte IS vs BK Hacken",
+      "home": "Orgryte IS",
+      "away": "BK Hacken",
+      "pick": "Away(2)",
+      "sources": [
+        "adibet",
+        "wp_tables"
+      ],
+      "source_count": 2,
+      "odds": "",
+      "league": "Sweden",
+      "time": ""
+    },
+    {
       "match": "Volsungur vs Afturelding",
       "home": "Volsungur",
       "away": "Afturelding",
@@ -1126,20 +1362,6 @@
       "source_count": 2,
       "odds": "",
       "league": "Iceland",
-      "time": ""
-    },
-    {
-      "match": "Orgryte vs Hacken",
-      "home": "Orgryte",
-      "away": "Hacken",
-      "pick": "Away(2)",
-      "sources": [
-        "adibet",
-        "wp_tables"
-      ],
-      "source_count": 2,
-      "odds": "",
-      "league": "Sweden",
       "time": ""
     }
   ]
