@@ -10,6 +10,7 @@ $db = getDB();
 if (!$db) { die(json_encode(['status' => 'error', 'message' => 'DB failed'])); }
 
 $today = date('Y-m-d');
+$lookback = date('Y-m-d', strtotime($today . ' -3 days'));
 $AFP_OFFSET = 1000000000;
 $settled = 0;
 $failed = 0;
@@ -18,12 +19,12 @@ $skipped = 0;
 // === 1. Settle web_picks (odds-signals + manual picks) ===
 $stmt = $db->prepare("
     SELECT wp.* FROM web_picks wp
-    LEFT JOIN pick_settlements ps ON wp.id = ps.web_pick_id AND ps.settlement_date = ? AND ps.result != 'pending'
+    LEFT JOIN pick_settlements ps ON wp.id = ps.web_pick_id AND ps.result != 'pending'
     WHERE ps.id IS NULL
-    AND DATE(wp.detected_at) = ?
+    AND DATE(wp.detected_at) >= ?
     ORDER BY wp.id DESC
 ");
-$stmt->execute([$today, $today]);
+$stmt->execute([$lookback]);
 $picks = $stmt->fetchAll();
 
 foreach ($picks as $pick) {
@@ -36,11 +37,11 @@ foreach ($picks as $pick) {
 // === 2. Settle admin_featured_picks (scraper intersections) ===
 $stmt2 = $db->prepare("
     SELECT afp.*, (? + afp.id) AS ps_web_pick_id FROM admin_featured_picks afp
-    LEFT JOIN pick_settlements ps ON (? + afp.id) = ps.web_pick_id AND ps.settlement_date = ? AND ps.result != 'pending'
-    WHERE ps.id IS NULL AND DATE(afp.created_at) = ?
+    LEFT JOIN pick_settlements ps ON (? + afp.id) = ps.web_pick_id AND ps.result != 'pending'
+    WHERE ps.id IS NULL AND DATE(afp.created_at) >= ?
     ORDER BY afp.id DESC
 ");
-$stmt2->execute([$AFP_OFFSET, $AFP_OFFSET, $today, $today]);
+$stmt2->execute([$AFP_OFFSET, $AFP_OFFSET, $lookback]);
 $afpPicks = $stmt2->fetchAll();
 
 foreach ($afpPicks as $pick) {
@@ -98,26 +99,34 @@ function settleOnePick($db, $pick, $today) {
 }
 
 function findMatchResult($db, $homeTeam, $awayTeam, $today) {
-    // Exact match
-    $stmt = $db->prepare("SELECT home_score, away_score FROM match_results WHERE home_team = ? AND away_team = ? AND match_date = ? LIMIT 1");
-    $stmt->execute([$homeTeam, $awayTeam, $today]);
-    $result = $stmt->fetch();
-    if ($result) return $result;
+    $yesterday = date('Y-m-d', strtotime($today . ' -1 day'));
+    $tomorrow = date('Y-m-d', strtotime($today . ' +1 day'));
+    $dates = [$today, $yesterday, $tomorrow];
 
-    // Swapped teams
-    $stmt->execute([$awayTeam, $homeTeam, $today]);
-    $result = $stmt->fetch();
-    if ($result) return ['home_score' => $result['away_score'], 'away_score' => $result['home_score']];
+    foreach ($dates as $d) {
+        // Exact match
+        $stmt = $db->prepare("SELECT home_score, away_score FROM match_results WHERE home_team = ? AND away_team = ? AND match_date = ? LIMIT 1");
+        $stmt->execute([$homeTeam, $awayTeam, $d]);
+        $result = $stmt->fetch();
+        if ($result) return $result;
 
-    // Fuzzy match
-    $stmt = $db->prepare("SELECT home_score, away_score, home_team, away_team FROM match_results WHERE match_date = ? ORDER BY id DESC LIMIT 200");
-    $stmt->execute([$today]);
-    foreach ($stmt->fetchAll() as $m) {
-        if (teamFuzzyMatch($homeTeam, $m['home_team']) && teamFuzzyMatch($awayTeam, $m['away_team'])) {
-            return $m;
-        }
-        if (teamFuzzyMatch($homeTeam, $m['away_team']) && teamFuzzyMatch($awayTeam, $m['home_team'])) {
-            return ['home_score' => $m['away_score'], 'away_score' => $m['home_score']];
+        // Swapped teams
+        $stmt->execute([$awayTeam, $homeTeam, $d]);
+        $result = $stmt->fetch();
+        if ($result) return ['home_score' => $result['away_score'], 'away_score' => $result['home_score']];
+    }
+
+    // Fuzzy match across today +-1
+    foreach ($dates as $d) {
+        $stmt = $db->prepare("SELECT home_score, away_score, home_team, away_team FROM match_results WHERE match_date = ? ORDER BY id DESC LIMIT 200");
+        $stmt->execute([$d]);
+        foreach ($stmt->fetchAll() as $m) {
+            if (teamFuzzyMatch($homeTeam, $m['home_team']) && teamFuzzyMatch($awayTeam, $m['away_team'])) {
+                return $m;
+            }
+            if (teamFuzzyMatch($homeTeam, $m['away_team']) && teamFuzzyMatch($awayTeam, $m['home_team'])) {
+                return ['home_score' => $m['away_score'], 'away_score' => $m['home_score']];
+            }
         }
     }
     return null;
@@ -125,26 +134,36 @@ function findMatchResult($db, $homeTeam, $awayTeam, $today) {
 
 function normalizePickTeam($name) {
     $name = trim(preg_replace('/\s+/', ' ', $name));
-    $prefixes = ['FC ', 'CF ', 'AC ', 'SC ', 'RC ', 'SS ', 'CD ', 'AS ', 'SK ', 'FK ', 'NK ', 'UD ', 'CD ', 'CA ', 'CR ', 'EC ', 'AA ', 'AE ', 'SSC ', 'Real ', 'Atletico '];
-    foreach ($prefixes as $p) {
-        if (stripos($name, $p) === 0) { $name = substr($name, strlen($p)); break; }
-    }
-    $suffixes = [' FC', ' CF', ' AC', ' SC', ' RC', ' SS', ' CD', ' AS', ' SK', ' FK', ' NK', ' UD', ' CD', ' CA', ' CR', ' EC', ' AA', ' AE'];
-    foreach ($suffixes as $s) {
-        $sLen = strlen($s);
-        if (substr($name, -$sLen) === $s) { $name = substr($name, 0, -$sLen); break; }
-    }
+    $name = preg_replace('/^(FC|CF|AC|SC|RC|SS|CD|AS|SK|FK|NK|UD|CD|CA|CR|EC|AA|AE|SSC|Real|Atletico)\s+/i', '', $name);
+    $name = preg_replace('/\s+(FC|CF|AC|SC|RC|SS|CD|AS|SK|FK|NK|UD|CD|CA|CR|EC|AA|AE|SSC)$/i', '', $name);
     return trim(mb_strtolower($name));
 }
 
 function teamFuzzyMatch($a, $b) {
     if ($a === $b) return true;
     if (strpos($a, $b) !== false || strpos($b, $a) !== false) return true;
+
+    // Normalize: strip common suffixes like "fk", "fc", "cf" etc after a space
+    $strip = ['fc', 'cf', 'ac', 'sc', 'rc', 'ss', 'cd', 'as', 'sk', 'fk', 'nk', 'ud', 'ca', 'cr', 'ec', 'aa', 'ae', 'ssc'];
+    $aClean = trim(preg_replace('/\s+(' . implode('|', $strip) . ')$/i', '', $a));
+    $bClean = trim(preg_replace('/\s+(' . implode('|', $strip) . ')$/i', '', $b));
+    if ($aClean === $bClean) return true;
+    if (strpos($aClean, $bClean) !== false || strpos($bClean, $aClean) !== false) return true;
+
+    // Word overlap
     $aWords = preg_split('/\s+/', $a);
     $bWords = preg_split('/\s+/', $b);
     $common = array_intersect($aWords, $bWords);
     $min = min(count($aWords), count($bWords));
     if ($min > 0 && count($common) >= $min * 0.5) return true;
+
+    // Single-word teams: check if one is a substring of the other after normalization
+    if (count($aWords) === 1 || count($bWords) === 1) {
+        $longer = count($aWords) >= count($bWords) ? $a : $b;
+        $shorter = count($aWords) < count($bWords) ? $a : $b;
+        if (strlen($shorter) >= 3 && strpos($longer, $shorter) !== false) return true;
+    }
+
     return false;
 }
 
