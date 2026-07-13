@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-07-13T09:22:42.069Z",
-  "started_at": "2026-07-13T09:22:18.506Z",
+  "generated_at": "2026-07-13T10:30:52.111Z",
+  "started_at": "2026-07-13T10:30:30.950Z",
   "min_agreement": 2,
   "sources": {
     "allnigeriafootball": {
@@ -17,7 +17,7 @@
     },
     "bet_sites": {
       "status": "ok",
-      "count": 66
+      "count": 72
     },
     "wp_tables": {
       "status": "ok",
@@ -377,6 +377,33 @@
       "source": "bet_sites",
       "picks": [
         {
+          "match": "Honka vs HJS",
+          "home": "Honka",
+          "away": "HJS",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Breidablik vs Keflavi",
+          "home": "Breidablik",
+          "away": "Keflavi",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Djurgarden vs Halmstad",
+          "home": "Djurgarden",
+          "away": "Halmstad",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
           "match": "Fram vs Thor",
           "home": "Fram",
           "away": "Thor",
@@ -669,6 +696,33 @@
           "home": "Tukums",
           "away": "Super Nova",
           "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Honka vs HJS",
+          "home": "Honka",
+          "away": "HJS",
+          "pick": "1 &amp; Ov 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Breidablik vs Keflavik",
+          "home": "Breidablik",
+          "away": "Keflavik",
+          "pick": "1 Ov 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Djurgarden vs Halmstad",
+          "home": "Djurgarden",
+          "away": "Halmstad",
+          "pick": "1 Ov 1.5",
           "odds": "",
           "league": "",
           "time": ""
@@ -985,9 +1039,10 @@
       "pick": "Over 1.5",
       "sources": [
         "allnigeriafootball",
-        "adibet"
+        "adibet",
+        "bet_sites"
       ],
-      "source_count": 2,
+      "source_count": 3,
       "odds": "",
       "league": "Sweden Allsvenskan",
       "time": "18:00"
