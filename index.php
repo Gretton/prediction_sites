@@ -346,20 +346,20 @@ try { $approvedSlips = getApprovedSlips(); } catch (Exception $e) {}
                         'title' => 'Parlay Premium',
                         'desc' => 'Combine 2-19 stable favorites to build up to 30x accumulator. Auto-selected based on accuracy patterns.',
                         'features' => ['Combined Odds: Up to 30x', 'Legs: 2-19 picks', 'Win Rate: 25-35%', 'Betting markets: Win, Win 1UP, DC', 'Market Movement Analysis'],
-                        'locked' => ['Safety Rollover (not included)', 'Top Picks (not included)'],
+                        'locked' => ['Safety Rollover (not included)', 'PRO Predictions (not included)'],
                         'popular' => false
                     ],
                     'rollover' => [
                         'title' => 'Rollover Premium',
                         'desc' => 'Conservative 7-day cycle with 1-7 curated picks daily. Focuses on stable favorites with strong market confirmation.',
-                        'features' => ['Odds Range: 1.18 - 1.30', 'Win Rate: 75-85%', 'Leagues: Core leagues only (no cups)', 'Betting markets: Win 1UP, DC (1X/X2)', 'Top Picks (Banker of the Day)'],
-                        'locked' => ['+ Bonus (Free access): Over 1.5 Goals, Under 3.5 Goals, Most Corners'],
+                        'features' => ['Odds Range: 1.18 - 1.30', 'Win Rate: 75-85%', 'Leagues: Core leagues only (no cups)', 'Betting markets: Win 1UP, DC (1X/X2)', 'Most Corners'],
+                        'locked' => ['Parlay Premium (not included)', 'PRO Predictions (not included)'],
                         'popular' => true
                     ],
                     'both' => [
                         'title' => 'Both Premium',
-                        'desc' => 'Get everything — Rollover + Parlay + Top Picks. Best value for serious punters who want full coverage.',
-                        'features' => ['Everything in Rollover', 'Everything in Parlay', 'All Betting Markets + Top Picks', 'Priority Support', 'Best Value', 'Save 10% vs Separate'],
+                        'desc' => 'Get everything — Rollover + Parlay + PRO Predictions. Best value for serious punters who want full coverage.',
+                        'features' => ['Everything in Rollover', 'Everything in Parlay', 'PRO Predictions (Top Picks + Most Corners)', 'Priority Support', 'Best Value', 'Save 10% vs Separate'],
                         'locked' => [],
                         'popular' => false
                     ]

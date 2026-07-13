@@ -111,7 +111,7 @@ if ($user['id'] == 1) {
 }
 
 $hasMostCorners = $hasRollover;
-$hasTopPicks = $hasRollover || $user['id'] == 1;
+$hasTopPicks = $hasRollover && $hasParlay;
 
 $mostCornersPicks = deduplicatePicks(fetchPicks('most_corners'));
 $topPicks = getAdminTopPicks();
@@ -447,7 +447,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-soft); color: var(
     <button class="nav-link <?= $hasRollover ? ($defaultTab === 'goals' ? 'active' : '') : 'disabled' ?>" data-bs-toggle="pill" data-bs-target="#goals" type="button" <?= !$hasRollover ? 'disabled' : '' ?>><i class="fas fa-futbol me-2"></i>Goals</button>
     <button class="nav-link <?= $hasMostCorners ? ($defaultTab === 'mostcorners' ? 'active' : '') : 'disabled' ?>" data-bs-toggle="pill" data-bs-target="#mostcorners" type="button" <?= !$hasMostCorners ? 'disabled' : '' ?>><i class="fas fa-vector-square me-2"></i>Corners</button>
     <button class="nav-link <?= $hasTopPicks ? ($defaultTab === 'featured' ? 'active' : '') : 'disabled' ?>" data-bs-toggle="pill" data-bs-target="#featured" type="button" <?= !$hasTopPicks ? 'disabled' : '' ?>><i class="fas fa-bolt me-2"></i>Popular</button>
-    <button class="nav-link <?= ($hasParlay || $hasRollover) ? ($defaultTab === 'toppredictions' ? 'active' : '') : 'disabled' ?>" data-bs-toggle="pill" data-bs-target="#toppredictions" type="button" <?= !($hasParlay || $hasRollover) ? 'disabled' : '' ?>><i class="fas fa-crown me-2"></i>PRO</button>
+    <button class="nav-link <?= ($hasParlay && $hasRollover) ? ($defaultTab === 'toppredictions' ? 'active' : '') : 'disabled' ?>" data-bs-toggle="pill" data-bs-target="#toppredictions" type="button" <?= !($hasParlay && $hasRollover) ? 'disabled' : '' ?>><i class="fas fa-crown me-2"></i>PRO</button>
     <?php if (!isSectionHidden('betting_codes')): ?>
     <button class="nav-link <?= $defaultTab === 'codes' ? 'active' : '' ?>" data-bs-toggle="pill" data-bs-target="#codes" type="button"><i class="fas fa-ticket me-2"></i>Codes</button>
     <?php endif; ?>
@@ -710,7 +710,7 @@ if (!empty($mt) && strtolower($mt) !== 'tbd') {
 <div class="alert alert-info text-center"><div style="font-size: 3rem; margin-bottom: 1rem;"><i class="fas fa-crown" style="color: var(--accent);"></i></div><h6>Top Picks will be available once processing is complete</h6><p class="mb-0 text-muted">Please check back later!</p></div>
 <?php else: ?>
 <?php foreach($topPicks as $pick): ?>
-<?php renderPickCard($pick, $hasTopPicks, 'POPULAR Access Required', 'Subscribe to Rollover or Both to unlock our highest-accuracy daily selections', 'rollover', null, false, false); ?>
+<?php renderPickCard($pick, $hasTopPicks, 'PRO Access Required', 'Subscribe to BOTH Premium Plans (Rollover + Parlay) to unlock PRO predictions', 'both', null, false, false); ?>
 <?php endforeach; ?>
 <?php endif; ?>
 </div>
@@ -956,9 +956,9 @@ document.addEventListener('DOMContentLoaded', function() {
 <div class="text-center mb-4"><h2 style="font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem;">Choose Your Premium Plan</h2><p class="text-muted">Flexible durations — the longer you pick, the less per day</p></div>
 <div class="pricing-grid">
 <?php
-$tiers = ['parlay' => ['icon' => '', 'title' => 'Parlay Premium', 'features' => ['High-Odds Parlay Picks', '~30x Combined Odds', '2-19 Legs Auto-Selected', 'Include Speculative picks', 'All Leagues (Cups Inclusive)'], 'locked' => 'Safety Rollover'],
-          'rollover' => ['icon' => '', 'title' => 'Rollover Premium', 'features' => ['7-Day Safety Cycle', '1-5 Curated Picks Daily', 'SAFE/MODERATE picks Only', 'Over 1.5 Goals picks', 'Core Leagues (No Cups)', 'Top Picks + Most Corners'], 'locked' => null, 'popular' => true],
-           'both' => ['icon' => '', 'title' => 'Both Premium', 'features' => ['Everything in Parlay', 'Everything in Rollover', 'Full Access to All Features', 'Priority Support', 'Best Value - Save 10%', 'Recommended for Serious Punters'], 'locked' => null]];
+$tiers = ['parlay' => ['icon' => '', 'title' => 'Parlay Premium', 'features' => ['High-Odds Parlay Picks', '~30x Combined Odds', '2-19 Legs Auto-Selected', 'Include Speculative picks', 'All Leagues (Cups Inclusive)'], 'locked' => 'Safety Rollover & PRO Predictions'],
+          'rollover' => ['icon' => '', 'title' => 'Rollover Premium', 'features' => ['7-Day Safety Cycle', '1-5 Curated Picks Daily', 'SAFE/MODERATE picks Only', 'Over 1.5 Goals picks', 'Core Leagues (No Cups)', 'Most Corners'], 'locked' => 'Parlay & PRO Predictions', 'popular' => true],
+           'both' => ['icon' => '', 'title' => 'Both Premium', 'features' => ['Everything in Parlay', 'Everything in Rollover', 'PRO Predictions (Top Picks + Most Corners)', 'Full Access to All Features', 'Priority Support', 'Best Value - Save 10%', 'Recommended for Serious Punters'], 'locked' => null]];
 $durationOpts = getDurationOptions();
 foreach ($tiers as $tierKey => $tier):
     $firstPrice = getPlanPrice($tierKey, 'monthly');

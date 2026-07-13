@@ -486,9 +486,9 @@ footer a:hover { color: var(--primary); }
     <div class="pricing-grid">
     <?php
     $tiers = [
-        'parlay' => ['title' => 'Parlay', 'features' => ['Smart Picks Signal Access', 'Best Pick Per Market', 'High-Confidence Picks', 'Parlay Betting Picks']],
-        'rollover' => ['title' => 'Rollover', 'features' => ['Smart Picks Signal Access', 'Best Pick Per Market', 'High-Confidence Picks', '7-Day Safety Rollover', 'Core Leagues Only'], 'popular' => true],
-        'both' => ['title' => 'Both', 'features' => ['Everything in Parlay', 'Everything in Rollover', 'Full Access to All Features', 'Priority Support', 'Best Value']],
+        'parlay' => ['title' => 'Parlay', 'features' => ['Smart Picks Signal Access', 'Best Pick Per Market', 'High-Confidence Picks', 'Parlay Betting Picks'], 'locked' => ['Safety Rollover + PRO Predictions']],
+        'rollover' => ['title' => 'Rollover', 'features' => ['Smart Picks Signal Access', 'Best Pick Per Market', 'High-Confidence Picks', '7-Day Safety Rollover', 'Core Leagues Only', 'Most Corners'], 'locked' => ['Parlay + PRO Predictions'], 'popular' => true],
+        'both' => ['title' => 'Both', 'features' => ['Everything in Parlay', 'Everything in Rollover', 'PRO Predictions (Top Picks + Most Corners)', 'Full Access to All Features', 'Priority Support', 'Best Value'], 'locked' => []],
     ];
     $durationOpts = ['daily' => ['label' => 'Daily'], 'biweekly' => ['label' => '14 Days'], 'monthly' => ['label' => 'Monthly']];
     foreach ($tiers as $tierKey => $tier):
@@ -503,6 +503,11 @@ footer a:hover { color: var(--primary); }
         <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px;">~<?= $perDay ?> TZS/day</div>
         <ul class="pricing-features">
         <?php foreach ($tier['features'] as $f): ?><li><?= htmlspecialchars($f) ?></li><?php endforeach; ?>
+        <?php if (!empty($tier['locked'])): ?>
+        <?php foreach ($tier['locked'] as $l): ?>
+        <li style="color:var(--text-muted);text-decoration:line-through;"><?= htmlspecialchars($l) ?></li>
+        <?php endforeach; ?>
+        <?php endif; ?>
         </ul>
         <div class="d-flex flex-wrap gap-1 justify-content-center mb-3">
         <?php foreach ($durationOpts as $dk => $dopt):
