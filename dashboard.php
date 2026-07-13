@@ -958,7 +958,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <?php
 $tiers = ['parlay' => ['icon' => '', 'title' => 'Parlay Premium', 'features' => ['High-Odds Parlay Picks', '~30x Combined Odds', '2-19 Legs Auto-Selected', 'Include Speculative picks', 'All Leagues (Cups Inclusive)'], 'locked' => 'Safety Rollover & PRO Predictions'],
           'rollover' => ['icon' => '', 'title' => 'Rollover Premium', 'features' => ['7-Day Safety Cycle', '1-5 Curated Picks Daily', 'SAFE/MODERATE picks Only', 'Over 1.5 Goals picks', 'Core Leagues (No Cups)', 'Most Corners'], 'locked' => 'Parlay & PRO Predictions', 'popular' => true],
-           'both' => ['icon' => '', 'title' => 'Both Premium', 'features' => ['Everything in Parlay', 'Everything in Rollover', 'PRO Predictions (Top Picks + Most Corners)', 'Full Access to All Features', 'Priority Support', 'Best Value - Save 10%', 'Recommended for Serious Punters'], 'locked' => null]];
+           'both' => ['icon' => '', 'title' => 'Both Premium', 'features' => ['Everything in Parlay', 'Everything in Rollover', 'PRO Predictions (Elevated accuracy)', 'Full Access to All Features', 'Priority Support', 'Best Value - Save 10%', 'Recommended for Serious Punters'], 'locked' => null]];
 $durationOpts = getDurationOptions();
 foreach ($tiers as $tierKey => $tier):
     $firstPrice = getPlanPrice($tierKey, 'monthly');

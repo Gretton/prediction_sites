@@ -158,7 +158,7 @@ body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #0f
                 <li style="text-decoration: line-through; color: var(--text-muted);">PRO Predictions — <strong>not included</strong></li>
             <?php else: ?>
                 <li>Everything in Parlay + Rollover</li>
-                <li>PRO Predictions (Top Picks + Most Corners)</li>
+                <li>PRO Predictions (Elevated accuracy)</li>
                 <li>Priority support, best value</li>
             <?php endif; ?>
         </ul>

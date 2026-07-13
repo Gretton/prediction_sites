@@ -488,7 +488,7 @@ footer a:hover { color: var(--primary); }
     $tiers = [
         'parlay' => ['title' => 'Parlay', 'features' => ['Smart Picks Signal Access', 'Best Pick Per Market', 'High-Confidence Picks', 'Parlay Betting Picks'], 'locked' => ['Safety Rollover + PRO Predictions']],
         'rollover' => ['title' => 'Rollover', 'features' => ['Smart Picks Signal Access', 'Best Pick Per Market', 'High-Confidence Picks', '7-Day Safety Rollover', 'Core Leagues Only', 'Most Corners'], 'locked' => ['Parlay + PRO Predictions'], 'popular' => true],
-        'both' => ['title' => 'Both', 'features' => ['Everything in Parlay', 'Everything in Rollover', 'PRO Predictions (Top Picks + Most Corners)', 'Full Access to All Features', 'Priority Support', 'Best Value'], 'locked' => []],
+        'both' => ['title' => 'Both', 'features' => ['Everything in Parlay', 'Everything in Rollover', 'PRO Predictions (Elevated accuracy)', 'Full Access to All Features', 'Priority Support', 'Best Value'], 'locked' => []],
     ];
     $durationOpts = ['daily' => ['label' => 'Daily'], 'biweekly' => ['label' => '14 Days'], 'monthly' => ['label' => 'Monthly']];
     foreach ($tiers as $tierKey => $tier):

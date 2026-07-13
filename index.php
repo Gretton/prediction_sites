@@ -356,10 +356,10 @@ try { $approvedSlips = getApprovedSlips(); } catch (Exception $e) {}
                         'locked' => ['Parlay Premium (not included)', 'PRO Predictions (not included)'],
                         'popular' => true
                     ],
-                    'both' => [
+'both' => [
                         'title' => 'Both Premium',
                         'desc' => 'Get everything — Rollover + Parlay + PRO Predictions. Best value for serious punters who want full coverage.',
-                        'features' => ['Everything in Rollover', 'Everything in Parlay', 'PRO Predictions (Top Picks + Most Corners)', 'Priority Support', 'Best Value', 'Save 10% vs Separate'],
+                        'features' => ['Everything in Rollover', 'Everything in Parlay', 'PRO Predictions (Elevated accuracy)', 'Priority Support', 'Best Value', 'Save 10% vs Separate'],
                         'locked' => [],
                         'popular' => false
                     ]
