@@ -174,9 +174,8 @@ footer a:hover { color: var(--primary); }
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ms-auto">
-                <li class="nav-item"><a class="nav-link" href="./">Home</a></li>
-                <li class="nav-item"><a class="nav-link active" href="signals"><i class="fas fa-microchip me-1" style="color:#22C55E;"></i>Smart Picks</a></li>
+<ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="./">Home</a></li>
                 <li class="nav-item dropdown">
 <a class="nav-link dropdown-toggle" href="javascript:void(0)" role="button" data-bs-toggle="dropdown">Free Tools</a>
                     <ul class="dropdown-menu">
@@ -569,8 +568,7 @@ footer a:hover { color: var(--primary); }
             <div class="col-md-3">
                 <h6 class="mb-3" style="font-weight:700;color:var(--text);">Free Tools</h6>
                 <ul class="list-unstyled" style="font-size:0.85rem;">
-                    <li class="mb-2"><a href="signals" style="color:var(--muted);text-decoration:none;"><i class="fas fa-microchip me-1" style="color:#22C55E;"></i> Smart Picks</a></li>
-                    <li class="mb-2"><a href="dropping-odds" style="color:var(--muted);text-decoration:none;"><i class="fas fa-arrow-trend-down me-1" style="color:#EF4444;"></i> Dropping Odds</a></li>
+<li class="mb-2"><a href="dropping-odds" style="color:var(--muted);text-decoration:none;"><i class="fas fa-arrow-trend-down me-1" style="color:#EF4444;"></i> Dropping Odds</a></li>
                     <li class="mb-2"><a href="track-record" style="color:var(--muted);text-decoration:none;"><i class="fas fa-chart-line me-1" style="color:#FBBF24;"></i> Performance</a></li>
                     <li class="mb-2"><a href="betting-school" style="color:var(--muted);text-decoration:none;"><i class="fas fa-book me-1" style="color:#8B5CF6;"></i> Betting School</a></li>
                     <li class="mb-2"><a href="pikka" style="color:var(--muted);text-decoration:none;"><i class="fas fa-futbol me-1" style="color:#6366F1;"></i> Pikka</a></li>
