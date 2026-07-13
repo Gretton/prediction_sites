@@ -10,7 +10,7 @@ $db = getDB();
 if (!$db) { die(json_encode(['status' => 'error', 'message' => 'DB failed'])); }
 
 $today = date('Y-m-d');
-$lookback = date('Y-m-d', strtotime($today . ' -3 days'));
+$lookback = date('Y-m-d', strtotime($today . ' -7 days'));  // was -3 days
 $AFP_OFFSET = 1000000000;
 $settled = 0;
 $failed = 0;
@@ -65,6 +65,11 @@ function settleOnePick($db, $pick, $today) {
 
     if (empty($pickValue) || empty($matchName)) return null;
     if (stripos($pickValue, 'Most Corners') !== false) return null;
+
+    // Defensive: skip if this pick already has a non-pending settlement (protects manual fixes)
+    $already = $db->prepare("SELECT id FROM pick_settlements WHERE web_pick_id = ? AND settlement_date = ? AND result != 'pending' LIMIT 1");
+    $already->execute([$pickId, $today]);
+    if ($already->fetch()) { echo "  Skipping $matchName: already settled (manual override preserved)\n"; return null; }
 
     $parts = explode(' vs ', $matchName);
     if (count($parts) !== 2) $parts = explode(' VS ', $matchName);
@@ -186,6 +191,9 @@ function determinePickResult($pickValue, $homeScore, $awayScore, $totalGoals, $p
     if ($pv === '1') return $homeScore > $awayScore;
     if ($pv === '2') return $awayScore > $homeScore;
     if ($pv === 'X' || $pv === 'DRAW') return $homeScore === $awayScore;
+    // Normalized market names from track-record.php
+    if ($pv === 'HOME WIN' || $pv === 'HOMEWIN') return $homeScore > $awayScore;
+    if ($pv === 'AWAY WIN' || $pv === 'AWAYWIN') return $awayScore > $homeScore;
 
     if (preg_match('/^OVER\s+(\d+\.?\d*)\s*GOALS?$/i', $pv, $m)) return $totalGoals > (float)$m[1];
     if (preg_match('/^UNDER\s+(\d+\.?\d*)\s*GOALS?$/i', $pv, $m)) return $totalGoals < (float)$m[1];

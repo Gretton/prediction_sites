@@ -40,12 +40,88 @@ $voided = (int)$overall['voided'];
 $settled = $won + $lost;
 $winRate = $settled > 0 ? round($won / $settled * 100, 1) : 0;
 
-// Stats by pick type
-$byType = $db->query("SELECT ps.pick_value, COUNT(*) as total, SUM(CASE WHEN result='won' THEN 1 ELSE 0 END) as won, SUM(CASE WHEN result='lost' THEN 1 ELSE 0 END) as lost FROM pick_settlements ps GROUP BY ps.pick_value ORDER BY total DESC")->fetchAll();
+// Stats by pick type (exclude stale pending older than 3 days)
+$cutoff = date('Y-m-d', strtotime('-3 days'));
+$byTypeRaw = $db->query("
+    SELECT ps.pick_value, ps.match_name, COUNT(*) as total,
+           SUM(CASE WHEN result='won' THEN 1 ELSE 0 END) as won,
+           SUM(CASE WHEN result='lost' THEN 1 ELSE 0 END) as lost
+    FROM pick_settlements ps
+    WHERE ps.result != 'pending' OR ps.settlement_date >= '$cutoff'
+    GROUP BY ps.pick_value, ps.match_name
+    ORDER BY total DESC
+")->fetchAll();
 
-// Recent settlements (paginated)
-$totalRecent = $db->query("SELECT COUNT(*) FROM pick_settlements")->fetchColumn();
-$recent = $db->query("SELECT ps.*, wp.league, wp.detected_at FROM pick_settlements ps LEFT JOIN web_picks wp ON ps.web_pick_id = wp.id ORDER BY ps.id DESC LIMIT $perPage OFFSET $offset")->fetchAll();
+// Normalize pick values into markets and merge
+function normalizePickType($val, $matchName = '') {
+    $v = strtoupper(trim($val));
+    // 1X2
+    if ($v === '1' || $v === 'HOME(1)') return 'Home Win';
+    if ($v === '2' || $v === 'AWAY(2)') return 'Away Win';
+    if ($v === 'X' || $v === 'DRAW') return 'Draw';
+    // Double chance
+    if (in_array($v, ['1X', 'X2', '12'])) {
+        return ['1X' => 'Home or Draw', 'X2' => 'Away or Draw', '12' => 'Home or Away'][$v];
+    }
+    if (stripos($val, 'HOME OR DRAW') !== false || stripos($val, 'HOME OR DR') !== false) return 'Home or Draw';
+    if (stripos($val, 'AWAY OR DRAW') !== false || stripos($val, 'AWAY OR DR') !== false) return 'Away or Draw';
+    if (stripos($val, 'HOME OR AWAY') !== false) return 'Home or Away';
+    // BTTS
+    if (in_array($v, ['GG', 'NG', 'BTS', 'NBTS', 'BTTS'])) return 'Both Teams to Score';
+    // Over / Under
+    if (preg_match('/^(OVER\s+\d+\.?\d*)\s*GOALS?$/i', $val, $m)) return $m[1] . ' Goals';
+    if (preg_match('/^(UNDER\s+\d+\.?\d*)\s*GOALS?$/i', $val, $m)) return $m[1] . ' Goals';
+    if (preg_match('/^OVER\s+\d+\.?\d*/i', $val)) return preg_replace('/\s*GOALS?$/i', '', $val) . ' Goals';
+    if (preg_match('/^UNDER\s+\d+\.?\d*/i', $val)) return preg_replace('/\s*GOALS?$/i', '', $val) . ' Goals';
+    // Team wins — determine home vs away from match name
+    if (preg_match('/ WIN$/i', $val) || preg_match('/^Win (.+)$/i', $val, $m)) {
+        $team = preg_replace('/\s+WIN$/i', '', trim($val));
+        if (preg_match('/^Win (.+)$/i', $val, $m2)) $team = trim($m2[1]);
+        if ($matchName) {
+            $parts = preg_split('/\s+vs\.?\s+/i', $matchName, 2);
+            if (count($parts) === 2) {
+                $home = trim($parts[0]); $away = trim($parts[1]);
+                $teamClean = preg_replace('/^(FC|CF|AC|SC|RC|SS|CD|AS|SK|FK|NK|UD)\s+/i', '', $team);
+                $homeClean = preg_replace('/^(FC|CF|AC|SC|RC|SS|CD|AS|SK|FK|NK|UD)\s+/i', '', $home);
+                $awayClean = preg_replace('/^(FC|CF|AC|SC|RC|SS|CD|AS|SK|FK|NK|UD)\s+/i', '', $away);
+                if (stripos($homeClean, $teamClean) !== false || stripos($teamClean, $homeClean) !== false) return 'Home Win';
+                if (stripos($awayClean, $teamClean) !== false || stripos($teamClean, $awayClean) !== false) return 'Away Win';
+            }
+        }
+        return 'Win';
+    }
+    return $val;
+}
+$byType = [];
+foreach ($byTypeRaw as $t) {
+    $key = normalizePickType($t['pick_value'], $t['match_name'] ?? '');
+    if (!isset($byType[$key])) $byType[$key] = ['pick_value' => $key, 'total' => 0, 'won' => 0, 'lost' => 0];
+    $byType[$key]['total'] += (int)$t['total'];
+    $byType[$key]['won'] += (int)$t['won'];
+    $byType[$key]['lost'] += (int)$t['lost'];
+}
+uasort($byType, fn($a, $b) => $b['total'] <=> $a['total']);
+
+// Recent settlements (last 7 days, hide old pending)
+$recentCutoff = date('Y-m-d', strtotime('-7 days'));
+$allRecent = $db->query("
+    SELECT ps.*, wp.league, wp.detected_at
+    FROM pick_settlements ps
+    LEFT JOIN web_picks wp ON ps.web_pick_id = wp.id
+    WHERE ps.settlement_date >= '$recentCutoff' OR ps.result != 'pending'
+    ORDER BY FIELD(ps.result, 'won', 'lost', 'void', 'pending'), ps.id DESC
+")->fetchAll();
+
+// Dedup: per match_name, keep the best result (won > lost > void > pending)
+$bestPerMatch = [];
+foreach ($allRecent as $r) {
+    $mn = $r['match_name'];
+    if (!isset($bestPerMatch[$mn])) {
+        $bestPerMatch[$mn] = $r;
+    }
+}
+$totalRecent = count($bestPerMatch);
+$recent = array_slice(array_values($bestPerMatch), $offset, $perPage);
 $totalPages = max(1, ceil($totalRecent / $perPage));
 
 // ROI
@@ -85,7 +161,7 @@ function getResultBadge($result) {
 
 $user = getCurrentUser();
 $premium = $user ? getPremiumStatus() : null;
-$pageTitle = 'Recent Results — Verified Performance | PREDIXA';
+$pageTitle = 'Performance — Verified Results | PREDIXA';
 $pageDesc = 'Verified win/loss performance of all premium picks. Track our system\'s accuracy across 1X2, Double Chance, Over/Under, and BTTS markets.';
 $canonical = (defined('SITE_URL') ? SITE_URL : 'https://predixa.co.tz') . '/track-record';
 
@@ -105,7 +181,7 @@ $subscriber = isLoggedIn() && (getPremiumStatus()['parlay'] || getPremiumStatus(
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="PREDIXA">
 <link rel="canonical" href="<?= htmlspecialchars($canonical) ?>">
-<title>Recent Results — Verified Performance | PREDIXA</title>
+<title>Performance — Verified Results | PREDIXA</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -181,7 +257,7 @@ footer a:hover { color: var(--primary); }
                     <a class="btn btn-outline-premium btn-sm" href="dashboard" style="min-width: 100px; padding: 10px 24px; min-height: 44px;">Dashboard</a>
                     <a class="btn btn-sm" href="logout" style="border:1px solid var(--border-color);color:var(--text-muted);padding:10px 16px;border-radius:6px;text-decoration:none;font-size:0.8rem;margin-left:6px;">Logout</a>
                     <?php else: ?>
-                    <a class="btn btn-outline-premium btn-sm" href="login" style="min-width: 100px; padding: 10px 24px; min-height: 44px;">Login</a>
+                    <a class="btn btn-outline-premium btn-sm" href="login?redirect=track-record" style="min-width: 100px; padding: 10px 24px; min-height: 44px;">Login</a>
                     <?php endif; ?>
                 </li>
             </ul>
@@ -191,7 +267,7 @@ footer a:hover { color: var(--primary); }
 
 <div class="page-header">
     <div class="container">
-        <h1><i class="fas fa-trophy me-2" style="color:#FBBF24;"></i>Recent Results</h1>
+        <h1><i class="fas fa-chart-line me-2" style="color:#FBBF24;"></i>Performance</h1>
         <p style="color:var(--text-muted);font-size:1rem;max-width:700px;">Verified performance of our system picks — every win, loss, and void is recorded automatically from live match results. <?= $subscriber ? 'Below are the <strong style="color:#22C55E;">recent picks</strong> from our prediction engine.' : '<strong style="color:#22C55E;">Subscribe</strong> to see individual pick details.' ?></p>
     </div>
 </div>
@@ -237,15 +313,15 @@ footer a:hover { color: var(--primary); }
     <!-- Pick Type Breakdown -->
     <?php if (!empty($byType)): ?>
     <div class="mb-4" style="background:linear-gradient(135deg,rgba(139,92,246,0.12) 0%,rgba(6,182,212,0.06) 100%);border:1px solid rgba(139,92,246,0.2);border-radius:12px;padding:18px;">
-        <h5 style="font-weight:700;font-size:0.95rem;margin-bottom:12px;"><i class="fas fa-chart-pie me-1" style="color:var(--accent);"></i>Performance by Pick Type</h5>
+        <h5 style="font-weight:700;font-size:0.95rem;margin-bottom:12px;"><i class="fas fa-chart-pie me-1" style="color:var(--accent);"></i>Performance by Betting Market</h5>
         <div class="pick-type-grid">
         <?php foreach ($byType as $t):
             $tSettled = (int)$t['won'] + (int)$t['lost'];
-            $tRate = $tSettled > 0 ? round((int)$t['won'] / $tSettled * 100, 1) : 0;
+            $tRate = $tSettled > 0 ? round((int)$t['won'] / $tSettled * 100, 1) : null;
         ?>
             <div class="pick-type-item">
                 <div class="label"><?= htmlspecialchars($t['pick_value']) ?></div>
-                <div class="sub"><?= $t['total'] ?> picks &middot; <?= $tRate ?>% win rate</div>
+                <div class="sub"><?= $t['total'] ?> picks &middot; <?= $tRate !== null ? $tRate . '% win rate' : '<span style="color:var(--text-muted);">pending</span>' ?></div>
                 <div style="font-size:0.7rem;margin-top:4px;"><span style="color:#22C55E;"><?= $t['won'] ?>W</span> <span style="color:#EF4444;margin-left:4px;"><?= $t['lost'] ?>L</span></div>
             </div>
         <?php endforeach; ?>
@@ -264,7 +340,7 @@ footer a:hover { color: var(--primary); }
                 <?php if (isLoggedIn()): ?>
                 <a href="subscribe" class="btn" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9);color:#fff;font-weight:700;padding:10px 28px;border-radius:8px;font-size:0.9rem;text-decoration:none;"><i class="fas fa-crown me-1"></i>Subscribe Now</a>
                 <?php else: ?>
-                <a href="login" class="btn" style="background:rgba(255,255,255,0.15);color:#fff;font-weight:600;padding:10px 20px;border-radius:8px;font-size:0.85rem;text-decoration:none;border:1px solid rgba(255,255,255,0.2);">Login</a>
+                <a href="login?redirect=track-record" class="btn" style="background:rgba(255,255,255,0.15);color:#fff;font-weight:600;padding:10px 20px;border-radius:8px;font-size:0.85rem;text-decoration:none;border:1px solid rgba(255,255,255,0.2);">Login</a>
                 <a href="subscribe" class="btn" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9);color:#fff;font-weight:700;padding:10px 28px;border-radius:8px;font-size:0.9rem;text-decoration:none;"><i class="fas fa-crown me-1"></i>Subscribe</a>
                 <?php endif; ?>
             </div>
@@ -276,14 +352,13 @@ footer a:hover { color: var(--primary); }
                 <i class="fas fa-clock-rotate me-1" style="color:var(--accent);"></i>Recent Picks
                 <small style="font-weight:400;color:var(--text-muted);font-size:0.75rem;"> &mdash; system's recent winning picks</small>
             </h5>
-            <?php if ($subscriber): ?>
-            <input type="text" id="searchTrackRecord" class="form-control form-control-sm" placeholder="Search by team..." style="max-width:220px;font-size:0.82rem;background:rgba(22,27,34,0.7);border:1.5px solid rgba(139,92,246,0.45);color:var(--text-light);margin-left:auto;">
+            <input type="text" id="searchTrackRecord" class="form-control form-control-sm" placeholder="Search match, pick type, team..." style="max-width:260px;font-size:0.82rem;background:rgba(22,27,34,0.7);border:1.5px solid rgba(139,92,246,0.45);color:var(--text-light);margin-left:auto;">
             <span style="font-size:0.75rem;color:var(--text-muted);" id="pickCount"><?= count($recent) ?> picks</span>
-            <?php endif; ?>
         </div>
         <?php if (empty($recent)): ?>
         <p class="text-muted mb-0">No picks settled yet.</p>
         <?php elseif ($subscriber): ?>
+        <div id="picksContainer">
         <?php foreach ($recent as $r): ?>
         <div class="result-card d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div style="flex:1;min-width:140px;">
@@ -328,6 +403,7 @@ footer a:hover { color: var(--primary); }
             <?php endif; ?>
         </div>
         <?php endif; ?>
+        </div>
         <?php endif; ?>
     </div>
 
@@ -346,7 +422,7 @@ footer a:hover { color: var(--primary); }
                 <h6 class="mb-3" style="font-weight:700;color:var(--text-light);">Quick Links</h6>
                 <ul class="list-unstyled" style="font-size:0.85rem;">
                     <li class="mb-2"><a href="./#pricing"><i class="fas fa-tag me-1" style="color:var(--accent);"></i> Plans</a></li>
-                    <li class="mb-2"><?php if (isset($_SESSION['user_id'])): ?><a href="dashboard"><i class="fas fa-gauge-high me-1" style="color:var(--accent);"></i> Dashboard</a><?php else: ?><a href="login"><i class="fas fa-right-to-bracket me-1" style="color:var(--primary);"></i> Login</a><?php endif; ?></li>
+                    <li class="mb-2"><?php if (isset($_SESSION['user_id'])): ?><a href="dashboard"><i class="fas fa-gauge-high me-1" style="color:var(--accent);"></i> Dashboard</a><?php else: ?><a href="login?redirect=track-record"><i class="fas fa-right-to-bracket me-1" style="color:var(--primary);"></i> Login</a><?php endif; ?></li>
                     <?php if (!isset($_SESSION['user_id'])): ?><li class="mb-2"><a href="signup"><i class="fas fa-user-plus me-1" style="color:#22C55E;"></i> Sign Up</a></li><?php endif; ?>
                     <li class="mb-2"><a href="./#codes-faq"><i class="fas fa-circle-question me-1" style="color:#FBBF24;"></i> FAQ</a></li>
                 </ul>
@@ -355,7 +431,7 @@ footer a:hover { color: var(--primary); }
                 <h6 class="mb-3" style="font-weight:700;color:var(--text-light);">Free Tools</h6>
                 <ul class="list-unstyled" style="font-size:0.85rem;">
                     <li class="mb-2"><a href="signals"><i class="fas fa-microchip me-1" style="color:#22C55E;"></i> Smart Picks</a></li>
-                    <li class="mb-2"><a href="track-record"><i class="fas fa-trophy me-1" style="color:#FBBF24;"></i> Recent Results</a></li>
+                    <li class="mb-2"><a href="track-record"><i class="fas fa-chart-line me-1" style="color:#FBBF24;"></i> Performance</a></li>
                     <li class="mb-2"><a href="dropping-odds"><i class="fas fa-arrow-trend-down me-1" style="color:#EF4444;"></i> Dropping Odds</a></li>
                     <li class="mb-2"><a href="betting-school"><i class="fas fa-book me-1" style="color:#8B5CF6;"></i> Betting School</a></li>
                     <li class="mb-2"><a href="pikka"><i class="fas fa-futbol me-1" style="color:#6366F1;"></i> Pikka</a></li>
@@ -382,17 +458,28 @@ footer a:hover { color: var(--primary); }
 document.addEventListener('DOMContentLoaded', function() {
     var searchInput = document.getElementById('searchTrackRecord');
     if (!searchInput) return;
-    var cards = document.querySelectorAll('.result-card');
+    var pickGrid = document.querySelector('.pick-type-grid');
+    var picksContainer = document.getElementById('picksContainer');
     var countEl = document.getElementById('pickCount');
     searchInput.addEventListener('input', function() {
         var q = this.value.toLowerCase().trim();
+        // Filter pick-type items
+        if (pickGrid) {
+            var items = pickGrid.querySelectorAll('.pick-type-item');
+            items.forEach(function(c) {
+                c.style.display = (!q || c.textContent.toLowerCase().includes(q)) ? '' : 'none';
+            });
+        }
+        // Filter result cards
         var visible = 0;
-        cards.forEach(function(c) {
-            var text = c.textContent.toLowerCase();
-            var match = !q || text.includes(q);
-            c.style.display = match ? '' : 'none';
-            if (match) visible++;
-        });
+        if (picksContainer) {
+            var cards = picksContainer.querySelectorAll('.result-card');
+            cards.forEach(function(c) {
+                var match = !q || c.textContent.toLowerCase().includes(q);
+                c.style.display = match ? '' : 'none';
+                if (match) visible++;
+            });
+        }
         if (countEl) countEl.textContent = visible + ' picks';
     });
 });

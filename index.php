@@ -158,7 +158,7 @@ try { $approvedSlips = getApprovedSlips(); } catch (Exception $e) {}
                         <ul class="dropdown-menu dropdown-menu-dark" style="background:var(--secondary);border:1px solid var(--border-color);">
                             <li><a class="dropdown-item" href="dropping-odds"><i class="fas fa-arrow-trend-down me-2" style="color:#EF4444;"></i>Dropping Odds</a></li>
                             <li><a class="dropdown-item" href="signals"><i class="fas fa-microchip me-2" style="color:#22C55E;"></i>Smart Picks</a></li>
-                            <li><a class="dropdown-item" href="track-record"><i class="fas fa-trophy me-2" style="color:#FBBF24;"></i>Recent Results</a></li>
+                            <li><a class="dropdown-item" href="track-record"><i class="fas fa-chart-line me-2" style="color:#FBBF24;"></i>Performance</a></li>
                             <li><a class="dropdown-item" href="betting-school"><i class="fas fa-book me-2" style="color:#8B5CF6;"></i>Betting School</a></li>
                             <li><a class="dropdown-item" href="pikka"><i class="fas fa-futbol me-2" style="color:#6366F1;"></i>Pikka</a></li>
                         </ul>
@@ -863,7 +863,7 @@ try { $approvedSlips = getApprovedSlips(); } catch (Exception $e) {}
                     <ul class="list-unstyled">
                         <li class="mb-2"><a href="dropping-odds"><i class="fas fa-arrow-trend-down me-1" style="color:#EF4444;"></i> Dropping Odds</a></li>
                         <li class="mb-2"><a href="signals"><i class="fas fa-microchip me-1" style="color:#22C55E;"></i> Smart Picks</a></li>
-                        <li class="mb-2"><a href="track-record"><i class="fas fa-trophy me-1" style="color:#FBBF24;"></i> Recent Results</a></li>
+                        <li class="mb-2"><a href="track-record"><i class="fas fa-chart-line me-1" style="color:#FBBF24;"></i> Performance</a></li>
                         <li class="mb-2"><a href="betting-school"><i class="fas fa-book me-1" style="color:#8B5CF6;"></i> Betting School</a></li>
                         <li class="mb-2"><a href="pikka"><i class="fas fa-futbol me-1" style="color:#6366F1;"></i> Pikka</a></li>
                     </ul>
