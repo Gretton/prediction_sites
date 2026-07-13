@@ -24,10 +24,14 @@ $db->exec("CREATE TABLE IF NOT EXISTS `match_results` (
     `match_date` DATE NOT NULL,
     `league` VARCHAR(255) DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `first_seen_at` DATETIME DEFAULT NULL,
     INDEX `idx_match_date` (`match_date`),
     INDEX `idx_home_team` (`home_team`),
     INDEX `idx_away_team` (`away_team`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+// Add column if missing (existing DB)
+try { $db->exec("ALTER TABLE match_results ADD COLUMN first_seen_at DATETIME DEFAULT NULL AFTER created_at"); } catch (PDOException $e) {}
 
 $today = date('Y-m-d');
 $inserted = 0;
@@ -40,8 +44,9 @@ function normalizeTeam($name) {
     return trim(mb_strtolower($name));
 }
 
-$checkStmt = $db->prepare("SELECT COUNT(*) FROM match_results WHERE home_team = ? AND away_team = ? AND match_date = ?");
-$insertStmt = $db->prepare("INSERT INTO match_results (home_team, away_team, home_score, away_score, match_date) VALUES (?, ?, ?, ?, ?)");
+$checkStmt = $db->prepare("SELECT id, home_score, away_score, first_seen_at FROM match_results WHERE home_team = ? AND away_team = ? AND match_date = ?");
+$insertStmt = $db->prepare("INSERT INTO match_results (home_team, away_team, home_score, away_score, match_date, first_seen_at) VALUES (?, ?, ?, ?, ?, NOW())");
+$updateStmt = $db->prepare("UPDATE match_results SET home_score = ?, away_score = ? WHERE id = ?");
 
 foreach ($input['matches'] as $m) {
     $home = normalizeTeam($m['home_team'] ?? '');
@@ -49,10 +54,29 @@ foreach ($input['matches'] as $m) {
     $hs = (int)($m['home_score'] ?? 0);
     $as = (int)($m['away_score'] ?? 0);
     if (empty($home) || empty($away)) { $skipped++; continue; }
+
     $checkStmt->execute([$home, $away, $today]);
-    if ($checkStmt->fetchColumn() > 0) { $skipped++; continue; }
-    $insertStmt->execute([$home, $away, $hs, $as, $today]);
-    $inserted++;
+    $existing = $checkStmt->fetch();
+
+    if ($existing) {
+        // Allow overwrite within 30-minute cooldown window
+        $firstSeen = $existing['first_seen_at'];
+        $cooldown = date('Y-m-d H:i:s', strtotime('-30 minutes'));
+        if ($firstSeen && $firstSeen > $cooldown) {
+            // Use MAX to only update if scores changed
+            if ((int)$existing['home_score'] !== $hs || (int)$existing['away_score'] !== $as) {
+                $updateStmt->execute([$hs, $as, $existing['id']]);
+                $inserted++;
+            } else {
+                $skipped++;
+            }
+        } else {
+            $skipped++;
+        }
+    } else {
+        $insertStmt->execute([$home, $away, $hs, $as, $today]);
+        $inserted++;
+    }
 }
 
 echo json_encode(['status' => 'ok', 'inserted' => $inserted, 'skipped' => $skipped, 'date' => $today]);

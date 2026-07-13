@@ -145,6 +145,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $analysisLog[] = '[' . date('H:i:s') . '] <i class="fas fa-check-circle me-1" style="color:#10B981;"></i>Verified boost applied to ' . $verifiedCount . ' tips (' . implode(', ', array_unique(array_map(fn($m) => $m, array_column(array_filter($tips, fn($t) => isset($t['pattern_badge']) && str_contains($t['pattern_badge'], 'VERIFIED')), 'pick_type'))) ?: ['?']) . ')';
                 }
 
+                // --- Phase 0.5: Bayesian agreement boost ---
+                $bayesianAgreeCount = 0;
+                $bayesianDisagreeCount = 0;
+                try {
+                    require_once __DIR__ . '/classes/BayesianModel.php';
+                    $bmBoost = new BayesianModel();
+                    foreach ($tips as &$tip) {
+                        $matchName = $tip['match'] ?? '';
+                        $pickVal = $tip['pick'] ?? '';
+                        if (!$matchName || !$pickVal) continue;
+                        $agreement = $bmBoost->getAgreementScore($matchName, $pickVal);
+                        if ($agreement === null) continue;
+                        if ($agreement['strongly_agrees']) {
+                            $tip['win_rate_low'] = min(99, (int)($tip['win_rate_low'] ?? 0) + 8);
+                            $tip['win_rate_high'] = min(99, (int)($tip['win_rate_high'] ?? 0) + 6);
+                            if (!isset($tip['safety_notes'])) $tip['safety_notes'] = [];
+                            $tip['safety_notes'][] = '🤖 Bayesian agrees (' . $agreement['probability'] . '%) +' . $agreement['agreement'] . '%';
+                            $bayesianAgreeCount++;
+                        } elseif ($agreement['disagrees']) {
+                            // Downgrade confidence if Bayesian strongly disagrees
+                            $tip['win_rate_low'] = max(30, (int)($tip['win_rate_low'] ?? 50) - 12);
+                            $tip['win_rate_high'] = max(35, (int)($tip['win_rate_high'] ?? 60) - 10);
+                            if (!isset($tip['safety_notes'])) $tip['safety_notes'] = [];
+                            $tip['safety_notes'][] = '⚠️ Bayesian disagrees (' . $agreement['probability'] . '%) — model conflict';
+                            $bayesianDisagreeCount++;
+                        }
+                    }
+                    unset($tip);
+                    if ($bayesianAgreeCount > 0 || $bayesianDisagreeCount > 0) {
+                        $analysisLog[] = '[' . date('H:i:s') . '] <i class="fas fa-chart-bar me-1" style="color:#059669;"></i>Bayesian boost: ' . $bayesianAgreeCount . ' agreed ↑, ' . $bayesianDisagreeCount . ' disagreed ↓';
+                    }
+                } catch (Exception $e) {
+                    $analysisLog[] = '[' . date('H:i:s') . '] <i class="fas fa-exclamation-triangle me-1" style="color:#F59E0B;"></i>Bayesian boost skipped: ' . $e->getMessage();
+                }
+
                 // --- Phase 1: Categorize each tip (per predixa.py) ---
                 // A tip can flow into multiple pools (e.g. Over 1.5 in both tab + parlay)
                 $rolloverPool = [];
@@ -525,7 +560,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt = $db->prepare("UPDATE web_users SET is_demo = 0 WHERE id = ?");
     $stmt->execute([(int)$_POST['user_id']]);
     $msg = "<i class='fas fa-check-circle me-1' style='color:#22C55E;'></i>Demo status removed.";
-}
+} elseif ($_POST['action'] === 'retune_bayesian') {
+    require_once __DIR__ . '/classes/BayesianModel.php';
+    $bmTune = new BayesianModel();
+    $tuneResult = $bmTune->tunePriorStrength();
+    if (is_array($tuneResult)) {
+        $_SESSION['bayesian_k'] = $tuneResult['best_k'];
+        $_SESSION['bayesian_err'] = $tuneResult['best_err'];
+        $msg = "<i class='fas fa-check-circle me-1' style='color:#22C55E;'></i>Bayesian re-tuned: k = {$tuneResult['best_k']}, error rate = " . round($tuneResult['best_err']*100, 1) . "%";
+    } else {
+        $error = "<i class='fas fa-times-circle me-1' style='color:#EF4444;'></i>Bayesian tuning failed (need ≥20 settled picks in last 90 days)";
+    }
+} elseif ($_POST['action'] === 'bayesian_batch_predict') {
+        require_once __DIR__ . '/classes/BayesianModel.php';
+        $bm = new BayesianModel();
+        $result = $bm->runBatchPredictions();
+        $msg = "<i class='fas fa-check-circle me-1' style='color:#22C55E;'></i>Bayesian batch: {$result['stored']} stored, {$result['skipped']} skipped, {$result['errors']} errors";
+    } elseif ($_POST['action'] === 'bayesian_settle') {
+        require_once __DIR__ . '/classes/BayesianModel.php';
+        $bm = new BayesianModel();
+        $result = $bm->settlePredictions();
+        $msg = "<i class='fas fa-check-circle me-1' style='color:#22C55E;'></i>Bayesian settle: {$result['settled']} settled, {$result['matched']} matched, {$result['unmatched']} unmatched";
+    } elseif ($_POST['action'] === 'bayesian_clear_session') {
+        unset($_SESSION['bayesian_k'], $_SESSION['bayesian_err']);
+        $msg = "<i class='fas fa-check-circle me-1' style='color:#22C55E;'></i>Bayesian cache cleared";
+    }
 }
 }
 
@@ -708,18 +767,18 @@ $pageStats = $db->query("SELECT page, COUNT(*) as visits FROM page_views WHERE v
 $topIps = $db->query("SELECT ip_address, COUNT(*) as hits, MAX(visited_at) as last_hit FROM page_views WHERE visited_at >= CURDATE() AND ip_address != '' GROUP BY ip_address ORDER BY hits DESC LIMIT 5")->fetchAll();
 $recentVisits = $db->query("SELECT pv.*, wu.phone, wu.email FROM page_views pv LEFT JOIN web_users wu ON pv.user_id = wu.id ORDER BY pv.visited_at DESC LIMIT 20")->fetchAll();
 $allPicks = getAllPicksForAdmin();
-$tabOrder = ['scrape_analyze', 'approve', 'users', 'featured', 'admins', 'code_purchases', 'visitors'];
+$tabOrder = ['scrape_analyze', 'approve', 'users', 'admins', 'code_purchases', 'visitors'];
 $requestedTab = $_GET['tab'] ?? '';
 if ($requestedTab) {
     $activeTab = $requestedTab;
+    if ($activeTab === 'featured') { header('Location: ?tab=scrape_analyze&sub=featured'); exit; }
 } else {
     $activeTab = 'approve';
     foreach ($tabOrder as $t) {
         $permCheck = match($t) {
-            'scrape_analyze' => $isSuperAdmin || hasAdminPermission('analysis') || hasAdminPermission('scraper'),
+            'scrape_analyze' => $isSuperAdmin || hasAdminPermission('analysis') || hasAdminPermission('scraper') || hasAdminPermission('picks'),
             'approve' => $isSuperAdmin || hasAdminPermission('payments'),
             'users' => $isSuperAdmin || hasAdminPermission('users'),
-            'featured' => $isSuperAdmin || hasAdminPermission('picks'),
             'admins' => $isSuperAdmin || hasAdminPermission('admins'),
             'code_purchases' => $isSuperAdmin || hasAdminPermission('code_purchases'),
             'visitors' => $isSuperAdmin || hasAdminPermission('visitors'),
@@ -844,9 +903,6 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-soft); color: var(
         <?php endif; ?>
         <?php if ($isSuperAdmin || hasAdminPermission('users')): ?>
         <a href="?tab=users" class="nav-link <?= $activeTab === 'users' ? 'active' : '' ?>"><i class="fas fa-users me-1"></i>Users</a>
-        <?php endif; ?>
-        <?php if ($isSuperAdmin || hasAdminPermission('picks')): ?>
-        <a href="?tab=featured" class="nav-link <?= $activeTab === 'featured' ? 'active' : '' ?>"><i class="fas fa-star me-1"></i>Featured Betslip</a>
         <?php endif; ?>
         <?php if ($isSuperAdmin || hasAdminPermission('admins')): ?>
         <a href="?tab=admins" class="nav-link <?= $activeTab === 'admins' ? 'active' : '' ?>"><i class="fas fa-user-shield me-1"></i>Manage Admins</a>
@@ -1286,106 +1342,6 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-soft); color: var(
 <?php endif; ?>
 <?php endif; ?>
 
-<?php if ($activeTab === 'featured'): ?>
-<?php if (!hasAdminPermission('picks')): ?>
-<div class="alert alert-danger text-center py-4"><i class="fas fa-lock me-2"></i>You do not have permission to manage featured betslips.</div>
-<?php else: ?>
-<div class="card">
-    <div class="card-header">
-        <h2 class="card-title"><i class="fas fa-star me-1"></i>Configure TOP PICKS</h2>
-        <span class="badge" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white;">Rollover/Both Exclusive</span>
-    </div>
-    <div class="alert" style="background: #ECFDF5; border-left: 4px solid #10B981; margin-bottom: 1rem;">
-        <strong><i class="fas fa-lightbulb me-1"></i>How it works:</strong> Search matches below → Click to add to selection → Click "Save as TOP PICKS". 
-        Only Rollover & Both subscribers will see these.
-    </div>
-
-    <form method="POST" id="topPicksForm">
-    <input type="hidden" name="action" value="save_top_picks">
-    <div class="row">
-        <div class="col-md-6">
-            <input type="text" id="pickSearch" class="search-input" placeholder="&#xF002; Search match or league...">
-            <div id="availablePicks" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 0.5rem;">
-                <?php foreach ($allPicks as $pick): ?>
-                <div class="pick-item" data-id="<?= $pick['id'] ?>" data-name="<?= strtolower($pick['match_name']) ?>" data-league="<?= strtolower($pick['league']) ?>"
-                     style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; margin-bottom: 0.25rem; background: var(--bg-soft); border-radius: 4px; cursor: pointer; transition: 0.2s; border: 2px solid transparent;">
-                    <input type="checkbox" name="selected_picks[]" value="<?= $pick['id'] ?>" class="pick-checkbox" style="width: 18px; height: 18px; cursor: pointer; flex-shrink: 0;">
-                    <div style="flex: 1; pointer-events: none;">
-                        <div style="font-weight: 600; font-size: 0.85rem;"><?= htmlspecialchars($pick['match_name']) ?></div>
-                        <div style="font-size: 0.75rem; color: var(--text-muted);"><?= htmlspecialchars($pick['league']) ?> • <?= number_format($pick['odds'], 2) ?>x</div>
-                    </div>
-                </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-
-        <div class="col-md-6">
-            <h5 style="font-size: 0.9rem; margin-bottom: 0.5rem;"><i class="fas fa-check-circle me-1" style="color:#22C55E;"></i>Selected for TOP PICKS (<span id="selectedCount">0</span>)</h5>
-            <div id="selectedPicksList" style="max-height: 400px; overflow-y: auto; border: 2px dashed var(--primary); border-radius: 6px; padding: 0.5rem; min-height: 150px; background: #F0FDF4;">
-                <div class="text-center text-muted py-3" id="emptyMsg">No picks selected yet</div>
-            </div>
-            <button type="submit" class="btn btn-approve w-100 mt-3"><i class="fas fa-floppy-disk me-1"></i>Save as TOP PICKS</button>
-        </div>
-    </div>
-    </form>
-</div>
-
-<script>
-(function() {
-    const searchInput = document.getElementById('pickSearch');
-    const availableDiv = document.getElementById('availablePicks');
-    const selectedList = document.getElementById('selectedPicksList');
-    const selectedCount = document.getElementById('selectedCount');
-
-    function refreshSelected() {
-        const checked = availableDiv.querySelectorAll('.pick-checkbox:checked');
-        selectedList.innerHTML = '';
-        selectedCount.textContent = checked.length;
-
-        if (checked.length === 0) {
-            selectedList.innerHTML = '<div class="text-center text-muted py-3">No picks selected yet</div>';
-            return;
-        }
-        checked.forEach(cb => {
-            const el = cb.closest('.pick-item');
-            if (!el) return;
-            const clone = el.cloneNode(true);
-            const cloneCb = clone.querySelector('.pick-checkbox');
-            cloneCb.removeAttribute('name');
-            cloneCb.checked = true;
-            cloneCb.addEventListener('change', () => { cb.checked = cloneCb.checked; refreshSelected(); });
-            clone.style.borderColor = 'var(--primary)';
-            clone.style.background = '#E0F2FE';
-            clone.style.marginBottom = '0.5rem';
-            selectedList.appendChild(clone);
-        });
-    }
-
-    availableDiv.addEventListener('change', function(e) {
-        if (e.target.classList.contains('pick-checkbox')) {
-            refreshSelected();
-        }
-    });
-
-    availableDiv.addEventListener('click', function(e) {
-        const cb = e.target.closest('.pick-item')?.querySelector('.pick-checkbox');
-        if (cb && e.target !== cb) {
-            cb.checked = !cb.checked;
-            refreshSelected();
-        }
-    });
-
-    searchInput?.addEventListener('input', function(e) {
-        const term = e.target.value.toLowerCase().trim();
-        availableDiv.querySelectorAll('.pick-item').forEach(el => {
-            el.style.display = (el.dataset.name.includes(term) || el.dataset.league.includes(term)) ? '' : 'none';
-        });
-    });
-})();
-</script>
-<?php endif; ?>
-<?php endif; ?>
-
 <?php if ($activeTab === 'code_purchases'): ?>
 <?php if (!hasAdminPermission('code_purchases')): ?>
 <div class="alert alert-danger text-center py-4"><i class="fas fa-lock me-2"></i>You do not have permission to manage code purchases.</div>
@@ -1800,18 +1756,32 @@ document.addEventListener('DOMContentLoaded', function() {
 <?php endif; ?>
 
 <?php if ($activeTab === 'scrape_analyze'): ?>
-<?php if (!hasAdminPermission('analysis') && !hasAdminPermission('scraper')): ?>
+<?php if (!hasAdminPermission('analysis') && !hasAdminPermission('scraper') && !hasAdminPermission('picks')): ?>
 <div class="alert alert-danger text-center py-4"><i class="fas fa-lock me-2"></i>You do not have permission to access this section.</div>
 <?php else:
-$sub = $_GET['sub'] ?? 'analysis';
+$requestedSub = $_GET['sub'] ?? '';
+$sub = in_array($requestedSub, ['analysis', 'verified', 'featured']) ? $requestedSub : 'analysis';
+if ($sub === 'analysis' && !$isSuperAdmin && !hasAdminPermission('analysis') && !hasAdminPermission('scraper')) {
+    $sub = 'featured';
+}
 ?>
+<!-- Outer sub-nav: Betting School + Featured Betslip -->
 <div style="display:flex;gap:8px;margin-bottom:1rem;border-bottom:2px solid #E5E7EB;padding-bottom:0.5rem;">
-    <a href="?tab=scrape_analyze" class="nav-link <?= $sub === 'analysis' ? 'active' : '' ?>" style="text-decoration:none;font-weight:600;font-size:0.85rem;padding:6px 16px;border-radius:8px;<?= $sub === 'analysis' ? 'background:var(--primary);color:#fff;' : 'color:var(--text-muted);' ?>"><i class="fas fa-microchip me-1"></i>Analysis</a>
-    <?php if ($isSuperAdmin || hasAdminPermission('consensus')): ?>
-    <a href="?tab=scrape_analyze&sub=verified" class="nav-link <?= $sub === 'verified' ? 'active' : '' ?>" style="text-decoration:none;font-weight:600;font-size:0.85rem;padding:6px 16px;border-radius:8px;<?= $sub === 'verified' ? 'background:var(--primary);color:#fff;' : 'color:var(--text-muted);' ?>"><i class="fas fa-check-circle me-1"></i>Verified Data</a>
+    <a href="?tab=scrape_analyze" class="nav-link <?= $sub !== 'featured' ? 'active' : '' ?>" style="text-decoration:none;font-weight:600;font-size:0.85rem;padding:6px 16px;border-radius:8px;<?= $sub !== 'featured' ? 'background:var(--primary);color:#fff;' : 'color:var(--text-muted);' ?>"><i class="fas fa-microchip me-1"></i>Analysis</a>
+    <?php if ($isSuperAdmin || hasAdminPermission('picks')): ?>
+    <a href="?tab=scrape_analyze&sub=featured" class="nav-link <?= $sub === 'featured' ? 'active' : '' ?>" style="text-decoration:none;font-weight:600;font-size:0.85rem;padding:6px 16px;border-radius:8px;<?= $sub === 'featured' ? 'background:var(--primary);color:#fff;' : 'color:var(--text-muted);' ?>"><i class="fas fa-book-open me-1"></i>Betting Strategies</a>
     <?php endif; ?>
-    <a href="?tab=scrape_analyze&sub=bayesian" class="nav-link <?= $sub === 'bayesian' ? 'active' : '' ?>" style="text-decoration:none;font-weight:600;font-size:0.85rem;padding:6px 16px;border-radius:8px;<?= $sub === 'bayesian' ? 'background:var(--primary);color:#fff;' : 'color:var(--text-muted);' ?>"><i class="fas fa-chart-bar me-1"></i>Bayesian</a>
 </div>
+
+<?php if ($sub !== 'featured'): ?>
+<!-- Inner sub-nav: Analysis / Verified -->
+<div style="display:flex;gap:8px;margin-bottom:1rem;border-bottom:2px solid #E5E7EB;padding-bottom:0.5rem;padding-left:4px;">
+    <a href="?tab=scrape_analyze" class="nav-link <?= $sub === 'analysis' ? 'active' : '' ?>" style="text-decoration:none;font-weight:600;font-size:0.8rem;padding:4px 14px;border-radius:8px;<?= $sub === 'analysis' ? 'background:var(--primary);color:#fff;' : 'color:var(--text-muted);' ?>"><i class="fas fa-microchip me-1"></i>Analysis</a>
+    <?php if ($isSuperAdmin || hasAdminPermission('consensus')): ?>
+    <a href="?tab=scrape_analyze&sub=verified" class="nav-link <?= $sub === 'verified' ? 'active' : '' ?>" style="text-decoration:none;font-weight:600;font-size:0.8rem;padding:4px 14px;border-radius:8px;<?= $sub === 'verified' ? 'background:var(--primary);color:#fff;' : 'color:var(--text-muted);' ?>"><i class="fas fa-check-circle me-1"></i>Verified Data</a>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
 
 <?php if ($sub === 'analysis'): ?>
 <div class="alert" style="background: #F0F4FF; border-left: 4px solid var(--primary); margin-bottom: 1rem; font-size: 0.85rem;">
@@ -1858,320 +1828,109 @@ $sub = $_GET['sub'] ?? 'analysis';
             </a>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="card h-100 d-flex flex-column" style="border-left: 4px solid #059669;">
-            <div class="card-header">
-                <h2 class="card-title"><i class="fas fa-chart-bar me-1" style="color:#059669;"></i>Bayesian Prediction</h2>
-                <span class="badge" style="background: #059669; color: white;">Beta-Binomial model</span>
-            </div>
-            <div class="alert" style="background: #ECFDF5; border-left: 4px solid #059669; margin-bottom: 0.5rem; font-size: 0.78rem; padding:0.5rem 0.75rem;">
-                <strong><i class="fas fa-calculator me-1"></i>Bayesian inference:</strong> Uses historical match results (league priors + team form + H2H) to compute posterior probabilities via Beta-Binomial conjugate model. Applies Poisson for Over/Under.
-            </div>
-            <?php
-            $bayesianResults = [];
-            $bayesianError = '';
-            try {
-                require_once __DIR__ . '/classes/BayesianModel.php';
-                $bm = new BayesianModel();
-                $dataSummary = $bm->getDataQualitySummary();
-                $totalData = (int)($dataSummary['total_matches'] ?? 0);
-                $teamsData = (int)($dataSummary['teams'] ?? 0);
-                $minDate = $dataSummary['earliest'] ?? '—';
-
-                // Get today's candidate matches from web_picks + scraper_results
-                $matchPool = [];
-                try {
-                    $stmt = $db->query("
-                        SELECT DISTINCT match_name, league, match_time
-                        FROM (
-                            SELECT match_name, league, match_time FROM web_picks WHERE DATE(detected_at) = CURDATE()
-                            UNION
-                            SELECT match_name, league, match_time FROM scraper_results WHERE DATE(detected_at) = CURDATE()
-                            UNION
-                            SELECT match_name, league, match_time FROM admin_featured_picks WHERE DATE(created_at) = CURDATE()
-                        ) t
-                        ORDER BY match_time ASC
-                        LIMIT 15
-                    ");
-                    $matchPool = $stmt->fetchAll();
-                } catch (Exception $e) {}
-
-                if (!empty($matchPool)) {
-                    $bayesianResults = [];
-                    foreach ($matchPool as $m) {
-                        $parts = preg_split('/\s+vs\.?\s+/i', $m['match_name'], 2);
-                        if (count($parts) === 2) {
-                            $home = trim($parts[0]);
-                            $away = trim($parts[1]);
-                            try {
-                                $pred = $bm->predict($home, $away, $m['league']);
-                                $pred['match_name'] = $m['match_name'];
-                                $pred['league'] = $m['league'];
-                                $pred['match_time'] = $m['match_time'];
-                                $bayesianResults[] = $pred;
-                            } catch (Exception $e) {
-                                error_log("BayesianModel predict error for {$m['match_name']}: " . $e->getMessage());
-                            }
-                        }
-                    }
-                    // Sort by confidence descending
-                    usort($bayesianResults, fn($a, $b) => $b['confidence'] <=> $a['confidence']);
-                }
-            } catch (Exception $e) {
-                $bayesianError = $e->getMessage();
-            }
-            ?>
-            <?php if ($bayesianError): ?>
-            <div class="alert alert-danger py-2 px-3" style="font-size:0.78rem;margin:0.5rem;"><?= htmlspecialchars($bayesianError) ?></div>
-            <?php endif; ?>
-            <div style="padding:0.5rem 0.75rem;font-size:0.72rem;color:var(--text-muted);border-bottom:1px solid var(--border-color);">
-                <i class="fas fa-database me-1"></i>Training data: <strong><?= number_format($totalData) ?></strong> matches, <strong><?= $teamsData ?></strong> teams since <strong><?= htmlspecialchars($minDate) ?></strong>
-            </div>
-            <div style="flex:1;overflow-y:auto;max-height:260px;padding:0.5rem 0.75rem;">
-                <?php if (empty($bayesianResults)): ?>
-                <div style="text-align:center;padding:1rem;color:var(--text-muted);font-size:0.8rem;">
-                    <i class="fas fa-inbox me-1"></i> No match data available for today.<br>
-                    <span style="font-size:0.7rem;">Run analysis or wait for scrapers to populate matches.</span>
-                </div>
-                <?php else: foreach ($bayesianResults as $bp): ?>
-                <div style="border-bottom:1px solid rgba(0,0,0,0.05);padding:0.4rem 0;font-size:0.75rem;">
-                    <div style="font-weight:600;color:#1E293B;font-size:0.78rem;"><?= htmlspecialchars($bp['match_name']) ?></div>
-                    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:2px;">
-                        <span style="background:rgba(5,150,105,0.12);color:#059669;padding:1px 6px;border-radius:4px;font-weight:700;">
-                            1: <?= $bp['probs']['1'] ?>%
-                        </span>
-                        <span style="background:rgba(245,158,11,0.12);color:#D97706;padding:1px 6px;border-radius:4px;font-weight:700;">
-                            X: <?= $bp['probs']['X'] ?>%
-                        </span>
-                        <span style="background:rgba(239,68,68,0.12);color:#DC2626;padding:1px 6px;border-radius:4px;font-weight:700;">
-                            2: <?= $bp['probs']['2'] ?>%
-                        </span>
-                        <?php if ($bp['over_under']['over_25'] > 50): ?>
-                        <span style="background:rgba(99,102,241,0.12);color:#4F46E5;padding:1px 6px;border-radius:4px;font-weight:700;">
-                            O2.5: <?= $bp['over_under']['over_25'] ?>%
-                        </span>
-                        <?php else: ?>
-                        <span style="background:rgba(99,102,241,0.12);color:#4F46E5;padding:1px 6px;border-radius:4px;font-weight:700;">
-                            U2.5: <?= $bp['over_under']['under_25'] ?>%
-                        </span>
-                        <?php endif; ?>
-                        <?php if ($bp['btts']['yes'] > 50): ?>
-                        <span style="background:rgba(168,85,247,0.12);color:#7C3AED;padding:1px 6px;border-radius:4px;font-weight:700;">
-                            GG: <?= $bp['btts']['yes'] ?>%
-                        </span>
-                        <?php endif; ?>
-                    </div>
-                    <div style="font-size:0.65rem;color:var(--text-muted);margin-top:1px;">
-                        <?php if ($bp['data_quality'] > 0): ?>
-                        <i class="fas fa-chart-simple me-1"></i>conf: <?= $bp['confidence'] ?>% · samples: <?= $bp['data_quality'] ?>
-                        <?php endif; ?>
-                        · λ=<?= $bp['over_under']['expected_total_goals'] ?>
-                        <?php foreach ($bp['recommended_pick'] as $rp): ?>
-                        <span style="background:var(--primary);color:#fff;padding:0px 5px;border-radius:3px;margin-left:4px;font-weight:700;"><?= htmlspecialchars($rp['type']) ?> (<?= $rp['prob'] ?>%)</span>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-                <?php endforeach; endif; ?>
-            </div>
-            <div style="padding:0.4rem 0.75rem;border-top:1px solid var(--border-color);font-size:0.7rem;color:var(--text-muted);">
-                <i class="fas fa-info-circle me-1"></i> Beta-Binomial conjugate prior + Poisson scoring model. <a href="?tab=scrape_analyze&sub=bayesian" style="color:var(--primary);">Full details →</a>
-            </div>
-        </div>
-    </div>
 </div>
 
-<?php if ($isSuperAdmin): ?>
 <?php
-// Betting School article management
-$articleMsg = '';
-$articleError = '';
-$editingArticle = null;
-$editMode = isset($_GET['edit_article']) ? (int)$_GET['edit_article'] : 0;
+require_once __DIR__ . '/classes/BayesianModel.php';
+// Bayesian accuracy monitor card
+$bayesianModel = new BayesianModel();
+$accTrend = $bayesianModel->getAccuracyTrend(30);
+$overallCorrect = 0; $overallTotal = 0;
+foreach ($accTrend as $d) { $overallCorrect += (int)$d['correct']; $overallTotal += (int)$d['total']; }
+$overallAcc = $overallTotal > 0 ? round($overallCorrect / $overallTotal * 100, 1) : 0;
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? '';
-    if ($action === 'create_article' || $action === 'update_article') {
-        $title = trim($_POST['title'] ?? '');
-        $slug = trim($_POST['slug'] ?? '');
-        $content = $_POST['content'] ?? '';
-        $excerpt = trim($_POST['excerpt'] ?? '');
-        $metaDesc = trim($_POST['meta_description'] ?? '');
-        $author = trim($_POST['author'] ?? 'PREDIXA');
-        $published = isset($_POST['published']) ? 1 : 0;
-        if (!$title || !$slug || !$content) {
-            $articleError = 'Title, slug, and content are required.';
-        } else {
-            if ($action === 'create_article') {
-                $db->prepare("INSERT INTO betting_articles (title, slug, content, excerpt, meta_description, author, published) VALUES (?, ?, ?, ?, ?, ?, ?)")->execute([$title, $slug, $content, $excerpt, $metaDesc, $author, $published]);
-                $articleMsg = 'Article created.';
-            } else {
-                $aid = (int)$_POST['article_id'];
-                $db->prepare("UPDATE betting_articles SET title=?, slug=?, content=?, excerpt=?, meta_description=?, author=?, published=? WHERE id=?")->execute([$title, $slug, $content, $excerpt, $metaDesc, $author, $published, $aid]);
-                $articleMsg = 'Article updated.';
-            }
-        }
-    } elseif ($action === 'toggle_publish') {
-        $aid = (int)$_POST['article_id'];
-        $published = (int)$_POST['published'];
-        $db->prepare("UPDATE betting_articles SET published=? WHERE id=?")->execute([$published, $aid]);
-        $articleMsg = $published ? 'Article published.' : 'Article unpublished.';
-    } elseif ($action === 'delete_article') {
-        $aid = (int)$_POST['article_id'];
-        $db->prepare("DELETE FROM betting_articles WHERE id=?")->execute([$aid]);
-        $articleMsg = 'Article deleted.';
+// Auto-tune on first load if not already tuned (stored in session)
+if (!isset($_SESSION['bayesian_k']) && $overallTotal >= 20) {
+    $tuneResult = $bayesianModel->tunePriorStrength();
+    if (is_array($tuneResult)) {
+        $_SESSION['bayesian_k'] = $tuneResult['best_k'];
+        $_SESSION['bayesian_err'] = $tuneResult['best_err'];
     }
 }
-
-if ($editMode) {
-    $stmt = $db->prepare("SELECT * FROM betting_articles WHERE id=?");
-    $stmt->execute([$editMode]);
-    $editingArticle = $stmt->fetch();
-}
-$articles = $db->query("SELECT * FROM betting_articles ORDER BY created_at DESC")->fetchAll();
+$tunedK = $_SESSION['bayesian_k'] ?? $bayesianModel->getPriorStrength();
+$tunedErr = $_SESSION['bayesian_err'] ?? null;
 ?>
-<div class="card mb-3">
-    <div class="card-header" data-bs-toggle="collapse" data-bs-target="#bsAccordion" role="button" style="cursor:pointer;">
-        <h2 class="card-title"><i class="fas fa-book-open me-1"></i>Betting School</h2>
-        <span class="badge" style="background: #F59E0B; color: white;"><?= count($articles) ?> Articles</span>
+<div class="card mt-3" style="border-left: 4px solid #10B981;">
+    <div class="card-header d-flex flex-wrap align-items-center gap-2">
+        <h2 class="card-title" style="margin:0;"><i class="fas fa-robot me-1" style="color:#10B981;"></i>Bayesian Model Monitor</h2>
+        <span class="badge" style="background:#10B981;color:#fff;">Rolling 30-day</span>
+        <span style="margin-left:auto;font-size:0.78rem;color:var(--text-muted);">k = <?= $tunedK ?> <?php if ($tunedErr): ?><span title="Grid-search error rate">(err: <?= $tunedErr ?>%)</span><?php endif; ?></span>
     </div>
-    <div class="collapse show" id="bsAccordion">
-        <div class="p-0">
-            <?php if ($articleMsg): ?>
-            <div class="alert" style="background: #ECFDF5; border-left: 4px solid #10B981; margin:1rem;font-size:0.82rem;"><?= htmlspecialchars($articleMsg) ?></div>
-            <?php endif; if ($articleError): ?>
-            <div class="alert" style="background: #FEF2F2; border-left: 4px solid #EF4444; margin:1rem;font-size:0.82rem;"><?= htmlspecialchars($articleError) ?></div>
-            <?php endif; ?>
-
-            <div class="accordion" id="bsAccordionInner">
-                <div class="accordion-item" style="border:none;">
-                    <h2 class="accordion-header" style="border-bottom:1px solid var(--border-color);">
-                        <button class="accordion-button <?= $editingArticle ? '' : 'collapsed' ?>" type="button" data-bs-toggle="collapse" data-bs-target="#bsNewArticle" style="font-size:0.85rem;font-weight:600;background:transparent;">
-                            <?= $editingArticle ? '<i class="fas fa-edit me-2"></i>Edit Article' : '<i class="fas fa-plus me-2"></i>New Article' ?>
-                        </button>
-                    </h2>
-                    <div id="bsNewArticle" class="accordion-collapse collapse <?= $editingArticle ? 'show' : '' ?>" data-bs-parent="#bsAccordionInner">
-                        <div class="accordion-body p-3">
-                            <?php if ($editingArticle): ?>
-                            <form method="POST">
-                                <input type="hidden" name="action" value="update_article">
-                                <input type="hidden" name="article_id" value="<?= $editingArticle['id'] ?>">
-                                <div class="row g-2 mb-2">
-                                    <div class="col-md-6"><label style="font-size:0.75rem;font-weight:600;">Title</label><input type="text" name="title" class="form-control form-control-sm" value="<?= htmlspecialchars($editingArticle['title']) ?>" required></div>
-                                    <div class="col-md-3"><label style="font-size:0.75rem;font-weight:600;">Slug</label><input type="text" name="slug" class="form-control form-control-sm" value="<?= htmlspecialchars($editingArticle['slug']) ?>" required></div>
-                                    <div class="col-md-3"><label style="font-size:0.75rem;font-weight:600;">Author</label><input type="text" name="author" class="form-control form-control-sm" value="<?= htmlspecialchars($editingArticle['author'] ?? 'PREDIXA') ?>"></div>
-                                </div>
-                                <div class="mb-2"><label style="font-size:0.75rem;font-weight:600;">Excerpt</label><input type="text" name="excerpt" class="form-control form-control-sm" value="<?= htmlspecialchars($editingArticle['excerpt'] ?? '') ?>"></div>
-                                <div class="mb-2"><label style="font-size:0.75rem;font-weight:600;">Meta Description</label><input type="text" name="meta_description" class="form-control form-control-sm" value="<?= htmlspecialchars($editingArticle['meta_description'] ?? '') ?>"></div>
-                                <div class="mb-2">
-                                    <label style="font-size:0.75rem;font-weight:600;">Content (HTML)</label>
-                                    <div class="mb-2 p-2" style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:6px;font-size:0.75rem;">
-                                        <strong style="color:#334155;">Internal Links — click to copy:</strong>
-                                        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">
-                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;dropping-odds\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">dropping-odds</span>
-                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;betting-school\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">betting-school</span>
-                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;tipster\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">tipster</span>
-                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;tipster/leaderboard\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">tipster/leaderboard</span>
-                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;terms\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">terms</span>
-                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;dashboard\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">dashboard</span>
-                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;signup\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">signup</span>
-                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;login\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">login</span>
-                                        </div>
-                                        <div style="margin-top:4px;color:#64748B;">Replace <code>text</code> with anchor, e.g. <code>&lt;a href="pikka"&gt;betting codes&lt;/a&gt;</code></div>
-                                    </div>
-                                    <textarea name="content" class="form-control" rows="8" style="font-family:monospace;font-size:0.82rem;"><?= htmlspecialchars($editingArticle['content']) ?></textarea>
-                                </div>
-                                <div class="d-flex gap-2 align-items-center">
-                                    <label><input type="checkbox" name="published" value="1" <?= $editingArticle['published'] ? 'checked' : '' ?>> Published</label>
-                                    <button type="submit" class="btn btn-approve btn-sm">Update Article</button>
-                                    <a href="?tab=scrape_analyze" class="btn btn-sm" style="border:1px solid var(--border-color);">Cancel</a>
-                                </div>
-                            </form>
-                            <?php else: ?>
-                            <form method="POST">
-                                <input type="hidden" name="action" value="create_article">
-                                <div class="row g-2 mb-2">
-                                    <div class="col-md-6"><label style="font-size:0.75rem;font-weight:600;">Title</label><input type="text" name="title" class="form-control form-control-sm" placeholder="e.g. Understanding Double Chance Betting" required></div>
-                                    <div class="col-md-3"><label style="font-size:0.75rem;font-weight:600;">Slug (URL)</label><input type="text" name="slug" class="form-control form-control-sm" placeholder="e.g. double-chance-betting-guide" required></div>
-                                    <div class="col-md-3"><label style="font-size:0.75rem;font-weight:600;">Author</label><input type="text" name="author" class="form-control form-control-sm" value="PREDIXA"></div>
-                                </div>
-                                <div class="mb-2"><label style="font-size:0.75rem;font-weight:600;">Excerpt</label><input type="text" name="excerpt" class="form-control form-control-sm" placeholder="Brief summary shown on listing page"></div>
-                                <div class="mb-2"><label style="font-size:0.75rem;font-weight:600;">Meta Description (SEO)</label><input type="text" name="meta_description" class="form-control form-control-sm" placeholder="Meta description for search engines"></div>
-                                <div class="mb-2">
-                                    <label style="font-size:0.75rem;font-weight:600;">Content (HTML)</label>
-                                    <div class="mb-2 p-2" style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:6px;font-size:0.75rem;">
-                                        <strong style="color:#334155;">Internal Links — click to copy:</strong>
-                                        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">
-                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;dropping-odds\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">dropping-odds</span>
-                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;betting-school\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">betting-school</span>
-                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;tipster\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">tipster</span>
-                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;tipster/leaderboard\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">tipster/leaderboard</span>
-                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;terms\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">terms</span>
-                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;dashboard\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">dashboard</span>
-                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;signup\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">signup</span>
-                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;login\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">login</span>
-                                        </div>
-                                        <div style="margin-top:4px;color:#64748B;">Replace <code>text</code> with anchor, e.g. <code>&lt;a href="pikka"&gt;betting codes&lt;/a&gt;</code></div>
-                                    </div>
-                                    <textarea name="content" class="form-control" rows="8" style="font-family:monospace;font-size:0.82rem;" placeholder="Write the full article here with HTML tags..."></textarea>
-                                </div>
-                                <div class="d-flex gap-2 align-items-center">
-                                    <label><input type="checkbox" name="published" value="1"> Publish immediately</label>
-                                    <button type="submit" class="btn btn-approve btn-sm">Create Article</button>
-                                </div>
-                            </form>
-                            <?php endif; ?>
-                        </div>
-                    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <div style="text-align:center;padding:1rem;background:var(--bg-soft);border-radius:8px;">
+                    <div style="font-size:2rem;font-weight:700;color:#10B981;"><?= $overallAcc ?>%</div>
+                    <div style="font-size:0.75rem;color:var(--text-muted);">30-Day Accuracy</div>
                 </div>
-                <div class="accordion-item" style="border:none;">
-                    <h2 class="accordion-header">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#bsAllArticles" style="font-size:0.85rem;font-weight:600;background:transparent;">
-                            <i class="fas fa-list me-2"></i>All Articles (<?= count($articles) ?>)
-                        </button>
-                    </h2>
-                    <div id="bsAllArticles" class="accordion-collapse collapse" data-bs-parent="#bsAccordionInner">
-                        <div class="accordion-body p-0">
-                            <div class="table-responsive">
-                                <table class="table" style="margin-bottom:0;">
-                                    <thead><tr><th>ID</th><th>Title</th><th>Slug</th><th>Author</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
-                                    <tbody>
-                                    <?php if (empty($articles)): ?>
-                                        <tr><td colspan="7" class="text-center text-muted py-3">No articles yet.</td></tr>
-                                    <?php else: foreach ($articles as $a): ?>
-                                        <tr>
-                                            <td><?= $a['id'] ?></td>
-                                            <td><a href="betting-school/<?= htmlspecialchars($a['slug']) ?>" target="_blank" style="color:var(--primary);"><?= htmlspecialchars($a['title']) ?></a></td>
-                                            <td><code>/betting-school/<?= htmlspecialchars($a['slug']) ?></code></td>
-                                            <td><?= htmlspecialchars($a['author'] ?? 'PREDIXA') ?></td>
-                                            <td><?= $a['published'] ? '<span class="badge" style="background:#10B981;">Published</span>' : '<span class="badge" style="background:#9CA3AF;">Draft</span>' ?></td>
-                                            <td><?= date('j M Y', strtotime($a['created_at'])) ?></td>
-                                            <td>
-                                                <a href="?tab=scrape_analyze&edit_article=<?= $a['id'] ?>" class="btn btn-sm" style="background:var(--bg-soft);border:1px solid var(--border-color);padding:2px 10px;font-size:0.75rem;">Edit</a>
-                                                <form method="POST" class="d-inline">
-                                                    <input type="hidden" name="action" value="toggle_publish">
-                                                    <input type="hidden" name="article_id" value="<?= $a['id'] ?>">
-                                                    <input type="hidden" name="published" value="<?= $a['published'] ? 0 : 1 ?>">
-                                                    <button type="submit" class="btn btn-sm" style="background:var(--bg-soft);border:1px solid var(--border-color);padding:2px 10px;font-size:0.75rem;"><?= $a['published'] ? 'Unpublish' : 'Publish' ?></button>
-                                                </form>
-                                                <form method="POST" class="d-inline" onsubmit="return confirm('Delete this article?')">
-                                                    <input type="hidden" name="action" value="delete_article">
-                                                    <input type="hidden" name="article_id" value="<?= $a['id'] ?>">
-                                                    <button type="submit" class="btn btn-sm" style="background:#FEF2F2;color:#EF4444;border:1px solid #FCA5A5;padding:2px 10px;font-size:0.75rem;">Delete</button>
-                                                </form>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; endif; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
+            </div>
+            <div class="col-md-3">
+                <div style="text-align:center;padding:1rem;background:var(--bg-soft);border-radius:8px;">
+                    <div style="font-size:2rem;font-weight:700;color:var(--primary);"><?= $overallCorrect ?>/<?= $overallTotal ?></div>
+                    <div style="font-size:0.75rem;color:var(--text-muted);">Correct / Total</div>
                 </div>
+            </div>
+            <div class="col-md-3">
+                <div style="text-align:center;padding:1rem;background:var(--bg-soft);border-radius:8px;">
+                    <div style="font-size:1.3rem;font-weight:700;color:<?= ($overallAcc >= 50 ? '#10B981' : '#EF4444') ?>;">
+                        <?= $overallAcc >= 60 ? '✓ Good' : ($overallAcc >= 45 ? '⚠ Average' : '✗ Poor') ?>
+                    </div>
+                    <div style="font-size:0.75rem;color:var(--text-muted);">Status</div>
+                </div>
+            </div>
+        </div>
+        <?php if (!empty($accTrend)): ?>
+        <div style="margin-top:1rem;">
+            <h6 style="font-size:0.78rem;font-weight:600;margin-bottom:0.5rem;">Daily Accuracy (last 30 days)</h6>
+            <div style="display:flex;gap:2px;align-items:flex-end;height:60px;flex-wrap:nowrap;overflow-x:auto;">
+                <?php foreach ($accTrend as $d):
+                    $barH = max(4, min(60, ((float)$d['accuracy'] / 100) * 60));
+                    $color = (float)$d['accuracy'] >= 50 ? '#10B981' : '#EF4444';
+                ?>
+                <div style="display:flex;flex-direction:column;align-items:center;min-width:28px;">
+                    <div style="width:20px;height:<?= $barH ?>px;background:<?= $color ?>;border-radius:3px 3px 0 0;opacity:0.8;" title="<?= $d['day'] ?>: <?= $d['accuracy'] ?>% (<?= $d['correct'] ?>/<?= $d['total'] ?>)"></div>
+                    <span style="font-size:0.55rem;color:var(--text-muted);writing-mode:vertical-lr;transform:rotate(180deg);"><?= substr($d['day'], 5) ?></span>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+        <div class="row g-2 mt-3" style="border-top:1px solid var(--border-color);padding-top:1rem;">
+            <div class="col-md-3">
+                <form method="POST">
+                    <input type="hidden" name="action" value="bayesian_batch_predict">
+                    <button type="submit" class="btn btn-sm w-100" style="background:#059669;color:#fff;border:0;padding:6px 10px;border-radius:6px;font-size:0.75rem;" onclick="return confirm('Run batch predictions for today\\'s matches?')">
+                        <i class="fas fa-rocket me-1"></i>Batch Predict
+                    </button>
+                </form>
+            </div>
+            <div class="col-md-3">
+                <form method="POST">
+                    <input type="hidden" name="action" value="bayesian_settle">
+                    <button type="submit" class="btn btn-sm w-100" style="background:#D97706;color:#fff;border:0;padding:6px 10px;border-radius:6px;font-size:0.75rem;" onclick="return confirm('Settle today\\'s Bayesian predictions?')">
+                        <i class="fas fa-check-double me-1"></i>Settle
+                    </button>
+                </form>
+            </div>
+            <div class="col-md-3">
+                <form method="POST">
+                    <input type="hidden" name="action" value="retune_bayesian">
+                    <button type="submit" class="btn btn-sm w-100" style="background:#7C3AED;color:#fff;border:0;padding:6px 10px;border-radius:6px;font-size:0.75rem;" onclick="return confirm('Re-scan k from 5 to 100?')">
+                        <i class="fas fa-sliders-h me-1"></i>Re-tune k
+                    </button>
+                </form>
+            </div>
+            <div class="col-md-3">
+                <form method="POST">
+                    <input type="hidden" name="action" value="bayesian_clear_session">
+                    <button type="submit" class="btn btn-sm w-100" style="background:#6B7280;color:#fff;border:0;padding:6px 10px;border-radius:6px;font-size:0.75rem;">
+                        <i class="fas fa-redo me-1"></i>Reset Cache
+                    </button>
+                </form>
             </div>
         </div>
     </div>
 </div>
-<?php endif; // end super admin for Betting School ?>
 
 <?php endif; // end if ($sub === 'analysis') ?>
 
@@ -2322,108 +2081,294 @@ $latestScrape = !empty($scrapes) ? end($scrapes) : '';
 </div>
 <?php endif; // end if ($sub === 'verified') ?>
 
-<?php if ($sub === 'bayesian'): ?>
+
+
+<?php if ($sub === 'featured'): ?>
+<?php if (!hasAdminPermission('picks')): ?>
+<div class="alert alert-danger text-center py-4"><i class="fas fa-lock me-2"></i>You do not have permission to manage featured betslips.</div>
+<?php else: ?>
+
+<?php if ($isSuperAdmin): ?>
 <?php
-require_once __DIR__ . '/classes/BayesianModel.php';
-$bmPage = new BayesianModel();
-$bayesianAll = [];
-try {
-    $allMatches = $bmPage->getDataQualitySummary();
-    $leagues = $bmPage->getAvailableLeagues();
-    $selectedLeague = $_GET['league'] ?? '';
-
-    // Get today's matches
-    $matchPool = [];
-    $stmt = $db->query("
-        SELECT DISTINCT match_name, league, match_time
-        FROM (
-            SELECT match_name, league, match_time FROM web_picks WHERE DATE(detected_at) = CURDATE()
-            UNION
-            SELECT match_name, league, match_time FROM scraper_results WHERE DATE(detected_at) = CURDATE()
-            UNION
-            SELECT match_name, league, match_time FROM admin_featured_picks WHERE DATE(created_at) = CURDATE()
-        ) t
-        ORDER BY match_time ASC
-        LIMIT 50
-    ");
-    $matchPool = $stmt->fetchAll();
-
-    foreach ($matchPool as $m) {
-        $parts = preg_split('/\s+vs\.?\s+/i', $m['match_name'], 2);
-        if (count($parts) === 2) {
-            $h = trim($parts[0]); $a = trim($parts[1]);
-            try {
-                $pred = $bmPage->predict($h, $a, $m['league']);
-                $pred['match_name'] = $m['match_name'];
-                $pred['match_time'] = $m['match_time'];
-                $pred['league'] = $m['league'];
-                $bayesianAll[] = $pred;
-            } catch (Exception $e) {}
+$articleMsg = '';
+$articleError = '';
+$editingArticle = null;
+$editMode = isset($_GET['edit_article']) ? (int)$_GET['edit_article'] : 0;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+    if ($action === 'create_article' || $action === 'update_article') {
+        $title = trim($_POST['title'] ?? '');
+        $slug = trim($_POST['slug'] ?? '');
+        $content = $_POST['content'] ?? '';
+        $excerpt = trim($_POST['excerpt'] ?? '');
+        $metaDesc = trim($_POST['meta_description'] ?? '');
+        $author = trim($_POST['author'] ?? 'PREDIXA');
+        $published = isset($_POST['published']) ? 1 : 0;
+        if (!$title || !$slug || !$content) {
+            $articleError = 'Title, slug, and content are required.';
+        } else {
+            if ($action === 'create_article') {
+                $db->prepare("INSERT INTO betting_articles (title, slug, content, excerpt, meta_description, author, published) VALUES (?, ?, ?, ?, ?, ?, ?)")->execute([$title, $slug, $content, $excerpt, $metaDesc, $author, $published]);
+                $articleMsg = 'Article created.';
+            } else {
+                $aid = (int)$_POST['article_id'];
+                $db->prepare("UPDATE betting_articles SET title=?, slug=?, content=?, excerpt=?, meta_description=?, author=?, published=? WHERE id=?")->execute([$title, $slug, $content, $excerpt, $metaDesc, $author, $published, $aid]);
+                $articleMsg = 'Article updated.';
+            }
         }
+    } elseif ($action === 'toggle_publish') {
+        $aid = (int)$_POST['article_id'];
+        $published = (int)$_POST['published'];
+        $db->prepare("UPDATE betting_articles SET published=? WHERE id=?")->execute([$published, $aid]);
+        $articleMsg = $published ? 'Article published.' : 'Article unpublished.';
+    } elseif ($action === 'delete_article') {
+        $aid = (int)$_POST['article_id'];
+        $db->prepare("DELETE FROM betting_articles WHERE id=?")->execute([$aid]);
+        $articleMsg = 'Article deleted.';
     }
-    usort($bayesianAll, fn($x, $y) => $y['confidence'] <=> $x['confidence']);
-} catch (Exception $e) { $bayesianError = $e->getMessage(); }
+}
+if ($editMode) {
+    $stmt = $db->prepare("SELECT * FROM betting_articles WHERE id=?");
+    $stmt->execute([$editMode]);
+    $editingArticle = $stmt->fetch();
+}
+$articles = $db->query("SELECT * FROM betting_articles ORDER BY created_at DESC")->fetchAll();
 ?>
+<div class="card mb-3">
+    <div class="card-header" data-bs-toggle="collapse" data-bs-target="#bsAccordion" role="button" style="cursor:pointer;">
+        <h2 class="card-title"><i class="fas fa-book-open me-1"></i>Betting School</h2>
+        <span class="badge" style="background: #F59E0B; color: white;"><?= count($articles) ?> Articles</span>
+    </div>
+    <div class="collapse show" id="bsAccordion">
+        <div class="p-0">
+            <?php if ($articleMsg): ?><div class="alert" style="background: #ECFDF5; border-left: 4px solid #10B981; margin:1rem;font-size:0.82rem;"><?= htmlspecialchars($articleMsg) ?></div><?php endif;
+            if ($articleError): ?><div class="alert" style="background: #FEF2F2; border-left: 4px solid #EF4444; margin:1rem;font-size:0.82rem;"><?= htmlspecialchars($articleError) ?></div><?php endif; ?>
+            <div class="accordion" id="bsAccordionInner">
+                <div class="accordion-item" style="border:none;">
+                    <h2 class="accordion-header" style="border-bottom:1px solid var(--border-color);">
+                        <button class="accordion-button <?= $editingArticle ? '' : 'collapsed' ?>" type="button" data-bs-toggle="collapse" data-bs-target="#bsNewArticle" style="font-size:0.85rem;font-weight:600;background:transparent;">
+                            <?= $editingArticle ? '<i class="fas fa-edit me-2"></i>Edit Article' : '<i class="fas fa-plus me-2"></i>New Article' ?>
+                        </button>
+                    </h2>
+                    <div id="bsNewArticle" class="accordion-collapse collapse <?= $editingArticle ? 'show' : '' ?>" data-bs-parent="#bsAccordionInner">
+                        <div class="accordion-body p-3">
+                            <?php if ($editingArticle): ?>
+                            <form method="POST">
+                                <input type="hidden" name="action" value="update_article">
+                                <input type="hidden" name="article_id" value="<?= $editingArticle['id'] ?>">
+                                <div class="row g-2 mb-2">
+                                    <div class="col-md-6"><label style="font-size:0.75rem;font-weight:600;">Title</label><input type="text" name="title" class="form-control form-control-sm" value="<?= htmlspecialchars($editingArticle['title']) ?>" required></div>
+                                    <div class="col-md-3"><label style="font-size:0.75rem;font-weight:600;">Slug</label><input type="text" name="slug" class="form-control form-control-sm" value="<?= htmlspecialchars($editingArticle['slug']) ?>" required></div>
+                                    <div class="col-md-3"><label style="font-size:0.75rem;font-weight:600;">Author</label><input type="text" name="author" class="form-control form-control-sm" value="<?= htmlspecialchars($editingArticle['author'] ?? 'PREDIXA') ?>"></div>
+                                </div>
+                                <div class="mb-2"><label style="font-size:0.75rem;font-weight:600;">Excerpt</label><input type="text" name="excerpt" class="form-control form-control-sm" value="<?= htmlspecialchars($editingArticle['excerpt'] ?? '') ?>"></div>
+                                <div class="mb-2"><label style="font-size:0.75rem;font-weight:600;">Meta Description</label><input type="text" name="meta_description" class="form-control form-control-sm" value="<?= htmlspecialchars($editingArticle['meta_description'] ?? '') ?>"></div>
+                                <div class="mb-2">
+                                    <label style="font-size:0.75rem;font-weight:600;">Content (HTML)</label>
+                                    <div class="mb-2 p-2" style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:6px;font-size:0.75rem;">
+                                        <strong style="color:#334155;">Internal Links — click to copy:</strong>
+                                        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">
+                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;dropping-odds\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">dropping-odds</span>
+                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;betting-school\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">betting-school</span>
+                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;tipster\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">tipster</span>
+                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;tipster/leaderboard\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">tipster/leaderboard</span>
+                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;terms\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">terms</span>
+                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;dashboard\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">dashboard</span>
+                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;signup\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">signup</span>
+                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;login\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">login</span>
+                                        </div>
+                                        <div style="margin-top:4px;color:#64748B;">Replace <code>text</code> with anchor, e.g. <code>&lt;a href="pikka"&gt;betting codes&lt;/a&gt;</code></div>
+                                    </div>
+                                    <textarea name="content" class="form-control" rows="8" style="font-family:monospace;font-size:0.82rem;"><?= htmlspecialchars($editingArticle['content']) ?></textarea>
+                                </div>
+                                <div class="d-flex gap-2 align-items-center">
+                                    <label><input type="checkbox" name="published" value="1" <?= $editingArticle['published'] ? 'checked' : '' ?>> Published</label>
+                                    <button type="submit" class="btn btn-approve btn-sm">Update Article</button>
+                                    <a href="?tab=scrape_analyze&sub=featured" class="btn btn-sm" style="border:1px solid var(--border-color);">Cancel</a>
+                                </div>
+                            </form>
+                            <?php else: ?>
+                            <form method="POST">
+                                <input type="hidden" name="action" value="create_article">
+                                <div class="row g-2 mb-2">
+                                    <div class="col-md-6"><label style="font-size:0.75rem;font-weight:600;">Title</label><input type="text" name="title" class="form-control form-control-sm" placeholder="e.g. Understanding Double Chance Betting" required></div>
+                                    <div class="col-md-3"><label style="font-size:0.75rem;font-weight:600;">Slug (URL)</label><input type="text" name="slug" class="form-control form-control-sm" placeholder="e.g. double-chance-betting-guide" required></div>
+                                    <div class="col-md-3"><label style="font-size:0.75rem;font-weight:600;">Author</label><input type="text" name="author" class="form-control form-control-sm" value="PREDIXA"></div>
+                                </div>
+                                <div class="mb-2"><label style="font-size:0.75rem;font-weight:600;">Excerpt</label><input type="text" name="excerpt" class="form-control form-control-sm" placeholder="Brief summary shown on listing page"></div>
+                                <div class="mb-2"><label style="font-size:0.75rem;font-weight:600;">Meta Description (SEO)</label><input type="text" name="meta_description" class="form-control form-control-sm" placeholder="Meta description for search engines"></div>
+                                <div class="mb-2">
+                                    <label style="font-size:0.75rem;font-weight:600;">Content (HTML)</label>
+                                    <div class="mb-2 p-2" style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:6px;font-size:0.75rem;">
+                                        <strong style="color:#334155;">Internal Links — click to copy:</strong>
+                                        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">
+                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;dropping-odds\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">dropping-odds</span>
+                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;betting-school\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">betting-school</span>
+                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;tipster\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">tipster</span>
+                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;tipster/leaderboard\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">tipster/leaderboard</span>
+                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;terms\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">terms</span>
+                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;dashboard\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">dashboard</span>
+                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;signup\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">signup</span>
+                                            <span onclick="navigator.clipboard.writeText('<a href=\&quot;login\&quot;>text</a>')" style="cursor:pointer;background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:4px;white-space:nowrap;">login</span>
+                                        </div>
+                                        <div style="margin-top:4px;color:#64748B;">Replace <code>text</code> with anchor, e.g. <code>&lt;a href="pikka"&gt;betting codes&lt;/a&gt;</code></div>
+                                    </div>
+                                    <textarea name="content" class="form-control" rows="8" style="font-family:monospace;font-size:0.82rem;" placeholder="Write the full article here with HTML tags..."></textarea>
+                                </div>
+                                <div class="d-flex gap-2 align-items-center">
+                                    <label><input type="checkbox" name="published" value="1"> Publish immediately</label>
+                                    <button type="submit" class="btn btn-approve btn-sm">Create Article</button>
+                                </div>
+                            </form>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item" style="border:none;">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#bsAllArticles" style="font-size:0.85rem;font-weight:600;background:transparent;">
+                            <i class="fas fa-list me-2"></i>All Articles (<?= count($articles) ?>)
+                        </button>
+                    </h2>
+                    <div id="bsAllArticles" class="accordion-collapse collapse" data-bs-parent="#bsAccordionInner">
+                        <div class="accordion-body p-0">
+                            <div class="table-responsive">
+                                <table class="table" style="margin-bottom:0;">
+                                    <thead><tr><th>ID</th><th>Title</th><th>Slug</th><th>Author</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+                                    <tbody>
+                                    <?php if (empty($articles)): ?>
+                                        <tr><td colspan="7" class="text-center text-muted py-3">No articles yet.</td></tr>
+                                    <?php else: foreach ($articles as $a): ?>
+                                        <tr>
+                                            <td><?= $a['id'] ?></td>
+                                            <td><a href="betting-school/<?= htmlspecialchars($a['slug']) ?>" target="_blank" style="color:var(--primary);"><?= htmlspecialchars($a['title']) ?></a></td>
+                                            <td><code>/betting-school/<?= htmlspecialchars($a['slug']) ?></code></td>
+                                            <td><?= htmlspecialchars($a['author'] ?? 'PREDIXA') ?></td>
+                                            <td><?= $a['published'] ? '<span class="badge" style="background:#10B981;">Published</span>' : '<span class="badge" style="background:#9CA3AF;">Draft</span>' ?></td>
+                                            <td><?= date('j M Y', strtotime($a['created_at'])) ?></td>
+                                            <td>
+                                                <a href="?tab=scrape_analyze&sub=featured&edit_article=<?= $a['id'] ?>" class="btn btn-sm" style="background:var(--bg-soft);border:1px solid var(--border-color);padding:2px 10px;font-size:0.75rem;">Edit</a>
+                                                <form method="POST" class="d-inline">
+                                                    <input type="hidden" name="action" value="toggle_publish">
+                                                    <input type="hidden" name="article_id" value="<?= $a['id'] ?>">
+                                                    <input type="hidden" name="published" value="<?= $a['published'] ? 0 : 1 ?>">
+                                                    <button type="submit" class="btn btn-sm" style="background:var(--bg-soft);border:1px solid var(--border-color);padding:2px 10px;font-size:0.75rem;"><?= $a['published'] ? 'Unpublish' : 'Publish' ?></button>
+                                                </form>
+                                                <form method="POST" class="d-inline" onsubmit="return confirm('Delete this article?')">
+                                                    <input type="hidden" name="action" value="delete_article">
+                                                    <input type="hidden" name="article_id" value="<?= $a['id'] ?>">
+                                                    <button type="submit" class="btn btn-sm" style="background:#FEF2F2;color:#EF4444;border:1px solid #FCA5A5;padding:2px 10px;font-size:0.75rem;">Delete</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; endif; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; // end super admin for Betting School ?>
+
 <div class="card">
     <div class="card-header">
-        <h2 class="card-title"><i class="fas fa-chart-bar me-1" style="color:#059669;"></i>Bayesian Predictions</h2>
-        <span class="badge" style="background:#059669;color:#fff;">Beta-Binomial · Poisson</span>
+        <h2 class="card-title"><i class="fas fa-star me-1"></i>Configure TOP PICKS</h2>
+        <span class="badge" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white;">Rollover/Both Exclusive</span>
     </div>
-    <div style="padding:0.75rem 1rem;font-size:0.82rem;background:#ECFDF5;border-bottom:1px solid #A7F3D0;">
-        <strong><i class="fas fa-calculator me-1"></i>Beta-Binomial Conjugate Model</strong><br>
-        <span style="color:#374151;">P(θ | data) ∝ P(data | θ) × P(θ) — league prior updated with team form + H2H. Over/Under via Poisson(λ).</span>
-    </div>
-    <div class="stats-grid" style="padding:0.75rem 1rem;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));">
-        <div class="stat-card"><div class="stat-icon" style="background:#D1FAE5;color:#059669;"><i class="fas fa-futbol"></i></div>
-            <div class="stat-number"><?= number_format((int)($allMatches['total_matches'] ?? 0)) ?></div><div class="stat-label">Training Matches</div></div>
-        <div class="stat-card"><div class="stat-icon" style="background:#DBEAFE;color:#2563EB;"><i class="fas fa-users"></i></div>
-            <div class="stat-number"><?= (int)($allMatches['teams'] ?? 0) ?></div><div class="stat-label">Teams Tracked</div></div>
-        <div class="stat-card"><div class="stat-icon" style="background:#FEF3C7;color:#D97706;"><i class="fas fa-calendar"></i></div>
-            <div class="stat-number"><?= htmlspecialchars($allMatches['earliest'] ?? '—') ?></div><div class="stat-label">Earliest Data</div></div>
-        <div class="stat-card"><div class="stat-icon" style="background:#EDE9FE;color:#7C3AED;"><i class="fas fa-layer-group"></i></div>
-            <div class="stat-number"><?= count($leagues) ?></div><div class="stat-label">Leagues</div></div>
+    <div class="alert" style="background: #ECFDF5; border-left: 4px solid #10B981; margin-bottom: 1rem;">
+        <strong><i class="fas fa-lightbulb me-1"></i>How it works:</strong> Search matches below → Click to add to selection → Click "Save as TOP PICKS". 
+        Only Rollover & Both subscribers will see these.
     </div>
 
-    <?php if (!empty($bayesianAll)): ?>
-    <div style="overflow-x:auto;">
-        <table class="table" style="font-size:0.78rem;">
-            <thead><tr>
-                <th>Match</th><th>League</th><th>1</th><th>X</th><th>2</th>
-                <th>1X</th><th>X2</th><th>12</th>
-                <th>O2.5</th><th>U2.5</th><th>GG</th><th>ExpG</th><th>Conf</th><th>Best Pick</th>
-            </tr></thead>
-            <tbody>
-            <?php foreach ($bayesianAll as $bp): ?>
-            <tr>
-                <td><strong><?= htmlspecialchars($bp['match_name']) ?></strong><br><span style="font-size:0.65rem;color:var(--text-muted);"><?= htmlspecialchars($bp['match_time'] ?? '') ?></span></td>
-                <td style="font-size:0.7rem;"><?= htmlspecialchars(mb_substr($bp['league'] ?? '', 0, 20)) ?></td>
-                <td style="color:#059669;font-weight:700;"><?= $bp['probs']['1'] ?>%</td>
-                <td style="color:#D97706;font-weight:700;"><?= $bp['probs']['X'] ?>%</td>
-                <td style="color:#DC2626;font-weight:700;"><?= $bp['probs']['2'] ?>%</td>
-                <td><?= $bp['probs']['1X'] ?>%</td>
-                <td><?= $bp['probs']['X2'] ?>%</td>
-                <td><?= $bp['probs']['12'] ?>%</td>
-                <td><?= $bp['over_under']['over_25'] ?>%</td>
-                <td><?= $bp['over_under']['under_25'] ?>%</td>
-                <td><?= $bp['btts']['yes'] ?>%</td>
-                <td><?= $bp['over_under']['expected_total_goals'] ?></td>
-                <td><span class="badge" style="background:<?= $bp['confidence'] >= 60 ? '#059669' : ($bp['confidence'] >= 40 ? '#D97706' : '#9CA3AF') ?>;"><?= $bp['confidence'] ?>%</span></td>
-                <td><?php foreach ($bp['recommended_pick'] as $rp): ?><span class="badge" style="background:var(--primary);"><?= htmlspecialchars($rp['type']) ?> (<?= $rp['prob'] ?>%)</span> <?php endforeach; ?></td>
-            </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
+    <form method="POST" id="topPicksForm">
+    <input type="hidden" name="action" value="save_top_picks">
+    <div class="row">
+        <div class="col-md-6">
+            <input type="text" id="pickSearch" class="search-input" placeholder="&#xF002; Search match or league...">
+            <div id="availablePicks" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 0.5rem;">
+                <?php foreach ($allPicks as $pick): ?>
+                <div class="pick-item" data-id="<?= $pick['id'] ?>" data-name="<?= strtolower($pick['match_name']) ?>" data-league="<?= strtolower($pick['league']) ?>"
+                     style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; margin-bottom: 0.25rem; background: var(--bg-soft); border-radius: 4px; cursor: pointer; transition: 0.2s; border: 2px solid transparent;">
+                    <input type="checkbox" name="selected_picks[]" value="<?= $pick['id'] ?>" class="pick-checkbox" style="width: 18px; height: 18px; cursor: pointer; flex-shrink: 0;">
+                    <div style="flex: 1; pointer-events: none;">
+                        <div style="font-weight: 600; font-size: 0.85rem;"><?= htmlspecialchars($pick['match_name']) ?></div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);"><?= htmlspecialchars($pick['league']) ?> • <?= number_format($pick['odds'], 2) ?>x</div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <h5 style="font-size: 0.9rem; margin-bottom: 0.5rem;"><i class="fas fa-check-circle me-1" style="color:#22C55E;"></i>Selected for TOP PICKS (<span id="selectedCount">0</span>)</h5>
+            <div id="selectedPicksList" style="max-height: 400px; overflow-y: auto; border: 2px dashed var(--primary); border-radius: 6px; padding: 0.5rem; min-height: 150px; background: #F0FDF4;">
+                <div class="text-center text-muted py-3" id="emptyMsg">No picks selected yet</div>
+            </div>
+            <button type="submit" class="btn btn-approve w-100 mt-3"><i class="fas fa-floppy-disk me-1"></i>Save as TOP PICKS</button>
+        </div>
     </div>
-    <div style="padding:0.75rem 1rem;border-top:1px solid var(--border-color);font-size:0.7rem;color:var(--text-muted);">
-        <strong>How to read:</strong> Probabilities are posterior means from Beta-Binomial conjugate. Prior = league avg (k=20). Likelihood = team home/away form + H2H. O/U via Poisson(λ). Confidence = divergence from uniform(33%).
-    </div>
-    <?php else: ?>
-    <div style="padding:2rem;text-align:center;color:var(--text-muted);">
-        <i class="fas fa-inbox me-1"></i> No predictions available. Ensure scraper data is populated and run analysis first.
-    </div>
-    <?php endif; ?>
+    </form>
 </div>
-<?php endif; // end if ($sub === 'bayesian') ?>
+
+<script>
+(function() {
+    const searchInput = document.getElementById('pickSearch');
+    const availableDiv = document.getElementById('availablePicks');
+    const selectedList = document.getElementById('selectedPicksList');
+    const selectedCount = document.getElementById('selectedCount');
+
+    function refreshSelected() {
+        const checked = availableDiv.querySelectorAll('.pick-checkbox:checked');
+        selectedList.innerHTML = '';
+        selectedCount.textContent = checked.length;
+
+        if (checked.length === 0) {
+            selectedList.innerHTML = '<div class="text-center text-muted py-3">No picks selected yet</div>';
+            return;
+        }
+        checked.forEach(cb => {
+            const el = cb.closest('.pick-item');
+            if (!el) return;
+            const clone = el.cloneNode(true);
+            const cloneCb = clone.querySelector('.pick-checkbox');
+            cloneCb.removeAttribute('name');
+            cloneCb.checked = true;
+            cloneCb.addEventListener('change', () => { cb.checked = cloneCb.checked; refreshSelected(); });
+            clone.style.borderColor = 'var(--primary)';
+            clone.style.background = '#E0F2FE';
+            clone.style.marginBottom = '0.5rem';
+            selectedList.appendChild(clone);
+        });
+    }
+
+    availableDiv.addEventListener('change', function(e) {
+        if (e.target.classList.contains('pick-checkbox')) {
+            refreshSelected();
+        }
+    });
+
+    availableDiv.addEventListener('click', function(e) {
+        const cb = e.target.closest('.pick-item')?.querySelector('.pick-checkbox');
+        if (cb && e.target !== cb) {
+            cb.checked = !cb.checked;
+            refreshSelected();
+        }
+    });
+
+    searchInput?.addEventListener('input', function(e) {
+        const term = e.target.value.toLowerCase().trim();
+        availableDiv.querySelectorAll('.pick-item').forEach(el => {
+            el.style.display = (el.dataset.name.includes(term) || el.dataset.league.includes(term)) ? '' : 'none';
+        });
+    });
+})();
+</script>
+<?php endif; ?>
+<?php endif; ?>
 
 <?php endif; ?>
 <?php endif; ?>
