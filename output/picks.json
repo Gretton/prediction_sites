@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-07-13T13:37:10.698Z",
-  "started_at": "2026-07-13T13:36:36.846Z",
+  "generated_at": "2026-07-13T14:24:56.655Z",
+  "started_at": "2026-07-13T14:24:33.914Z",
   "min_agreement": 2,
   "sources": {
     "allnigeriafootball": {
@@ -21,7 +21,7 @@
     },
     "wp_tables": {
       "status": "ok",
-      "count": 0
+      "count": 5
     }
   },
   "sources_detail": [
@@ -1028,7 +1028,53 @@
     },
     {
       "source": "wp_tables",
-      "picks": []
+      "picks": [
+        {
+          "match": "Al Riyadi Abbasiyah vs Racing",
+          "home": "Al Riyadi Abbasiyah",
+          "away": "Racing",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Maardu vs Tartu Welco",
+          "home": "Maardu",
+          "away": "Tartu Welco",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Claypole vs Leones de Rosario",
+          "home": "Claypole",
+          "away": "Leones de Rosario",
+          "pick": "X2",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Al Markazia vs Sagesse Beirut",
+          "home": "Al Markazia",
+          "away": "Sagesse Beirut",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Arseneault N. vs Martin A.",
+          "home": "Arseneault N.",
+          "away": "Martin A.",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "",
+          "time": ""
+        }
+      ]
     }
   ],
   "intersections": [
@@ -1046,6 +1092,20 @@
       "odds": "",
       "league": "Sweden Allsvenskan",
       "time": "18:00"
+    },
+    {
+      "match": "Maardu Linnameeskond vs Tartu JK Welco",
+      "home": "Maardu Linnameeskond",
+      "away": "Tartu JK Welco",
+      "pick": "Away(2)",
+      "sources": [
+        "adibet",
+        "wp_tables"
+      ],
+      "source_count": 2,
+      "odds": "",
+      "league": "Estonia",
+      "time": ""
     },
     {
       "match": "Hafnarfjordur vs Valur",
