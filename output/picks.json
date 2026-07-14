@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-07-14T10:31:27.942Z",
-  "started_at": "2026-07-14T10:31:07.197Z",
+  "generated_at": "2026-07-14T11:24:45.438Z",
+  "started_at": "2026-07-14T11:24:23.120Z",
   "min_agreement": 2,
   "sources": {
     "allnigeriafootball": {
@@ -17,7 +17,7 @@
     },
     "bet_sites": {
       "status": "ok",
-      "count": 72
+      "count": 78
     },
     "wp_tables": {
       "status": "ok",
@@ -512,6 +512,33 @@
       "source": "bet_sites",
       "picks": [
         {
+          "match": "KuPS vs Vardar",
+          "home": "KuPS",
+          "away": "Vardar",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Gyor vs Vikingur",
+          "home": "Gyor",
+          "away": "Vikingur",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Levski vs Borac",
+          "home": "Levski",
+          "away": "Borac",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
           "match": "Honka vs HJS",
           "home": "Honka",
           "away": "HJS",
@@ -831,6 +858,33 @@
           "home": "Tukums",
           "away": "Super Nova",
           "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Iberia 1999 vs Flora",
+          "home": "Iberia 1999",
+          "away": "Flora",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Levski vs Borac",
+          "home": "Levski",
+          "away": "Borac",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Larne vs Tre Fiori",
+          "home": "Larne",
+          "away": "Tre Fiori",
+          "pick": "1 Ov 1.5",
           "odds": "",
           "league": "",
           "time": ""
@@ -1442,13 +1496,27 @@
       "time": "20:00"
     },
     {
-      "match": "Borac vs Levski",
-      "home": "Borac",
-      "away": "Levski",
+      "match": "Levski Sofia vs Borac Banja Luka",
+      "home": "Levski Sofia",
+      "away": "Borac Banja Luka",
       "pick": "Home(1)",
       "sources": [
         "adibet",
         "wp_tables"
+      ],
+      "source_count": 2,
+      "odds": "",
+      "league": "Euro Competitions",
+      "time": ""
+    },
+    {
+      "match": "Levski Sofia vs Borac Banja Luka",
+      "home": "Levski Sofia",
+      "away": "Borac Banja Luka",
+      "pick": "Over 1.5",
+      "sources": [
+        "adibet",
+        "bet_sites"
       ],
       "source_count": 2,
       "odds": "",
