@@ -821,7 +821,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-soft); color: var(
 .revenue-amount { font-size: 1.25rem; font-weight: 800; }
 .nav-container { max-width: 1200px; margin: 0 auto 1rem auto; padding: 0 1rem; }
 .nav-pills { display: flex; gap: 0.5rem; background: var(--bg-white); padding: 0.25rem; border-radius: 8px; box-shadow: var(--shadow); }
-.nav-link { flex: 1; padding: 0.5rem 1rem; border-radius: 6px; border: none; background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer; transition: all 0.2s; text-align: center; text-decoration: none; font-size: 0.85rem; }
+.nav-link { flex: 1; padding: 0.5rem 1rem; border-radius: 6px; border: none; background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: flex-start; gap: 0.5rem; text-decoration: none; font-size: 0.85rem; }
 .nav-link:hover { background: var(--bg-soft); color: var(--primary); }
 .nav-link.active { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; box-shadow: var(--shadow); }
 .main-content { flex: 1; max-width: 1200px; margin: 0 auto; padding: 0 1rem 1.5rem 1rem; width: 100%; }
