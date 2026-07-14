@@ -767,7 +767,7 @@ $pageStats = $db->query("SELECT page, COUNT(*) as visits FROM page_views WHERE v
 $topIps = $db->query("SELECT ip_address, COUNT(*) as hits, MAX(visited_at) as last_hit FROM page_views WHERE visited_at >= CURDATE() AND ip_address != '' GROUP BY ip_address ORDER BY hits DESC LIMIT 5")->fetchAll();
 $recentVisits = $db->query("SELECT pv.*, wu.phone, wu.email FROM page_views pv LEFT JOIN web_users wu ON pv.user_id = wu.id ORDER BY pv.visited_at DESC LIMIT 20")->fetchAll();
 $allPicks = getAllPicksForAdmin();
-$tabOrder = ['scrape_analyze', 'approve', 'users', 'admins', 'code_purchases', 'visitors'];
+$tabOrder = ['scrape_analyze', 'approve', 'users', 'admins', 'code_purchases', 'top_sellers', 'visitors'];
 $requestedTab = $_GET['tab'] ?? '';
 if ($requestedTab) {
     $activeTab = $requestedTab;
@@ -899,20 +899,20 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-soft); color: var(
         <a href="?tab=scrape_analyze" class="nav-link <?= $activeTab === 'scrape_analyze' ? 'active' : '' ?>"><i class="fas fa-microchip me-1"></i>Operations</a>
         <?php endif; ?>
         <?php if ($isSuperAdmin || hasAdminPermission('payments')): ?>
-        <a href="?tab=approve" class="nav-link <?= $activeTab === 'approve' ? 'active' : '' ?>"><i class="fas fa-check-circle me-1"></i>Approve Payments</a>
+        <a href="?tab=approve" class="nav-link <?= $activeTab === 'approve' ? 'active' : '' ?>"><i class="fas fa-check-circle me-1"></i>Payments</a>
         <?php endif; ?>
         <?php if ($isSuperAdmin || hasAdminPermission('users')): ?>
         <a href="?tab=users" class="nav-link <?= $activeTab === 'users' ? 'active' : '' ?>"><i class="fas fa-users me-1"></i>Users</a>
         <?php endif; ?>
         <?php if ($isSuperAdmin || hasAdminPermission('admins')): ?>
-        <a href="?tab=admins" class="nav-link <?= $activeTab === 'admins' ? 'active' : '' ?>"><i class="fas fa-user-shield me-1"></i>Manage Admins</a>
+        <a href="?tab=admins" class="nav-link <?= $activeTab === 'admins' ? 'active' : '' ?>"><i class="fas fa-user-shield me-1"></i>Admins</a>
         <?php endif; ?>
         <?php if ($isSuperAdmin || hasAdminPermission('code_purchases')): ?>
-        <a href="?tab=code_purchases" class="nav-link <?= $activeTab === 'code_purchases' ? 'active' : '' ?>"><i class="fas fa-cart-shopping me-1"></i>Credits Management <?= count($pendingCreditPurchases) ? '<span class="badge bg-danger ms-1">'.count($pendingCreditPurchases).'</span>' : '' ?></a>
+        <a href="?tab=code_purchases" class="nav-link <?= $activeTab === 'code_purchases' ? 'active' : '' ?>"><i class="fas fa-coins me-1"></i>Credits <?= count($pendingCreditPurchases) ? '<span class="badge bg-danger ms-1">'.count($pendingCreditPurchases).'</span>' : '' ?></a>
         <?php endif; ?>
-        <a href="?tab=top_sellers" class="nav-link <?= $activeTab === 'top_sellers' ? 'active' : '' ?>"><i class="fas fa-trophy me-1"></i>Top Sellers <?= $hasTopSellers ? '<span class="badge bg-danger ms-1">'.count($topSellersThisMonth).'</span>' : '' ?></a>
+        <a href="?tab=top_sellers" class="nav-link <?= $activeTab === 'top_sellers' ? 'active' : '' ?>"><i class="fas fa-gift me-1"></i>Rewards <?= $hasTopSellers ? '<span class="badge bg-danger ms-1">'.count($topSellersThisMonth).'</span>' : '' ?></a>
         <?php if ($isSuperAdmin): ?>
-        <a href="?tab=visitors" class="nav-link <?= $activeTab === 'visitors' ? 'active' : '' ?>"><i class="fas fa-eye me-1"></i>Visitor Logs</a>
+        <a href="?tab=visitors" class="nav-link <?= $activeTab === 'visitors' ? 'active' : '' ?>"><i class="fas fa-chart-line me-1"></i>Logs</a>
         <?php endif; ?>
     </div>
 </div>
