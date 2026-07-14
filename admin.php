@@ -1010,12 +1010,28 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-soft); color: var(
         <div class="text-center py-2">
             <button class="btn btn-sm load-more-hist" data-current="<?= $histInitial ?>" data-step="<?= $histInitial ?>" data-total="<?= $histTotal ?>" style="background:var(--primary);color:white;border-radius:6px;padding:4px 16px;font-size:0.75rem;font-weight:600;">Show <?= $histTotal - $histInitial ?> more</button>
         </div>
-        <?php endif; ?>
+<?php endif; ?>
+</div>
+<?php endif; ?>
+            <div class="col-md-2">
+                <label class="form-label text-muted small">Credits</label>
+                <input type="number" name="credits" class="form-control form-control-sm" min="1" value="1" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-muted small">Reason (optional)</label>
+                <input type="text" name="reason" class="form-control form-control-sm" placeholder="e.g. Gift, promotion">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label text-muted small">&nbsp;</label>
+                <button type="submit" class="btn btn-premium w-100" style="font-size:0.85rem;padding:0.5rem;"><i class="fas fa-gift me-1"></i>Give</button>
+            </div>
+        </form>
     </div>
-    <?php endif; ?>
-    <?php endif; ?>
+</div>
 
-    <?php if ($activeTab === 'users'): ?>
+<?php endif; ?>
+
+<?php if ($activeTab === 'users'): ?>
     <?php if (!hasAdminPermission('users')): ?>
     <div class="alert alert-danger text-center py-4"><i class="fas fa-lock me-2"></i>You do not have permission to manage users.</div>
     <?php else: ?>
@@ -1484,49 +1500,13 @@ $topSellers = getTopSellerStats(10);
                 <?php endforeach; endif; ?>
             </tbody>
         </table>
-    </div>
-    <div class="text-center py-2 load-more-wrap" data-table="creditHistoryTable" style="border-top:1px solid var(--border-color);">
-        <button type="button" class="btn btn-sm load-more-btn" style="background:var(--bg-soft);color:var(--primary);border:1px solid var(--border-color);padding:4px 20px;border-radius:6px;">
-            Show <span class="count">0</span> more
-        </button>
-    </div>
 </div>
-
-<div class="card mt-3">
-    <div class="card-header"><h2 class="card-title"><i class="fas fa-ticket me-1"></i>All Betting Codes <?php if (!empty($activeCodes)): ?><span class="badge bg-success ms-1" style="font-size: 0.7rem;"><?= count($activeCodes) ?> Active Today</span><?php endif; ?></h2></div>
-    <?php
-    $allCodesAdmin = getAllCodesAdmin();
-    $activeCodes = array_filter($allCodesAdmin, fn($c) => $c['status'] === 'active' && date('Y-m-d', strtotime($c['created_at'])) === date('Y-m-d'));
-    $soldCodes = array_filter($allCodesAdmin, fn($c) => $c['status'] === 'sold');
-    ?>
-    <div class="mb-2"><input type="text" class="table-search form-control form-control-sm" data-table="allCodesTable" placeholder="Search by name, phone or code..." style="max-width:320px;"></div>
-    <div class="table-responsive">
-        <table class="table" id="allCodesTable" data-page-size="10">
-            <thead><tr><th>ID</th><th>Phone</th><th>Code</th><th>Description</th><th>Matches</th><th>Status</th><th>Sales</th><th>Created</th></tr></thead>
-            <tbody>
-                <?php if (empty($allCodesAdmin)): ?>
-                <tr><td colspan="8" class="text-center text-muted py-4"><i class="fas fa-ticket me-2"></i>No betting codes yet</td></tr>
-                <?php else: foreach ($allCodesAdmin as $c): ?>
-                <tr>
-                    <td>#<?= $c['id'] ?></td>
-                    <td><code style="color: var(--primary);"><?= htmlspecialchars($c['display_name'] ?: $c['phone']) ?></code><br><small class="text-muted"><?= htmlspecialchars($c['phone']) ?></small></td>
-                    <td><code><?= htmlspecialchars($c['code']) ?></code></td>
-                    <td><?= htmlspecialchars($c['description']) ?></td>
-                    <td><?= htmlspecialchars($c['matches']) ?></td>
-                    <td><span class="badge <?= $c['status'] === 'active' ? 'badge-parlay' : 'badge-pending' ?>"><?= $c['status'] ?></span></td>
-                    <td><strong><?= (int)($c['sales_count'] ?? 0) ?></strong></td>
-                    <td class="text-muted"><?= date('M d, H:i', strtotime($c['created_at'])) ?></td>
-                </tr>
-                <?php endforeach; endif; ?>
-            </tbody>
-        </table>
+        <div class="text-center py-2 load-more-wrap" data-table="creditHistoryTable" style="border-top:1px solid var(--border-color);">
+            <button type="button" class="btn btn-sm load-more-btn" style="background:var(--bg-soft);color:var(--primary);border:1px solid var(--border-color);padding:4px 20px;border-radius:6px;">
+                Show <span class="count">0</span> more
+            </button>
+        </div>
     </div>
-    <div class="text-center py-2 load-more-wrap" data-table="allCodesTable" style="border-top:1px solid var(--border-color);">
-        <button type="button" class="btn btn-sm load-more-btn" style="background:var(--bg-soft);color:var(--primary);border:1px solid var(--border-color);padding:4px 20px;border-radius:6px;">
-            Show <span class="count">0</span> more
-        </button>
-    </div>
-</div>
 
 <div class="card mt-3">
     <div class="card-header"><h2 class="card-title"><i class="fas fa-plane me-1" style="color:#F59E0B;"></i>Pending Aviator Access Purchases</h2><span class="badge" style="background: var(--primary); color: white;"><?= count($pendingAviatorPurchases) ?> Pending</span></div>
@@ -1586,35 +1566,6 @@ $topSellers = getTopSellerStats(10);
         <button type="button" class="btn btn-sm load-more-btn" style="background:var(--bg-soft);color:var(--primary);border:1px solid var(--border-color);padding:4px 20px;border-radius:6px;">
             Show <span class="count">0</span> more
         </button>
-    </div>
-</div>
-
-<!-- Give Free Credits -->
-<div class="card mt-3">
-    <div class="card-header"><h2 class="card-title"><i class="fas fa-gift me-1" style="color:#F59E0B;"></i>Give Free Credits</h2></div>
-    <div class="p-3">
-        <form method="POST" class="row g-2 align-items-end" onsubmit="return document.getElementById('selectedUserId').value !== '' || (alert('Please select a user from the search results first.'), false);">
-            <input type="hidden" name="action" value="give_free_credits">
-            <div class="col-md-5" style="position:relative;">
-                <label class="form-label text-muted small">Find User</label>
-                <input type="text" id="userSearchInput" class="form-control form-control-sm" placeholder="Type phone or display name..." autocomplete="off">
-                <input type="hidden" name="target_user_id" id="selectedUserId" value="">
-                <div id="selectedUserLabel" class="small" style="color:var(--primary);font-weight:600;margin-top:2px;"></div>
-                <div id="userSearchResults" class="list-group" style="position:absolute;z-index:100;display:none;max-height:200px;overflow-y:auto;width:100%;"></div>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label text-muted small">Credits</label>
-                <input type="number" name="credits" class="form-control form-control-sm" min="1" value="1" required>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label text-muted small">Reason (optional)</label>
-                <input type="text" name="reason" class="form-control form-control-sm" placeholder="e.g. Gift, promotion">
-            </div>
-            <div class="col-md-2">
-                <label class="form-label text-muted small">&nbsp;</label>
-                <button type="submit" class="btn btn-premium w-100" style="font-size:0.85rem;padding:0.5rem;"><i class="fas fa-gift me-1"></i>Give</button>
-            </div>
-        </form>
     </div>
 </div>
 
@@ -2220,10 +2171,11 @@ $articles = $db->query("SELECT * FROM betting_articles ORDER BY created_at DESC"
                                     <button type="submit" class="btn btn-approve btn-sm">Create Article</button>
                                 </div>
                             </form>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
+<?php endif; ?>
+<?php endif; ?>
+
+<?php endif; ?>
+</div>
                 <div class="accordion-item" style="border:none;">
                     <h2 class="accordion-header">
                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#bsAllArticles" style="font-size:0.85rem;font-weight:600;background:transparent;">
@@ -2370,10 +2322,42 @@ $articles = $db->query("SELECT * FROM betting_articles ORDER BY created_at DESC"
 <?php endif; ?>
 <?php endif; ?>
 
-<?php endif; ?>
-<?php endif; ?>
-
-</main>
+<!-- All Betting Codes (moved from Credits tab) -->
+<div class="card mt-3">
+    <div class="card-header"><h2 class="card-title"><i class="fas fa-ticket me-1"></i>All Betting Codes</h2></div>
+    <?php
+    $allCodesAdmin = getAllCodesAdmin();
+    $activeCodes = array_filter($allCodesAdmin, fn($c) => $c['status'] === 'active' && date('Y-m-d', strtotime($c['created_at'])) === date('Y-m-d'));
+    $soldCodes = array_filter($allCodesAdmin, fn($c) => $c['status'] === 'sold');
+    ?>
+    <div class="mb-2"><input type="text" class="table-search form-control form-control-sm" data-table="allCodesTableAdmin" placeholder="Search by name, phone or code..." style="max-width:320px;"></div>
+    <div class="table-responsive">
+        <table class="table" id="allCodesTableAdmin" data-page-size="10">
+            <thead><tr><th>ID</th><th>Phone</th><th>Code</th><th>Description</th><th>Matches</th><th>Status</th><th>Sales</th><th>Created</th></tr></thead>
+            <tbody>
+                <?php if (empty($allCodesAdmin)): ?>
+                <tr><td colspan="8" class="text-center text-muted py-4"><i class="fas fa-ticket me-2"></i>No betting codes yet</td></tr>
+                <?php else: foreach ($allCodesAdmin as $c): ?>
+                <tr>
+                    <td>#<?= $c['id'] ?></td>
+                    <td><code style="color: var(--primary);"><?= htmlspecialchars($c['display_name'] ?: $c['phone']) ?></code><br><small class="text-muted"><?= htmlspecialchars($c['phone']) ?></small></td>
+                    <td><code><?= htmlspecialchars($c['code']) ?></code></td>
+                    <td><?= htmlspecialchars($c['description']) ?></td>
+                    <td><?= htmlspecialchars($c['matches']) ?></td>
+                    <td><span class="badge <?= $c['status'] === 'active' ? 'badge-parlay' : 'badge-pending' ?>"><?= $c['status'] ?></span></td>
+                    <td><strong><?= (int)($c['sales_count'] ?? 0) ?></strong></td>
+                    <td class="text-muted"><?= date('M d, H:i', strtotime($c['created_at'])) ?></td>
+                </tr>
+                <?php endforeach; endif; ?>
+            </tbody>
+        </table>
+    </div>
+    <div class="text-center py-2 load-more-wrap" data-table="allCodesTableAdmin" style="border-top:1px solid var(--border-color);">
+        <button type="button" class="btn btn-sm load-more-btn" style="background:var(--bg-soft);color:var(--primary);border:1px solid var(--border-color);padding:4px 20px;border-radius:6px;">
+            Show <span class="count">0</span> more
+        </button>
+    </div>
+</div>
 
 <!-- Presentation Mode Modal -->
 <div id="presentationModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;" onclick="if(event.target===this){this.style.display='none';this.classList.remove('show');}">
