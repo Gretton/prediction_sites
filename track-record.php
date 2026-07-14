@@ -40,16 +40,15 @@ $voided = (int)$overall['voided'];
 $settled = $won + $lost;
 $winRate = $settled > 0 ? round($won / $settled * 100, 1) : 0;
 
-// Stats by pick type (exclude stale pending older than 3 days)
-$cutoff = date('Y-m-d', strtotime('-3 days'));
+// Stats by pick type (only settled picks: won + lost)
 $byTypeRaw = $db->query("
-    SELECT ps.pick_value, ps.match_name, COUNT(*) as total,
+    SELECT ps.pick_value, ps.match_name, 
            SUM(CASE WHEN result='won' THEN 1 ELSE 0 END) as won,
            SUM(CASE WHEN result='lost' THEN 1 ELSE 0 END) as lost
     FROM pick_settlements ps
-    WHERE ps.result != 'pending' OR ps.settlement_date >= '$cutoff'
+    WHERE ps.result IN ('won','lost')
     GROUP BY ps.pick_value, ps.match_name
-    ORDER BY total DESC
+    ORDER BY (won + lost) DESC
 ")->fetchAll();
 
 // Normalize pick values into markets and merge
@@ -102,17 +101,17 @@ foreach ($byTypeRaw as $t) {
 }
 uasort($byType, fn($a, $b) => $b['total'] <=> $a['total']);
 
-// Recent settlements (last 7 days, hide old pending)
+// Recent settlements (last 7 days, only settled picks)
 $recentCutoff = date('Y-m-d', strtotime('-7 days'));
 $allRecent = $db->query("
     SELECT ps.*, wp.league, wp.detected_at
     FROM pick_settlements ps
     LEFT JOIN web_picks wp ON ps.web_pick_id = wp.id
-    WHERE ps.settlement_date >= '$recentCutoff' OR ps.result != 'pending'
-    ORDER BY FIELD(ps.result, 'won', 'lost', 'void', 'pending'), ps.id DESC
+    WHERE ps.settlement_date >= '$recentCutoff' AND ps.result IN ('won','lost')
+    ORDER BY ps.result DESC, ps.id DESC
 ")->fetchAll();
 
-// Dedup: per match_name, keep the best result (won > lost > void > pending)
+// Dedup: per match_name, keep the best result (won > lost)
 $bestPerMatch = [];
 foreach ($allRecent as $r) {
     $mn = $r['match_name'];
@@ -321,7 +320,7 @@ footer a:hover { color: var(--primary); }
         ?>
             <div class="pick-type-item">
                 <div class="label"><?= htmlspecialchars($t['pick_value']) ?></div>
-                <div class="sub"><?= $t['total'] ?> picks &middot; <?= $tRate !== null ? $tRate . '% win rate' : '<span style="color:var(--text-muted);">pending</span>' ?></div>
+                <div class="sub"><?= $tSettled ?> picks &middot; <?= $tRate !== null ? $tRate . '% win rate' : '<span style="color:var(--text-muted);">no settled picks</span>' ?></div>
                 <div style="font-size:0.7rem;margin-top:4px;"><span style="color:#22C55E;"><?= $t['won'] ?>W</span> <span style="color:#EF4444;margin-left:4px;"><?= $t['lost'] ?>L</span></div>
             </div>
         <?php endforeach; ?>
