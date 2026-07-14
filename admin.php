@@ -1716,25 +1716,12 @@ if ($sub === 'analysis' && !$isSuperAdmin && !hasAdminPermission('analysis') && 
     $sub = 'featured';
 }
 ?>
-<!-- Outer sub-nav: Betting School + Featured Betslip -->
+<!-- Outer sub-nav: Analysis + Verified -->
 <div style="display:flex;gap:8px;margin-bottom:1rem;border-bottom:2px solid #E5E7EB;padding-bottom:0.5rem;">
-    <a href="?tab=scrape_analyze" class="nav-link <?= $sub !== 'featured' ? 'active' : '' ?>" style="text-decoration:none;font-weight:600;font-size:0.85rem;padding:6px 16px;border-radius:8px;<?= $sub !== 'featured' ? 'background:var(--primary);color:#fff;' : 'color:var(--text-muted);' ?>"><i class="fas fa-microchip me-1"></i>Analysis</a>
-    <?php if ($isSuperAdmin || hasAdminPermission('picks')): ?>
-    <a href="?tab=scrape_analyze&sub=featured" class="nav-link <?= $sub === 'featured' ? 'active' : '' ?>" style="text-decoration:none;font-weight:600;font-size:0.85rem;padding:6px 16px;border-radius:8px;<?= $sub === 'featured' ? 'background:var(--primary);color:#fff;' : 'color:var(--text-muted);' ?>"><i class="fas fa-book-open me-1"></i>Betting Strategies</a>
-    <?php endif; ?>
-</div>
-
-<?php if ($sub !== 'featured'): ?>
-<!-- Inner sub-nav: Analysis / Verified -->
-<div style="display:flex;gap:8px;margin-bottom:1rem;border-bottom:2px solid #E5E7EB;padding-bottom:0.5rem;padding-left:4px;">
-    <a href="?tab=scrape_analyze" class="nav-link <?= $sub === 'analysis' ? 'active' : '' ?>" style="text-decoration:none;font-weight:600;font-size:0.8rem;padding:4px 14px;border-radius:8px;<?= $sub === 'analysis' ? 'background:var(--primary);color:#fff;' : 'color:var(--text-muted);' ?>"><i class="fas fa-microchip me-1"></i>Analysis</a>
+    <a href="?tab=scrape_analyze&sub=analysis" class="nav-link <?= $sub === 'analysis' ? 'active' : '' ?>" style="text-decoration:none;font-weight:600;font-size:0.85rem;padding:6px 16px;border-radius:8px;<?= $sub === 'analysis' ? 'background:var(--primary);color:#fff;' : 'color:var(--text-muted);' ?>"><i class="fas fa-microchip me-1"></i>Analysis</a>
     <?php if ($isSuperAdmin || hasAdminPermission('consensus')): ?>
-    <a href="?tab=scrape_analyze&sub=verified" class="nav-link <?= $sub === 'verified' ? 'active' : '' ?>" style="text-decoration:none;font-weight:600;font-size:0.8rem;padding:4px 14px;border-radius:8px;<?= $sub === 'verified' ? 'background:var(--primary);color:#fff;' : 'color:var(--text-muted);' ?>"><i class="fas fa-check-circle me-1"></i>Verified Data</a>
-    <?php endif; ?>
-</div>
+    <a href="?tab=scrape_analyze&sub=verified" class="nav-link <?= $sub === 'verified' ? 'active' : '' ?>" style="text-decoration:none;font-weight:600;font-size:0.85rem;padding:6px 16px;border-radius:8px;<?= $sub === 'verified' ? 'background:var(--primary);color:#fff;' : 'color:var(--text-muted);' ?>"><i class="fas fa-check-circle me-1"></i>Verified Data</a>
 <?php endif; ?>
-
-<?php if ($sub === 'analysis'): ?>
 <div class="alert" style="background: #F0F4FF; border-left: 4px solid var(--primary); margin-bottom: 1rem; font-size: 0.85rem;">
     <strong><i class="fas fa-sitemap me-1"></i>Analysis</strong>
     — Run analysis to generate picks from your scraped odds data.
@@ -2319,7 +2306,6 @@ $articles = $db->query("SELECT * FROM betting_articles ORDER BY created_at DESC"
     });
 })();
 </script>
-<?php endif; ?>
 <?php endif; ?>
 
 <!-- All Betting Codes (moved from Credits tab) -->
