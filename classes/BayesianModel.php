@@ -37,6 +37,13 @@ class BayesianModel {
                 `expected_goals` DECIMAL(4,2) DEFAULT NULL,
                 `confidence` DECIMAL(5,2) DEFAULT NULL,
                 `recommended_pick` VARCHAR(100) DEFAULT NULL,
+                `value_edge_1` DECIMAL(5,2) DEFAULT NULL,
+                `value_edge_x` DECIMAL(5,2) DEFAULT NULL,
+                `value_edge_2` DECIMAL(5,2) DEFAULT NULL,
+                `value_pick` VARCHAR(100) DEFAULT NULL,
+                `market_odds_1` DECIMAL(8,2) DEFAULT NULL,
+                `market_odds_x` DECIMAL(8,2) DEFAULT NULL,
+                `market_odds_2` DECIMAL(8,2) DEFAULT NULL,
                 `home_score` INT DEFAULT NULL,
                 `away_score` INT DEFAULT NULL,
                 `result` ENUM('pending','correct','incorrect','void') NOT NULL DEFAULT 'pending',
@@ -48,6 +55,14 @@ class BayesianModel {
                 INDEX `idx_match_name` (`match_name`),
                 UNIQUE KEY `uq_bayesian_match` (`match_name`(100), `match_date`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `value_edge_1` DECIMAL(5,2) DEFAULT NULL AFTER `recommended_pick`"); } catch (Exception $e) {}
+            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `value_edge_x` DECIMAL(5,2) DEFAULT NULL AFTER `value_edge_1`"); } catch (Exception $e) {}
+            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `value_edge_2` DECIMAL(5,2) DEFAULT NULL AFTER `value_edge_x`"); } catch (Exception $e) {}
+            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `value_pick` VARCHAR(100) DEFAULT NULL AFTER `value_edge_2`"); } catch (Exception $e) {}
+            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_1` DECIMAL(8,2) DEFAULT NULL AFTER `value_pick`"); } catch (Exception $e) {}
+            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_x` DECIMAL(8,2) DEFAULT NULL AFTER `market_odds_1`"); } catch (Exception $e) {}
+            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_2` DECIMAL(8,2) DEFAULT NULL AFTER `market_odds_x`"); } catch (Exception $e) {}
         } catch (Exception $e) {
             error_log("BayesianModel::ensureTable: " . $e->getMessage());
         }
@@ -260,6 +275,21 @@ class BayesianModel {
             if ($t2 > 0) { $postHome /= $t2; $postDraw /= $t2; $postAway /= $t2; }
         }
 
+        $homeStanding = $this->getTeamStanding($homeTeam, $league);
+        $awayStanding = $this->getTeamStanding($awayTeam, $league);
+        if ($homeStanding && $awayStanding) {
+            $totalTeams = max(20, $homeStanding['position'] + $awayStanding['position']);
+            $homePosNorm = 1 - (($homeStanding['position'] - 1) / ($totalTeams - 1));
+            $awayPosNorm = 1 - (($awayStanding['position'] - 1) / ($totalTeams - 1));
+            $homeAdj = ($homePosNorm - $awayPosNorm) * 0.06;
+            $awayAdj = ($awayPosNorm - $homePosNorm) * 0.06;
+            $postHome = max(0.01, $postHome + $homeAdj);
+            $postAway = max(0.01, $postAway + $awayAdj);
+            $postDraw = max(0.01, 1 - $postHome - $postAway);
+            $t3 = $postHome + $postDraw + $postAway;
+            if ($t3 > 0) { $postHome /= $t3; $postDraw /= $t3; $postAway /= $t3; }
+        }
+
         $ou = $this->predictOverUnder($homeTeam, $awayTeam, $league, $prior, $homeForm, $awayForm, $h2h, $lookbackDays);
         $btts = $this->predictBTTS($homeTeam, $awayTeam, $league, $prior, $homeForm, $awayForm, $h2h, $lookbackDays);
 
@@ -453,6 +483,36 @@ class BayesianModel {
         } catch (Exception $e) { return []; }
     }
 
+    public function getTodayPredictions() {
+        if (!$this->db) return [];
+        try {
+            return $this->db->query("
+                SELECT id, home_team, away_team, match_name, league,
+                       prob_1, prob_x, prob_2, confidence, recommended_pick
+                FROM bayesian_predictions
+                WHERE match_date = CURDATE()
+                ORDER BY confidence DESC
+            ")->fetchAll();
+        } catch (Exception $e) { return []; }
+    }
+
+    public function updateValueEdge($id, $edge1, $edgeX, $edge2, $valuePick, $odds1, $oddsX, $odds2) {
+        if (!$this->db) return false;
+        try {
+            $stmt = $this->db->prepare("
+                UPDATE bayesian_predictions SET
+                    value_edge_1 = ?, value_edge_x = ?, value_edge_2 = ?,
+                    value_pick = ?,
+                    market_odds_1 = ?, market_odds_x = ?, market_odds_2 = ?
+                WHERE id = ?
+            ");
+            return $stmt->execute([$edge1, $edgeX, $edge2, $valuePick, $odds1, $oddsX, $odds2, $id]);
+        } catch (Exception $e) {
+            error_log("BayesianModel::updateValueEdge: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function getAccuracyByLeague() {
         if (!$this->db) return [];
         try {
@@ -596,6 +656,40 @@ class BayesianModel {
         } catch (Exception $e) {
             error_log("BayesianModel::getHeadToHead: " . $e->getMessage());
             return $default;
+        }
+    }
+
+    private function getTeamStanding($team, $league) {
+        if (!$this->db || !$league) return null;
+        try {
+            $stmt = $this->db->prepare("
+                SELECT position, played, points, goal_diff
+                FROM league_standings
+                WHERE team = ? AND (league = ? OR league LIKE ? OR ? LIKE CONCAT('%', league, '%'))
+                  AND updated_at = CURDATE()
+                LIMIT 1
+            ");
+            $stmt->execute([$team, $league, '%' . $league . '%', $league]);
+            $r = $stmt->fetch();
+            if ($r) return $r;
+            $norm = $this->normalizeName($team);
+            $stmt2 = $this->db->prepare("
+                SELECT position, played, points, goal_diff
+                FROM league_standings
+                WHERE (league = ? OR league LIKE ? OR ? LIKE CONCAT('%', league, '%'))
+                  AND updated_at = CURDATE()
+                ORDER BY ABS(position) ASC
+            ");
+            $stmt2->execute([$league, '%' . $league . '%', $league]);
+            foreach ($stmt2->fetchAll() as $s) {
+                if ($this->bigramSimilarity($norm, $this->normalizeName($s['team'])) > 0.6) {
+                    return $s;
+                }
+            }
+            return null;
+        } catch (Exception $e) {
+            error_log("BayesianModel::getTeamStanding: " . $e->getMessage());
+            return null;
         }
     }
 

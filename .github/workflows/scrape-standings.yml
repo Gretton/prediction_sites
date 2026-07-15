@@ -1,0 +1,43 @@
+name: Scrape League Standings
+
+on:
+  schedule:
+    - cron: '0 5,13 * * *'
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install playwright google-api-python-client google-auth
+          python -m playwright install chromium
+
+      - name: Run standings scraper
+        id: standings
+        run: |
+          python cron/scrape_standings.py --json > standings.json
+          echo "count=$(python -c "import json; d=json.load(open('standings.json')); print(len(d['standings']))")" >> $GITHUB_OUTPUT
+
+      - name: Upload standings artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: league-standings
+          path: standings.json
+          retention-days: 7
+
+      - name: Post standings to predixa.co.tz
+        if: steps.standings.outputs.count > 0
+        run: |
+          curl -s -X POST -A "Mozilla/5.0 (compatible; PREDIXA-Bot)" \
+            -H "Content-Type: application/json" \
+            -d @standings.json \
+            "https://predixa.co.tz/cron/fetch_standings.php?key=pred-tz" || \
+            echo "fetch_standings failed"

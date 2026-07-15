@@ -22,6 +22,7 @@ $stmt = $db->prepare("
     LEFT JOIN pick_settlements ps ON wp.id = ps.web_pick_id AND ps.result != 'pending'
     WHERE ps.id IS NULL
     AND DATE(wp.detected_at) >= ?
+    AND wp.pick_type IN ('rollover','parlay','over_15')
     ORDER BY wp.id DESC
 ");
 $stmt->execute([$lookback]);
@@ -105,8 +106,9 @@ function settleOnePick($db, $pick, $today) {
 
 function findMatchResult($db, $homeTeam, $awayTeam, $today) {
     $yesterday = date('Y-m-d', strtotime($today . ' -1 day'));
+    $twoDaysAgo = date('Y-m-d', strtotime($today . ' -2 days'));
     $tomorrow = date('Y-m-d', strtotime($today . ' +1 day'));
-    $dates = [$today, $yesterday, $tomorrow];
+    $dates = [$today, $yesterday, $tomorrow, $twoDaysAgo];
 
     foreach ($dates as $d) {
         // Exact match

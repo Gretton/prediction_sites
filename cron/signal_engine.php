@@ -86,6 +86,16 @@ try {
             $pickTypeFinal = 'rollover';
         }
         
+        // Skip if match already has a result (already played)
+        $matchName = $tip['match'] ?? '';
+        if ($matchName && preg_match('/^(.+?)\s+vs\s+(.+?)$/i', $matchName, $m)) {
+            $playedCheck = $db->prepare("SELECT 1 FROM match_results WHERE home_team = ? AND away_team = ? AND match_date < CURDATE() LIMIT 1");
+            $playedCheck->execute([trim($m[1]), trim($m[2])]);
+            if ($playedCheck->fetchColumn()) continue;
+            $playedCheck->execute([trim($m[2]), trim($m[1])]);
+            if ($playedCheck->fetchColumn()) continue;
+        }
+
         $details = $notesStr;
         $badge = '';
         if (str_contains($notesStr, 'WIN 1UP')) $badge = 'WIN 1UP';

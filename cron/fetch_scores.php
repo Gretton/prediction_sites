@@ -59,17 +59,9 @@ foreach ($input['matches'] as $m) {
     $existing = $checkStmt->fetch();
 
     if ($existing) {
-        // Allow overwrite within 30-minute cooldown window
-        $firstSeen = $existing['first_seen_at'];
-        $cooldown = date('Y-m-d H:i:s', strtotime('-30 minutes'));
-        if ($firstSeen && $firstSeen > $cooldown) {
-            // Use MAX to only update if scores changed
-            if ((int)$existing['home_score'] !== $hs || (int)$existing['away_score'] !== $as) {
-                $updateStmt->execute([$hs, $as, $existing['id']]);
-                $inserted++;
-            } else {
-                $skipped++;
-            }
+        if ((int)$existing['home_score'] !== $hs || (int)$existing['away_score'] !== $as) {
+            $updateStmt->execute([$hs, $as, $existing['id']]);
+            $inserted++;
         } else {
             $skipped++;
         }
