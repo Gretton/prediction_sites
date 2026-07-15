@@ -767,7 +767,7 @@ $pageStats = $db->query("SELECT page, COUNT(*) as visits FROM page_views WHERE v
 $topIps = $db->query("SELECT ip_address, COUNT(*) as hits, MAX(visited_at) as last_hit FROM page_views WHERE visited_at >= CURDATE() AND ip_address != '' GROUP BY ip_address ORDER BY hits DESC LIMIT 5")->fetchAll();
 $recentVisits = $db->query("SELECT pv.*, wu.phone, wu.email FROM page_views pv LEFT JOIN web_users wu ON pv.user_id = wu.id ORDER BY pv.visited_at DESC LIMIT 20")->fetchAll();
 $allPicks = getAllPicksForAdmin();
-$tabOrder = ['scrape_analyze', 'approve', 'users', 'admins', 'code_purchases', 'top_sellers', 'visitors'];
+$tabOrder = ['scrape_analyze', 'approve', 'users', 'admins', 'code_purchases', 'visitors'];
 $requestedTab = $_GET['tab'] ?? '';
 if ($requestedTab) {
     $activeTab = $requestedTab;
@@ -821,7 +821,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-soft); color: var(
 .revenue-amount { font-size: 1.25rem; font-weight: 800; }
 .nav-container { max-width: 1200px; margin: 0 auto 1rem auto; padding: 0 1rem; }
 .nav-pills { display: flex; gap: 0.5rem; background: var(--bg-white); padding: 0.25rem; border-radius: 8px; box-shadow: var(--shadow); }
-.nav-link { flex: 1; padding: 0.5rem 1rem; border-radius: 6px; border: none; background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: flex-start; gap: 0.5rem; text-decoration: none; font-size: 0.85rem; }
+.nav-link { flex: 1; padding: 0.5rem 1rem; border-radius: 6px; border: none; background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer; transition: all 0.2s; text-align: center; text-decoration: none; font-size: 0.85rem; }
 .nav-link:hover { background: var(--bg-soft); color: var(--primary); }
 .nav-link.active { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; box-shadow: var(--shadow); }
 .main-content { flex: 1; max-width: 1200px; margin: 0 auto; padding: 0 1rem 1.5rem 1rem; width: 100%; }
@@ -853,7 +853,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-soft); color: var(
 .footer-content { max-width: 1200px; margin: 0 auto; padding: 0 1rem; text-align: center; }
 .footer-copy { color: var(--text-muted); font-size: 0.75rem; margin: 0; }
 .hamburger-btn { display: none; background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 0.5rem 0.8rem; border-radius: 8px; font-size: 1.5rem; cursor: pointer; transition: all 0.3s; }         .hamburger-btn:hover { background: rgba(255,255,255,0.3); } @media(max-width:768px) { .hamburger-btn { display: block; } .header-content { flex-direction: row; justify-content: space-between; text-align: left; } .header-actions { display: none; position: absolute; top: 100%; left: 0; right: 0; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); flex-direction: column; gap: 0.75rem; padding: 1rem; box-shadow: var(--shadow-lg); z-index: 999; } .header-actions.active { display: flex; } .stats-grid { grid-template-columns: repeat(2, 1fr); } .nav-pills { flex-direction: column; } }
-        .icon-gap { margin-right: 0.5rem; } i.fas, i.far, i.fab { vertical-align: -0.125em; }
+        .icon-gap { margin-right: 0.5rem; } i.fas, i.far, i.fab { vertical-align: -0.125em; } .nav-pills .nav-link { display: inline-flex; align-items: center; justify-content: center; }
         </style>
 </head>
 <body>
@@ -910,9 +910,11 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-soft); color: var(
         <?php if ($isSuperAdmin || hasAdminPermission('code_purchases')): ?>
         <a href="?tab=code_purchases" class="nav-link <?= $activeTab === 'code_purchases' ? 'active' : '' ?>"><i class="fas fa-coins me-1"></i>Credits <?= count($pendingCreditPurchases) ? '<span class="badge bg-danger ms-1">'.count($pendingCreditPurchases).'</span>' : '' ?></a>
         <?php endif; ?>
+        <?php if ($isSuperAdmin || hasAdminPermission('rewards')): ?>
         <a href="?tab=top_sellers" class="nav-link <?= $activeTab === 'top_sellers' ? 'active' : '' ?>"><i class="fas fa-gift me-1"></i>Rewards <?= $hasTopSellers ? '<span class="badge bg-danger ms-1">'.count($topSellersThisMonth).'</span>' : '' ?></a>
+        <?php endif; ?>
         <?php if ($isSuperAdmin): ?>
-        <a href="?tab=visitors" class="nav-link <?= $activeTab === 'visitors' ? 'active' : '' ?>"><i class="fas fa-chart-line me-1"></i>Logs</a>
+        <a href="?tab=visitors" class="nav-link <?= $activeTab === 'visitors' ? 'active' : '' ?>"><i class="fas fa-eye me-1"></i>Logs</a>
         <?php endif; ?>
     </div>
 </div>
@@ -1010,28 +1012,12 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-soft); color: var(
         <div class="text-center py-2">
             <button class="btn btn-sm load-more-hist" data-current="<?= $histInitial ?>" data-step="<?= $histInitial ?>" data-total="<?= $histTotal ?>" style="background:var(--primary);color:white;border-radius:6px;padding:4px 16px;font-size:0.75rem;font-weight:600;">Show <?= $histTotal - $histInitial ?> more</button>
         </div>
-<?php endif; ?>
-</div>
-<?php endif; ?>
-            <div class="col-md-2">
-                <label class="form-label text-muted small">Credits</label>
-                <input type="number" name="credits" class="form-control form-control-sm" min="1" value="1" required>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label text-muted small">Reason (optional)</label>
-                <input type="text" name="reason" class="form-control form-control-sm" placeholder="e.g. Gift, promotion">
-            </div>
-            <div class="col-md-2">
-                <label class="form-label text-muted small">&nbsp;</label>
-                <button type="submit" class="btn btn-premium w-100" style="font-size:0.85rem;padding:0.5rem;"><i class="fas fa-gift me-1"></i>Give</button>
-            </div>
-        </form>
+        <?php endif; ?>
     </div>
-</div>
+    <?php endif; ?>
+    <?php endif; ?>
 
-<?php endif; ?>
-
-<?php if ($activeTab === 'users'): ?>
+    <?php if ($activeTab === 'users'): ?>
     <?php if (!hasAdminPermission('users')): ?>
     <div class="alert alert-danger text-center py-4"><i class="fas fa-lock me-2"></i>You do not have permission to manage users.</div>
     <?php else: ?>
@@ -1105,7 +1091,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-soft); color: var(
                     <?php if (empty($allAdmins)): ?><tr><td colspan="7" class="text-center text-muted py-4"><i class="fas fa-cog me-2"></i>No admins configured</td></tr>
                     <?php else: foreach ($allAdmins as $admin):
                         $adminPerms = $admin['is_super'] ? '*' : ($admin['permissions'] ? json_decode($admin['permissions'], true) : []);
-                        $permLabels = ['payments'=>'Approve Payments','users'=>'Users','picks'=>'Featured Betslip','code_purchases'=>'Credits Management','visitors'=>'Visitor Logs','admins'=>'Manage Admins','scraper'=>'Operations','consensus'=>'Verified Data'];
+                        $permLabels = ['scraper'=>'Operations','payments'=>'Payments','users'=>'Users','admins'=>'Admins','code_purchases'=>'Credits','rewards'=>'Rewards','visitors'=>'Logs'];
                         $adminDisplayName = $admin['display_name'] ? htmlspecialchars($admin['display_name']) : '<span class="text-muted">—</span>';
                     ?>
                     <tr>
@@ -1157,7 +1143,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-soft); color: var(
                     <div class="col-12 mt-2">
                         <label class="form-label text-muted" style="font-size: 0.8rem;">Module Access (leave all unchecked for full access)</label>
                         <div class="d-flex flex-wrap gap-2">
-                            <?php $modules = ['payments'=>'Approve Payments','users'=>'Users','picks'=>'Featured Betslip','code_purchases'=>'Credits Management','visitors'=>'Visitor Logs','scraper'=>'Operations','consensus'=>'Verified Data']; ?>
+                            <?php $modules = ['scraper'=>'Operations','payments'=>'Payments','users'=>'Users','admins'=>'Admins','code_purchases'=>'Credits','rewards'=>'Rewards','visitors'=>'Logs']; ?>
                             <?php foreach ($modules as $mk => $ml): ?>
                             <label class="d-flex align-items-center gap-1" style="font-size:0.8rem;cursor:pointer;">
                                 <input type="checkbox" name="permissions[]" value="<?= $mk ?>"> <?= $ml ?>
@@ -1183,7 +1169,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-soft); color: var(
     <div class="modal-body px-4">
         <p class="text-muted small mb-3">Select modules for <strong id="editPermsPhone"></strong>:</p>
         <div class="d-flex flex-wrap gap-3">
-            <?php $allMods = ['payments'=>'Approve Payments','users'=>'Users','picks'=>'Featured Betslip','code_purchases'=>'Credits Management','visitors'=>'Visitor Logs','admins'=>'Manage Admins','scraper'=>'Operations','consensus'=>'Verified Data']; ?>
+            <?php $allMods = ['scraper'=>'Operations','payments'=>'Payments','users'=>'Users','admins'=>'Admins','code_purchases'=>'Credits','rewards'=>'Rewards','visitors'=>'Logs']; ?>
             <?php foreach ($allMods as $mk => $ml): ?>
             <label class="d-flex align-items-center gap-1" style="font-size:0.85rem;cursor:pointer;">
                 <input type="checkbox" name="permissions[]" value="<?= $mk ?>" class="perm-checkbox"> <?= $ml ?>
@@ -1500,13 +1486,13 @@ $topSellers = getTopSellerStats(10);
                 <?php endforeach; endif; ?>
             </tbody>
         </table>
-</div>
-        <div class="text-center py-2 load-more-wrap" data-table="creditHistoryTable" style="border-top:1px solid var(--border-color);">
-            <button type="button" class="btn btn-sm load-more-btn" style="background:var(--bg-soft);color:var(--primary);border:1px solid var(--border-color);padding:4px 20px;border-radius:6px;">
-                Show <span class="count">0</span> more
-            </button>
-        </div>
     </div>
+    <div class="text-center py-2 load-more-wrap" data-table="creditHistoryTable" style="border-top:1px solid var(--border-color);">
+        <button type="button" class="btn btn-sm load-more-btn" style="background:var(--bg-soft);color:var(--primary);border:1px solid var(--border-color);padding:4px 20px;border-radius:6px;">
+            Show <span class="count">0</span> more
+        </button>
+    </div>
+</div>
 
 <div class="card mt-3">
     <div class="card-header"><h2 class="card-title"><i class="fas fa-plane me-1" style="color:#F59E0B;"></i>Pending Aviator Access Purchases</h2><span class="badge" style="background: var(--primary); color: white;"><?= count($pendingAviatorPurchases) ?> Pending</span></div>
@@ -1595,6 +1581,87 @@ $topSellers = getTopSellerStats(10);
         </table>
     </div>
 </div>
+<?php endif; ?>
+<?php endif; ?>
+
+<?php if ($activeTab === 'top_sellers'): ?>
+<?php if (!hasAdminPermission('rewards')): ?>
+<div class="alert alert-danger text-center py-4"><i class="fas fa-lock me-2"></i>You do not have permission to access this section.</div>
+<?php else: ?>
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title"><i class="fas fa-trophy me-1" style="color: #F59E0B;"></i>Top Sellers — Monthly Reward</h2>
+        <span class="badge" style="background: #F59E0B; color: #000;"><?= number_format(FREE_CREDITS_PER_WEEK) ?> Credits Each</span>
+    </div>
+    <div class="alert" style="background: #F0F4FF; border-left: 4px solid var(--primary); font-size: 0.85rem;">
+        <strong><i class="fas fa-info-circle me-1"></i>Reward Scheme:</strong>
+        Every end of month, the top 3 sellers (by approved sales) each earn <strong><?= number_format(FREE_CREDITS_PER_WEEK) ?> free credits</strong>.
+        This is tracked per calendar month. You can only award once per month.
+    </div>
+    <?php if ($topSellerRewardAwarded): ?>
+    <div class="alert alert-success text-center py-3" style="font-size:1rem;">
+        <i class="fas fa-check-circle me-1" style="color:#22C55E;"></i>
+        <strong>Rewards already awarded for <?= date('F Y') ?>.</strong> Next cycle begins <?= date('F Y', strtotime('first day of next month')) ?>.
+    </div>
+    <?php elseif (empty($topSellersThisMonth)): ?>
+    <div class="alert alert-warning text-center py-3">
+        <i class="fas fa-exclamation-triangle me-1"></i>
+        No approved sales this month yet. Top sellers will appear here once sales are recorded.
+    </div>
+    <?php else: ?>
+    <div class="table-responsive">
+        <table class="table">
+            <thead><tr><th>Rank</th><th>Seller</th><th>Phone</th><th>Approved Sales</th><th>Reward</th></tr></thead>
+            <tbody>
+                <?php $rank = 0; foreach ($topSellersThisMonth as $ts): $rank++; ?>
+                <tr>
+                    <td><span style="font-size:1.3rem;"><?= $rank === 1 ? '🥇' : ($rank === 2 ? '🥈' : '🥉') ?></span></td>
+                    <td><strong><?= htmlspecialchars($ts['display_name'] ?: 'Seller #'.$ts['id']) ?></strong></td>
+                    <td><?= htmlspecialchars($ts['phone']) ?></td>
+                    <td><span class="badge" style="background: #F59E0B; color: #000; font-size:0.9rem;"><?= (int)$ts['total_sales'] ?> sales</span></td>
+                    <td><strong style="color: #059669;">+<?= number_format(FREE_CREDITS_PER_WEEK) ?> credits</strong></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <form method="POST" onsubmit="return confirm('Award <?= number_format(FREE_CREDITS_PER_WEEK) ?> credits each to top <?= count($topSellersThisMonth) ?> sellers for <?= date('F Y') ?>?')">
+        <input type="hidden" name="action" value="award_top_sellers">
+        <button type="submit" class="btn btn-approve w-100" style="padding: 0.75rem;">
+            <i class="fas fa-gift me-1"></i>Award <?= number_format(FREE_CREDITS_PER_WEEK) ?> Credits to Top <?= count($topSellersThisMonth) ?> Sellers
+        </button>
+    </form>
+    <?php endif; ?>
+</div>
+
+<!-- Give Free Credits -->
+<div class="card mt-3">
+    <div class="card-header"><h2 class="card-title"><i class="fas fa-gift me-1" style="color:#F59E0B;"></i>Give Free Credits</h2></div>
+    <div class="p-3">
+        <form method="POST" class="row g-2 align-items-end" onsubmit="return document.getElementById('selectedUserId').value !== '' || (alert('Please select a user from the search results first.'), false);">
+            <input type="hidden" name="action" value="give_free_credits">
+            <div class="col-md-5" style="position:relative;">
+                <label class="form-label text-muted small">Find User</label>
+                <input type="text" id="userSearchInput" class="form-control form-control-sm" placeholder="Type phone or display name..." autocomplete="off">
+                <input type="hidden" name="target_user_id" id="selectedUserId" value="">
+                <div id="selectedUserLabel" class="small" style="color:var(--primary);font-weight:600;margin-top:2px;"></div>
+                <div id="userSearchResults" class="list-group" style="position:absolute;z-index:100;display:none;max-height:200px;overflow-y:auto;width:100%;"></div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label text-muted small">Credits</label>
+                <input type="number" name="credits" class="form-control form-control-sm" min="1" value="1" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-muted small">Reason (optional)</label>
+                <input type="text" name="reason" class="form-control form-control-sm" placeholder="e.g. Gift, promotion">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label text-muted small">&nbsp;</label>
+                <button type="submit" class="btn btn-premium w-100" style="font-size:0.85rem;padding:0.5rem;"><i class="fas fa-gift me-1"></i>Give</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -1656,72 +1723,21 @@ document.addEventListener('DOMContentLoaded', function() {
 <?php endif; ?>
 <?php endif; ?>
 
-
-
-<?php if ($activeTab === 'top_sellers'): ?>
-<div class="card">
-    <div class="card-header">
-        <h2 class="card-title"><i class="fas fa-trophy me-1" style="color: #F59E0B;"></i>Top Sellers — Monthly Reward</h2>
-        <span class="badge" style="background: #F59E0B; color: #000;"><?= number_format(FREE_CREDITS_PER_WEEK) ?> Credits Each</span>
-    </div>
-    <div class="alert" style="background: #F0F4FF; border-left: 4px solid var(--primary); font-size: 0.85rem;">
-        <strong><i class="fas fa-info-circle me-1"></i>Reward Scheme:</strong>
-        Every end of month, the top 3 sellers (by approved sales) each earn <strong><?= number_format(FREE_CREDITS_PER_WEEK) ?> free credits</strong>.
-        This is tracked per calendar month. You can only award once per month.
-    </div>
-    <?php if ($topSellerRewardAwarded): ?>
-    <div class="alert alert-success text-center py-3" style="font-size:1rem;">
-        <i class="fas fa-check-circle me-1" style="color:#22C55E;"></i>
-        <strong>Rewards already awarded for <?= date('F Y') ?>.</strong> Next cycle begins <?= date('F Y', strtotime('first day of next month')) ?>.
-    </div>
-    <?php elseif (empty($topSellersThisMonth)): ?>
-    <div class="alert alert-warning text-center py-3">
-        <i class="fas fa-exclamation-triangle me-1"></i>
-        No approved sales this month yet. Top sellers will appear here once sales are recorded.
-    </div>
-    <?php else: ?>
-    <div class="table-responsive">
-        <table class="table">
-            <thead><tr><th>Rank</th><th>Seller</th><th>Phone</th><th>Approved Sales</th><th>Reward</th></tr></thead>
-            <tbody>
-                <?php $rank = 0; foreach ($topSellersThisMonth as $ts): $rank++; ?>
-                <tr>
-                    <td><span style="font-size:1.3rem;"><?= $rank === 1 ? '🥇' : ($rank === 2 ? '🥈' : '🥉') ?></span></td>
-                    <td><strong><?= htmlspecialchars($ts['display_name'] ?: 'Seller #'.$ts['id']) ?></strong></td>
-                    <td><?= htmlspecialchars($ts['phone']) ?></td>
-                    <td><span class="badge" style="background: #F59E0B; color: #000; font-size:0.9rem;"><?= (int)$ts['total_sales'] ?> sales</span></td>
-                    <td><strong style="color: #059669;">+<?= number_format(FREE_CREDITS_PER_WEEK) ?> credits</strong></td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-    <form method="POST" onsubmit="return confirm('Award <?= number_format(FREE_CREDITS_PER_WEEK) ?> credits each to top <?= count($topSellersThisMonth) ?> sellers for <?= date('F Y') ?>?')">
-        <input type="hidden" name="action" value="award_top_sellers">
-        <button type="submit" class="btn btn-approve w-100" style="padding: 0.75rem;">
-            <i class="fas fa-gift me-1"></i>Award <?= number_format(FREE_CREDITS_PER_WEEK) ?> Credits to Top <?= count($topSellersThisMonth) ?> Sellers
-        </button>
-    </form>
-    <?php endif; ?>
-</div>
-<?php endif; ?>
-
 <?php if ($activeTab === 'scrape_analyze'): ?>
 <?php if (!hasAdminPermission('analysis') && !hasAdminPermission('scraper') && !hasAdminPermission('picks')): ?>
 <div class="alert alert-danger text-center py-4"><i class="fas fa-lock me-2"></i>You do not have permission to access this section.</div>
 <?php else:
 $requestedSub = $_GET['sub'] ?? '';
-$sub = in_array($requestedSub, ['analysis', 'verified', 'featured']) ? $requestedSub : 'analysis';
-if ($sub === 'analysis' && !$isSuperAdmin && !hasAdminPermission('analysis') && !hasAdminPermission('scraper')) {
-    $sub = 'featured';
-}
+$sub = in_array($requestedSub, ['analysis', 'verified']) ? $requestedSub : 'analysis';
 ?>
-<!-- Outer sub-nav: Analysis + Verified -->
-<div style="display:flex;gap:8px;margin-bottom:1rem;border-bottom:2px solid #E5E7EB;padding-bottom:0.5rem;">
-    <a href="?tab=scrape_analyze&sub=analysis" class="nav-link <?= $sub === 'analysis' ? 'active' : '' ?>" style="text-decoration:none;font-weight:600;font-size:0.85rem;padding:6px 16px;border-radius:8px;<?= $sub === 'analysis' ? 'background:var(--primary);color:#fff;' : 'color:var(--text-muted);' ?>"><i class="fas fa-microchip me-1"></i>Analysis</a>
+<div style="display:flex;gap:8px;margin-bottom:1rem;border-bottom:2px solid #E5E7EB;padding-bottom:0.5rem;padding-left:4px;">
+    <a href="?tab=scrape_analyze" class="nav-link <?= $sub === 'analysis' ? 'active' : '' ?>" style="text-decoration:none;font-weight:600;font-size:0.8rem;padding:4px 14px;border-radius:8px;<?= $sub === 'analysis' ? 'background:var(--primary);color:#fff;' : 'color:var(--text-muted);' ?>"><i class="fas fa-microchip me-1"></i>Analysis</a>
     <?php if ($isSuperAdmin || hasAdminPermission('consensus')): ?>
-    <a href="?tab=scrape_analyze&sub=verified" class="nav-link <?= $sub === 'verified' ? 'active' : '' ?>" style="text-decoration:none;font-weight:600;font-size:0.85rem;padding:6px 16px;border-radius:8px;<?= $sub === 'verified' ? 'background:var(--primary);color:#fff;' : 'color:var(--text-muted);' ?>"><i class="fas fa-check-circle me-1"></i>Verified Data</a>
-<?php endif; ?>
+    <a href="?tab=scrape_analyze&sub=verified" class="nav-link <?= $sub === 'verified' ? 'active' : '' ?>" style="text-decoration:none;font-weight:600;font-size:0.8rem;padding:4px 14px;border-radius:8px;<?= $sub === 'verified' ? 'background:var(--primary);color:#fff;' : 'color:var(--text-muted);' ?>"><i class="fas fa-check-circle me-1"></i>Verified Data</a>
+    <?php endif; ?>
+</div>
+
+<?php if ($sub === 'analysis'): ?>
 <div class="alert" style="background: #F0F4FF; border-left: 4px solid var(--primary); margin-bottom: 1rem; font-size: 0.85rem;">
     <strong><i class="fas fa-sitemap me-1"></i>Analysis</strong>
     — Run analysis to generate picks from your scraped odds data.
@@ -2020,11 +2036,10 @@ $latestScrape = !empty($scrapes) ? end($scrapes) : '';
 <?php endif; // end if ($sub === 'verified') ?>
 
 
-
-<?php if ($sub === 'featured'): ?>
 <?php if (!hasAdminPermission('picks')): ?>
-<div class="alert alert-danger text-center py-4"><i class="fas fa-lock me-2"></i>You do not have permission to manage featured betslips.</div>
+<div class="alert alert-danger text-center py-4"><i class="fas fa-lock me-2"></i>You do not have permission to manage featured content.</div>
 <?php else: ?>
+
 
 <?php if ($isSuperAdmin): ?>
 <?php
@@ -2158,11 +2173,10 @@ $articles = $db->query("SELECT * FROM betting_articles ORDER BY created_at DESC"
                                     <button type="submit" class="btn btn-approve btn-sm">Create Article</button>
                                 </div>
                             </form>
-<?php endif; ?>
-<?php endif; ?>
-
-<?php endif; ?>
-</div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
                 <div class="accordion-item" style="border:none;">
                     <h2 class="accordion-header">
                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#bsAllArticles" style="font-size:0.85rem;font-weight:600;background:transparent;">
@@ -2308,17 +2322,16 @@ $articles = $db->query("SELECT * FROM betting_articles ORDER BY created_at DESC"
 </script>
 <?php endif; ?>
 
-<!-- All Betting Codes (moved from Credits tab) -->
 <div class="card mt-3">
-    <div class="card-header"><h2 class="card-title"><i class="fas fa-ticket me-1"></i>All Betting Codes</h2></div>
+    <div class="card-header"><h2 class="card-title"><i class="fas fa-ticket me-1"></i>All Betting Codes <?php if (!empty($activeCodes)): ?><span class="badge bg-success ms-1" style="font-size: 0.7rem;"><?= count($activeCodes) ?> Active Today</span><?php endif; ?></h2></div>
     <?php
     $allCodesAdmin = getAllCodesAdmin();
     $activeCodes = array_filter($allCodesAdmin, fn($c) => $c['status'] === 'active' && date('Y-m-d', strtotime($c['created_at'])) === date('Y-m-d'));
     $soldCodes = array_filter($allCodesAdmin, fn($c) => $c['status'] === 'sold');
     ?>
-    <div class="mb-2"><input type="text" class="table-search form-control form-control-sm" data-table="allCodesTableAdmin" placeholder="Search by name, phone or code..." style="max-width:320px;"></div>
+    <div class="mb-2"><input type="text" class="table-search form-control form-control-sm" data-table="allCodesTable" placeholder="Search by name, phone or code..." style="max-width:320px;"></div>
     <div class="table-responsive">
-        <table class="table" id="allCodesTableAdmin" data-page-size="10">
+        <table class="table" id="allCodesTable" data-page-size="10">
             <thead><tr><th>ID</th><th>Phone</th><th>Code</th><th>Description</th><th>Matches</th><th>Status</th><th>Sales</th><th>Created</th></tr></thead>
             <tbody>
                 <?php if (empty($allCodesAdmin)): ?>
@@ -2338,12 +2351,17 @@ $articles = $db->query("SELECT * FROM betting_articles ORDER BY created_at DESC"
             </tbody>
         </table>
     </div>
-    <div class="text-center py-2 load-more-wrap" data-table="allCodesTableAdmin" style="border-top:1px solid var(--border-color);">
+    <div class="text-center py-2 load-more-wrap" data-table="allCodesTable" style="border-top:1px solid var(--border-color);">
         <button type="button" class="btn btn-sm load-more-btn" style="background:var(--bg-soft);color:var(--primary);border:1px solid var(--border-color);padding:4px 20px;border-radius:6px;">
             Show <span class="count">0</span> more
         </button>
     </div>
 </div>
+
+<?php endif; ?>
+<?php endif; ?>
+
+</main>
 
 <!-- Presentation Mode Modal -->
 <div id="presentationModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;" onclick="if(event.target===this){this.style.display='none';this.classList.remove('show');}">
@@ -2614,4 +2632,3 @@ function showCreditHistory(userId, userName) {
 </script>
 </body>
 </html>
-

@@ -376,6 +376,66 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-soft); color: var(
 @media (max-width: 768px) { .hamburger-btn { display: block; } .header-content { flex-direction: row; justify-content: space-between; text-align: left; } .header-actions { display: none; position: absolute; top: 100%; left: 0; right: 0; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); flex-direction: column; gap: 0.75rem; padding: 1rem 1.5rem; box-shadow: var(--shadow-lg); z-index: 999; } .header-actions.active { display: flex; } .header-actions .badge-trial, .header-actions .badge-parlay, .header-actions .badge-rollover { align-self: flex-start; } .header-actions .btn-logout { width: 100%; text-align: center; } .header-actions .dropdown-menu { position: static !important; background: transparent !important; border: none !important; padding: 0 0 0 1rem !important; } .header-actions .dropdown-item { color: rgba(255,255,255,0.85) !important; font-size:0.85rem; padding:0.25rem 0 !important; } .header-actions .dropdown-item:hover { background: transparent !important; color: white !important; } .nav-pills { flex-direction: column; } .pricing-grid { grid-template-columns: 1fr; } .footer-links { flex-direction: column; gap: 0.5rem; } }
         /* Icon spacing utility */
         .icon-gap { margin-right: 0.5rem; } i.fas, i.far, i.fab { vertical-align: -0.125em; }
+        /* PRO tab mobile responsive */
+        @media (max-width: 600px) {
+            #toppredictions .tp-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 2px;
+                padding: 0.5rem;
+            }
+            #toppredictions .tp-row > div:first-child {
+                flex: none;
+                min-width: 0;
+            }
+            #toppredictions .tp-match {
+                white-space: normal !important;
+                font-size: 0.85rem !important;
+                line-height: 1.4;
+                overflow: visible !important;
+                margin-bottom: 2px;
+            }
+            #toppredictions .tp-match span {
+                display: block;
+                font-size: 0.65rem !important;
+                margin-top: 1px;
+            }
+            #toppredictions .tp-row > div:nth-child(2) {
+                flex: none;
+                min-width: 0;
+                margin: 2px 0;
+            }
+            #toppredictions .tp-row > div:last-child {
+                flex: none;
+                text-align: left;
+                min-width: unset;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            #toppredictions .tp-row > div:last-child > div {
+                font-size: 0.55rem;
+                line-height: 1;
+            }
+            #toppredictions .tp-row > div:last-child > span {
+                font-size: 0.8rem !important;
+            }
+            #toppredictions .card-header {
+                gap: 4px;
+            }
+            #toppredictions .card-header h5 {
+                font-size: 0.9rem;
+                width: 100%;
+            }
+            #toppredictions .card-header select,
+            #toppredictions .card-header input {
+                max-width: 110px !important;
+                font-size: 0.6rem !important;
+            }
+            #toppredictions .card-header span {
+                font-size: 0.55rem !important;
+            }
+        }
 </style>
 </head>
 <body>
@@ -392,7 +452,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-soft); color: var(
 <a href="aviator" class="header-link"><i class="fas fa-plane me-1" style="color:#F59E0B;"></i>Aviator</a>
 <?php endif; ?>
 <a href="dropping-odds" class="header-link"><i class="fas fa-arrow-down me-1" style="color:#EF4444;"></i>Dropping Odds</a>
-<a href="track-record" class="header-link"><i class="fas fa-chart-line me-1" style="color:#FBBF24;"></i>Performance</a>
+<a href="#" class="header-link"><i class="fas fa-chart-line me-1" style="color:#FBBF24;"></i>Performance</a>
 <a href="betting-school" class="header-link"><i class="fas fa-book-open me-1"></i>Betting School</a>
 <div class="dropdown d-inline-block">
     <a class="header-link" href="pikka?post=1" style="cursor:pointer;"><i class="fas fa-pen me-1"></i>Post Free Tips</a>
@@ -782,6 +842,60 @@ foreach ($merged as &$p) {
 }
 unset($p);
 
+// Add top Bayesian predictions as independent entries
+try {
+    if (!isset($bm)) {
+        require_once __DIR__ . '/classes/BayesianModel.php';
+        $bm = new BayesianModel();
+    }
+    $bayesianPicks = $db2->query("
+        SELECT match_name, recommended_pick, confidence, league
+        FROM bayesian_predictions
+        WHERE match_date = CURDATE()
+          AND confidence >= 60
+          AND recommended_pick IS NOT NULL
+          AND recommended_pick != ''
+        ORDER BY confidence DESC
+        LIMIT 15
+    ")->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($bayesianPicks as $bp) {
+        $recs = explode(',', $bp['recommended_pick']);
+        $primary = trim($recs[0] ?? '');
+        $parts = explode(':', $primary);
+        if (count($parts) !== 2) continue;
+        $pickType = $parts[0];
+        $pickProb = (float)$parts[1];
+
+        $key = $bp['match_name'] . '|' . $pickType;
+        if (in_array($key, $seenKeys)) continue;
+
+        $merged[] = [
+            'match_name' => $bp['match_name'],
+            'pick_value' => $pickType,
+            'actual_odds' => 0,
+            'odds' => 0,
+            'pattern_badge' => 'BAYESIAN',
+            'match_time' => '',
+            '_blended_conf' => round(($bp['confidence'] + $pickProb) / 2),
+            'is_bayesian' => true,
+            'home_odds' => 0,
+            'draw_odds' => 0,
+            'away_odds' => 0,
+            'fav_delta' => 0,
+            'opp_delta' => 0,
+            'draw_delta' => 0,
+            'is_home_fav' => true,
+            'league' => $bp['league'] ?? '',
+            'win_rate_low' => 0,
+            'details' => 'Bayesian Model Prediction',
+            'safety_notes' => '',
+            'risk_tier' => '',
+        ];
+        $seenKeys[] = $key;
+    }
+} catch (Exception $e) {}
+
 usort($merged, fn($a, $b) => ($b['_blended_conf'] ?? 0) <=> ($a['_blended_conf'] ?? 0));
 $tpPerPage = 20;
 $tpPage = max(1, (int)($_GET['tp_page'] ?? 1));
@@ -848,36 +962,40 @@ if ($tpSort === 'time') {
     }
     // Signal-style movements with colored arrows — identical to odds-signals.php
     $movementHtml = '';
-    $hDelta = (float)($p['fav_delta'] ?? 0);
-    $aDelta = (float)($p['opp_delta'] ?? 0);
-    $dDelta = (float)($p['draw_delta'] ?? 0);
-    $isHomeFav = (bool)($p['is_home_fav'] ?? true);
-    if ($isHomeFav) {
-        $hDisplayDelta = $hDelta;
-        $aDisplayDelta = $aDelta;
+    if ($p['is_bayesian'] ?? false) {
+        $pickOdds = 'Model';
     } else {
-        $hDisplayDelta = $aDelta;
-        $aDisplayDelta = $hDelta;
-    }
-    // Match odds-signals.php: delta > 0 (odds up) = ↑ green, delta < 0 (odds down) = ↓ red
-    $hArrow = $hDisplayDelta > 0 ? '↑' : ($hDisplayDelta < 0 ? '↓' : '–');
-    $hColor = $hDisplayDelta > 0 ? '#22C55E' : ($hDisplayDelta < 0 ? '#EF4444' : '#FBBF24');
-    $dArrow = $dDelta > 0 ? '↑' : ($dDelta < 0 ? '↓' : '–');
-    $dColor = $dDelta > 0 ? '#22C55E' : ($dDelta < 0 ? '#EF4444' : '#FBBF24');
-    $aArrow = $aDisplayDelta > 0 ? '↑' : ($aDisplayDelta < 0 ? '↓' : '–');
-    $aColor = $aDisplayDelta > 0 ? '#22C55E' : ($aDisplayDelta < 0 ? '#EF4444' : '#FBBF24');
-    $movementHtml = sprintf(
-        '<span style="color:%s;font-weight:600;">H: %.1f%% %s</span> <span style="color:%s;font-weight:600;">D: %.1f%% %s</span> <span style="color:%s;font-weight:600;">A: %.1f%% %s</span>',
-        $hColor, abs($hDisplayDelta), $hArrow,
-        $dColor, abs($dDelta), $dArrow,
-        $aColor, abs($aDisplayDelta), $aArrow
-    );
-    // Odds from web_picks
-    $tpOdds1 = number_format((float)($p['home_odds'] ?? 0), 2);
-    $tpOddsX = number_format((float)($p['draw_odds'] ?? 0), 2);
-    $tpOdds2 = number_format((float)($p['away_odds'] ?? 0), 2);
-    if ($tpOdds1 > 0 && $tpOddsX > 0 && $tpOdds2 > 0) {
-        $movementHtml .= sprintf(' <span style="color:#9CA3AF;">@ %s / %s / %s</span>', $tpOdds1, $tpOddsX, $tpOdds2);
+        $hDelta = (float)($p['fav_delta'] ?? 0);
+        $aDelta = (float)($p['opp_delta'] ?? 0);
+        $dDelta = (float)($p['draw_delta'] ?? 0);
+        $isHomeFav = (bool)($p['is_home_fav'] ?? true);
+        if ($isHomeFav) {
+            $hDisplayDelta = $hDelta;
+            $aDisplayDelta = $aDelta;
+        } else {
+            $hDisplayDelta = $aDelta;
+            $aDisplayDelta = $hDelta;
+        }
+        // Match odds-signals.php: delta > 0 (odds up) = ↑ green, delta < 0 (odds down) = ↓ red
+        $hArrow = $hDisplayDelta > 0 ? '↑' : ($hDisplayDelta < 0 ? '↓' : '–');
+        $hColor = $hDisplayDelta > 0 ? '#22C55E' : ($hDisplayDelta < 0 ? '#EF4444' : '#FBBF24');
+        $dArrow = $dDelta > 0 ? '↑' : ($dDelta < 0 ? '↓' : '–');
+        $dColor = $dDelta > 0 ? '#22C55E' : ($dDelta < 0 ? '#EF4444' : '#FBBF24');
+        $aArrow = $aDisplayDelta > 0 ? '↑' : ($aDisplayDelta < 0 ? '↓' : '–');
+        $aColor = $aDisplayDelta > 0 ? '#22C55E' : ($aDisplayDelta < 0 ? '#EF4444' : '#FBBF24');
+        $movementHtml = sprintf(
+            '<span style="color:%s;font-weight:600;">H: %.1f%% %s</span> <span style="color:%s;font-weight:600;">D: %.1f%% %s</span> <span style="color:%s;font-weight:600;">A: %.1f%% %s</span>',
+            $hColor, abs($hDisplayDelta), $hArrow,
+            $dColor, abs($dDelta), $dArrow,
+            $aColor, abs($aDisplayDelta), $aArrow
+        );
+        // Odds from web_picks
+        $tpOdds1 = number_format((float)($p['home_odds'] ?? 0), 2);
+        $tpOddsX = number_format((float)($p['draw_odds'] ?? 0), 2);
+        $tpOdds2 = number_format((float)($p['away_odds'] ?? 0), 2);
+        if ($tpOdds1 > 0 && $tpOddsX > 0 && $tpOdds2 > 0) {
+            $movementHtml .= sprintf(' <span style="color:#9CA3AF;">@ %s / %s / %s</span>', $tpOdds1, $tpOddsX, $tpOdds2);
+        }
     }
 ?>
 <div class="tp-row" style="display:flex;align-items:center;gap:8px;padding:0.5rem 0.75rem;border-bottom:<?= $i < count($merged)-1 ? '1px solid #F3F4F6' : 'none' ?>;">
@@ -885,7 +1003,7 @@ if ($tpSort === 'time') {
         <div class="tp-match" style="font-weight:600;font-size:0.82rem;color:#1F2937;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?= htmlspecialchars($p['match_name'] ?? '') ?><?php if ($timeStr): ?> <span style="font-weight:400;color:#9CA3AF;font-size:0.7rem;"><?= $timeStr ?></span><?php endif; ?></div>
         <div style="font-size:0.65rem;color:var(--text-muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
             <span style="font-weight:700;color:#8B5CF6;"><?= htmlspecialchars($pv) ?></span>
-            <span style="color:#9CA3AF;">· <?= $pickOdds ?>x</span>
+            <?php if ($pickOdds !== 'Model'): ?><span style="color:#9CA3AF;">· <?= $pickOdds ?>x</span><?php endif; ?>
             <?php if ($movementHtml): ?>
             <span style="color:#D1D5DB;">|</span>
             <span><?= $movementHtml ?></span>
@@ -894,9 +1012,9 @@ if ($tpSort === 'time') {
     </div>
     <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;">
         <?php if ($badges): $bp2 = explode(' ', trim($badges)); foreach ($bp2 as $b): $b = trim($b); if (!$b) continue;
-            $bc = $b === 'VERIFIED' ? '#10B981' : ($b === 'BANKER' ? '#06B6D4' : ($b === 'NOISY' ? '#EF4444' : '#6B7280'));
+            $bc = $b === 'VERIFIED' ? '#10B981' : ($b === 'BANKER' ? '#06B6D4' : ($b === 'NOISY' ? '#EF4444' : ($b === 'BAYESIAN' ? '#7C3AED' : '#6B7280')));
         ?>
-        <span style="display:inline-flex;align-items:center;gap:3px;background:rgba(<?= $b === 'VERIFIED' ? '16,185,129' : ($b === 'BANKER' ? '6,182,212' : ($b === 'NOISY' ? '239,68,68' : '107,114,128')) ?>,0.15);color:<?= $bc ?>;padding:1px 6px;border-radius:4px;font-weight:600;font-size:0.65rem;"><?= htmlspecialchars($b) ?></span>
+        <span style="display:inline-flex;align-items:center;gap:3px;background:rgba(<?= $b === 'VERIFIED' ? '16,185,129' : ($b === 'BANKER' ? '6,182,212' : ($b === 'NOISY' ? '239,68,68' : ($b === 'BAYESIAN' ? '124,58,237' : '107,114,128'))) ?>,0.15);color:<?= $bc ?>;padding:1px 6px;border-radius:4px;font-weight:600;font-size:0.65rem;"><?= htmlspecialchars($b) ?></span>
         <?php endforeach; endif; ?>
     </div>
     <div style="text-align:right;min-width:36px;">

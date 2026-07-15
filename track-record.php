@@ -30,7 +30,7 @@ $perPage = 20;
 $offset = ($page - 1) * $perPage;
 
 // Overall stats
-$totalStmt = $db->query("SELECT COUNT(*) as total, SUM(CASE WHEN result='won' THEN 1 ELSE 0 END) as won, SUM(CASE WHEN result='lost' THEN 1 ELSE 0 END) as lost, SUM(CASE WHEN result='pending' THEN 1 ELSE 0 END) as pending, SUM(CASE WHEN result='void' THEN 1 ELSE 0 END) as voided FROM pick_settlements");
+$totalStmt = $db->query("SELECT COUNT(*) as total, SUM(CASE WHEN result='won' THEN 1 ELSE 0 END) as won, SUM(CASE WHEN result='lost' THEN 1 ELSE 0 END) as lost, SUM(CASE WHEN result='pending' THEN 1 ELSE 0 END) as pending, SUM(CASE WHEN result='void' THEN 1 ELSE 0 END) as voided FROM pick_settlements ps INNER JOIN web_picks wp ON ps.web_pick_id = wp.id WHERE wp.pick_type IN ('rollover','parlay','over_15')");
 $overall = $totalStmt->fetch();
 $total = (int)$overall['total'];
 $won = (int)$overall['won'];
@@ -46,9 +46,10 @@ $byTypeRaw = $db->query("
            SUM(CASE WHEN result='won' THEN 1 ELSE 0 END) as won,
            SUM(CASE WHEN result='lost' THEN 1 ELSE 0 END) as lost
     FROM pick_settlements ps
-    WHERE ps.result IN ('won','lost')
+    INNER JOIN web_picks wp ON ps.web_pick_id = wp.id
+    WHERE ps.result IN ('won','lost') AND wp.pick_type IN ('rollover','parlay','over_15')
     GROUP BY ps.pick_value, ps.match_name
-    ORDER BY (won + lost) DESC
+    ORDER BY COUNT(*) DESC
 ")->fetchAll();
 
 // Normalize pick values into markets and merge
@@ -106,8 +107,8 @@ $recentCutoff = date('Y-m-d', strtotime('-7 days'));
 $allRecent = $db->query("
     SELECT ps.*, wp.league, wp.detected_at
     FROM pick_settlements ps
-    LEFT JOIN web_picks wp ON ps.web_pick_id = wp.id
-    WHERE ps.settlement_date >= '$recentCutoff' AND ps.result IN ('won','lost')
+    INNER JOIN web_picks wp ON ps.web_pick_id = wp.id
+    WHERE ps.settlement_date >= '$recentCutoff' AND ps.result IN ('won','lost') AND wp.pick_type IN ('rollover','parlay','over_15')
     ORDER BY ps.result DESC, ps.id DESC
 ")->fetchAll();
 
@@ -124,7 +125,7 @@ $recent = array_slice(array_values($bestPerMatch), $offset, $perPage);
 $totalPages = max(1, ceil($totalRecent / $perPage));
 
 // ROI
-$roiData = $db->query("SELECT odds, result FROM pick_settlements WHERE result IN ('won','lost')")->fetchAll();
+$roiData = $db->query("SELECT ps.odds, ps.result FROM pick_settlements ps INNER JOIN web_picks wp ON ps.web_pick_id = wp.id WHERE ps.result IN ('won','lost') AND wp.pick_type IN ('rollover','parlay','over_15')")->fetchAll();
 $totalStake = count($roiData);
 $totalReturn = 0;
 foreach ($roiData as $r) {
@@ -134,7 +135,7 @@ $roi = $totalStake > 0 ? round(($totalReturn - $totalStake) / $totalStake * 100,
 $profit = $totalReturn - $totalStake;
 
 // Win streak
-$streak = $db->query("SELECT result FROM pick_settlements WHERE result IN ('won','lost') ORDER BY id DESC LIMIT 20")->fetchAll();
+$streak = $db->query("SELECT ps.result FROM pick_settlements ps INNER JOIN web_picks wp ON ps.web_pick_id = wp.id WHERE ps.result IN ('won','lost') AND wp.pick_type IN ('rollover','parlay','over_15') ORDER BY ps.id DESC LIMIT 20")->fetchAll();
 $winStreak = 0;
 foreach ($streak as $s) {
     if ($s['result'] === 'won') $winStreak++;
@@ -142,7 +143,7 @@ foreach ($streak as $s) {
 }
 
 // Recent results for sparkline (last 10)
-$recent10 = $db->query("SELECT result FROM pick_settlements WHERE result IN ('won','lost') ORDER BY id DESC LIMIT 10")->fetchAll();
+$recent10 = $db->query("SELECT ps.result FROM pick_settlements ps INNER JOIN web_picks wp ON ps.web_pick_id = wp.id WHERE ps.result IN ('won','lost') AND wp.pick_type IN ('rollover','parlay','over_15') ORDER BY ps.id DESC LIMIT 10")->fetchAll();
 $sparkline = '';
 foreach (array_reverse($recent10) as $r) {
     $sparkline .= $r['result'] === 'won' ? '<span style="color:#22C55E;font-weight:800;">&#9679;</span>' : '<span style="color:#EF4444;font-weight:800;">&#9679;</span>';
@@ -430,7 +431,7 @@ footer a:hover { color: var(--primary); }
                 <h6 class="mb-3" style="font-weight:700;color:var(--text-light);">Free Tools</h6>
                 <ul class="list-unstyled" style="font-size:0.85rem;">
                     <li class="mb-2"><a href="signals"><i class="fas fa-microchip me-1" style="color:#22C55E;"></i> Smart Picks</a></li>
-                    <li class="mb-2"><a href="track-record"><i class="fas fa-chart-line me-1" style="color:#FBBF24;"></i> Performance</a></li>
+                    <li class="mb-2"><a href="#"><i class="fas fa-chart-line me-1" style="color:#FBBF24;"></i> Performance</a></li>
                     <li class="mb-2"><a href="dropping-odds"><i class="fas fa-arrow-trend-down me-1" style="color:#EF4444;"></i> Dropping Odds</a></li>
                     <li class="mb-2"><a href="betting-school"><i class="fas fa-book me-1" style="color:#8B5CF6;"></i> Betting School</a></li>
                     <li class="mb-2"><a href="pikka"><i class="fas fa-futbol me-1" style="color:#6366F1;"></i> Pikka</a></li>
