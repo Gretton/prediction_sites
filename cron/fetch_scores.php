@@ -44,9 +44,36 @@ function normalizeTeam($name) {
     return trim(mb_strtolower($name));
 }
 
-$checkStmt = $db->prepare("SELECT id, home_score, away_score, first_seen_at FROM match_results WHERE home_team = ? AND away_team = ? AND match_date = ?");
-$insertStmt = $db->prepare("INSERT INTO match_results (home_team, away_team, home_score, away_score, match_date, first_seen_at) VALUES (?, ?, ?, ?, ?, NOW())");
+// Ensure team_id columns exist
+try { $db->exec("ALTER TABLE match_results ADD COLUMN home_team_id INT DEFAULT NULL AFTER home_team"); } catch (Exception $e) {}
+try { $db->exec("ALTER TABLE match_results ADD COLUMN away_team_id INT DEFAULT NULL AFTER away_team"); } catch (Exception $e) {}
+try { $db->exec("ALTER TABLE match_results ADD INDEX idx_home_team_id (home_team_id)"); } catch (Exception $e) {}
+try { $db->exec("ALTER TABLE match_results ADD INDEX idx_away_team_id (away_team_id)"); } catch (Exception $e) {}
+try { $db->exec("CREATE TABLE IF NOT EXISTS `teams` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(255) NOT NULL,
+    `normalized_name` VARCHAR(255) NOT NULL,
+    `aliases` JSON DEFAULT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY `uq_teams_normalized` (`normalized_name`(100)),
+    INDEX `idx_teams_name` (`name`(100))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"); } catch (Exception $e) {}
+
+function resolveTeamId($db, $teamName, $normalizedName) {
+    $stmt = $db->prepare("SELECT id FROM teams WHERE normalized_name = ? LIMIT 1");
+    $stmt->execute([$normalizedName]);
+    $id = $stmt->fetchColumn();
+    if (!$id) {
+        $db->prepare("INSERT IGNORE INTO teams (name, normalized_name) VALUES (?, ?)")->execute([$teamName, $normalizedName]);
+        $id = $db->lastInsertId();
+    }
+    return $id;
+}
+
+$checkStmt = $db->prepare("SELECT id, home_score, away_score, first_seen_at, home_team_id, away_team_id FROM match_results WHERE home_team = ? AND away_team = ? AND match_date = ?");
+$insertStmt = $db->prepare("INSERT INTO match_results (home_team, away_team, home_score, away_score, match_date, first_seen_at, home_team_id, away_team_id) VALUES (?, ?, ?, ?, ?, NOW(), ?, ?)");
 $updateStmt = $db->prepare("UPDATE match_results SET home_score = ?, away_score = ? WHERE id = ?");
+$updateTeamIds = $db->prepare("UPDATE match_results SET home_team_id = ?, away_team_id = ? WHERE id = ?");
 
 foreach ($input['matches'] as $m) {
     $home = normalizeTeam($m['home_team'] ?? '');
@@ -65,8 +92,15 @@ foreach ($input['matches'] as $m) {
         } else {
             $skipped++;
         }
+        if (!$existing['home_team_id'] || !$existing['away_team_id']) {
+            $hid = resolveTeamId($db, $home, $home);
+            $aid = resolveTeamId($db, $away, $away);
+            $updateTeamIds->execute([$hid, $aid, $existing['id']]);
+        }
     } else {
-        $insertStmt->execute([$home, $away, $hs, $as, $today]);
+        $hid = resolveTeamId($db, $home, $home);
+        $aid = resolveTeamId($db, $away, $away);
+        $insertStmt->execute([$home, $away, $hs, $as, $today, $hid, $aid]);
         $inserted++;
     }
 }

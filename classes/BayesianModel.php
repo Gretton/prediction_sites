@@ -71,35 +71,62 @@ class BayesianModel {
 
     private function loadTeamAliases() {
         if (!empty(self::$teamAliases)) return;
-        // Load from match_results for fuzzy matching
         if (!$this->db) return;
         try {
-            $stmt = $this->db->query("SELECT DISTINCT home_team FROM match_results UNION SELECT DISTINCT away_team FROM match_results");
-            $all = [];
-            foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $name) {
-                $key = $this->normalizeName($name);
-                $all[$key][] = $name;
+            self::$teamAliases = [];
+            // Load from teams table first (preferred)
+            $stmt = $this->db->query("SELECT id, name, normalized_name, aliases FROM teams");
+            foreach ($stmt->fetchAll() as $r) {
+                $key = $r['normalized_name'];
+                $names = [$r['name']];
+                if ($r['aliases']) {
+                    $extra = json_decode($r['aliases'], true);
+                    if (is_array($extra)) $names = array_merge($names, $extra);
+                }
+                self::$teamAliases[$key] = ['id' => (int)$r['id'], 'names' => $names];
             }
-            self::$teamAliases = $all;
+            // If teams table is empty, fall back to match_results
+            if (empty(self::$teamAliases)) {
+                $stmt = $this->db->query("SELECT DISTINCT home_team FROM match_results UNION SELECT DISTINCT away_team FROM match_results");
+                foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $name) {
+                    $key = $this->normalizeName($name);
+                    if (!isset(self::$teamAliases[$key])) self::$teamAliases[$key] = ['id' => null, 'names' => []];
+                    self::$teamAliases[$key]['names'][] = $name;
+                }
+            }
         } catch (Exception $e) {}
+    }
+
+    private function getTeamId($name) {
+        $key = $this->normalizeName($name);
+        if (isset(self::$teamAliases[$key]) && self::$teamAliases[$key]['id']) {
+            return self::$teamAliases[$key]['id'];
+        }
+        return null;
     }
 
     public function resolveTeamName($scrapedName) {
         $key = $this->normalizeName($scrapedName);
-        // Direct match
-        if (isset(self::$teamAliases[$key]) && !empty(self::$teamAliases[$key])) {
-            return self::$teamAliases[$key][0];
+        if (isset(self::$teamAliases[$key]) && !empty(self::$teamAliases[$key]['names'])) {
+            return self::$teamAliases[$key]['names'][0];
         }
-        // Fuzzy match: character bigram overlap
         $best = null; $bestScore = 0;
-        foreach (self::$teamAliases as $dbKey => $names) {
+        foreach (self::$teamAliases as $dbKey => $entry) {
             $score = $this->bigramSimilarity($key, $dbKey);
             if ($score > $bestScore && $score > 0.55) {
                 $bestScore = $score;
-                $best = $names[0];
+                $best = $entry['names'][0] ?? null;
             }
         }
         return $best ?: $scrapedName;
+    }
+
+    public function resolveTeamId($scrapedName) {
+        $key = $this->normalizeName($scrapedName);
+        if (isset(self::$teamAliases[$key]) && !empty(self::$teamAliases[$key]['id'])) {
+            return self::$teamAliases[$key]['id'];
+        }
+        return null;
     }
 
     private function normalizeName($name) {
@@ -589,16 +616,30 @@ class BayesianModel {
         if (!$this->db) return $default;
         try {
             $lookback = date('Y-m-d', strtotime("-{$lookbackDays} days"));
-            $col = $isHome ? 'home_team' : 'away_team';
-            $stmt = $this->db->prepare("
-                SELECT home_score, away_score, match_date
-                FROM match_results
-                WHERE $col = ? AND match_date >= ? AND match_date <= CURDATE()
-                  AND home_score IS NOT NULL AND away_score IS NOT NULL
-                ORDER BY match_date DESC
-                LIMIT 30
-            ");
-            $stmt->execute([$team, $lookback]);
+            $teamId = $this->getTeamId($team);
+            if ($teamId) {
+                $stmt = $this->db->prepare("
+                    SELECT home_score, away_score, match_date
+                    FROM match_results
+                    WHERE (home_team_id = ? OR away_team_id = ?)
+                      AND match_date >= ? AND match_date <= CURDATE()
+                      AND home_score IS NOT NULL AND away_score IS NOT NULL
+                    ORDER BY match_date DESC
+                    LIMIT 30
+                ");
+                $stmt->execute([$teamId, $teamId, $lookback]);
+            } else {
+                $col = $isHome ? 'home_team' : 'away_team';
+                $stmt = $this->db->prepare("
+                    SELECT home_score, away_score, match_date
+                    FROM match_results
+                    WHERE $col = ? AND match_date >= ? AND match_date <= CURDATE()
+                      AND home_score IS NOT NULL AND away_score IS NOT NULL
+                    ORDER BY match_date DESC
+                    LIMIT 30
+                ");
+                $stmt->execute([$team, $lookback]);
+            }
             $rows = $stmt->fetchAll();
             if (empty($rows)) return $default;
 
@@ -633,15 +674,29 @@ class BayesianModel {
         if (!$this->db) return $default;
         try {
             $lookback = date('Y-m-d', strtotime("-{$lookbackDays} days"));
-            $stmt = $this->db->prepare("
-                SELECT home_team, home_score, away_score, match_date
-                FROM match_results
-                WHERE ((home_team = ? AND away_team = ?) OR (home_team = ? AND away_team = ?))
-                  AND match_date >= ? AND match_date <= CURDATE()
-                  AND home_score IS NOT NULL AND away_score IS NOT NULL
-                ORDER BY match_date DESC LIMIT 10
-            ");
-            $stmt->execute([$homeTeam, $awayTeam, $awayTeam, $homeTeam, $lookback]);
+            $homeId = $this->getTeamId($homeTeam);
+            $awayId = $this->getTeamId($awayTeam);
+            if ($homeId && $awayId) {
+                $stmt = $this->db->prepare("
+                    SELECT mr.home_team, mr.home_score, mr.away_score, mr.match_date
+                    FROM match_results mr
+                    WHERE ((mr.home_team_id = ? AND mr.away_team_id = ?) OR (mr.home_team_id = ? AND mr.away_team_id = ?))
+                      AND mr.match_date >= ? AND mr.match_date <= CURDATE()
+                      AND mr.home_score IS NOT NULL AND mr.away_score IS NOT NULL
+                    ORDER BY mr.match_date DESC LIMIT 10
+                ");
+                $stmt->execute([$homeId, $awayId, $awayId, $homeId, $lookback]);
+            } else {
+                $stmt = $this->db->prepare("
+                    SELECT home_team, home_score, away_score, match_date
+                    FROM match_results
+                    WHERE ((home_team = ? AND away_team = ?) OR (home_team = ? AND away_team = ?))
+                      AND match_date >= ? AND match_date <= CURDATE()
+                      AND home_score IS NOT NULL AND away_score IS NOT NULL
+                    ORDER BY match_date DESC LIMIT 10
+                ");
+                $stmt->execute([$homeTeam, $awayTeam, $awayTeam, $homeTeam, $lookback]);
+            }
             $rows = $stmt->fetchAll();
             if (empty($rows)) return $default;
 
@@ -672,6 +727,18 @@ class BayesianModel {
     private function getTeamStanding($team, $league) {
         if (!$this->db || !$league) return null;
         try {
+            $teamId = $this->getTeamId($team);
+            if ($teamId) {
+                $stmt = $this->db->prepare("
+                    SELECT position, played, points, goal_diff
+                    FROM league_standings
+                    WHERE team_id = ? AND updated_at = CURDATE()
+                    LIMIT 1
+                ");
+                $stmt->execute([$teamId]);
+                $r = $stmt->fetch();
+                if ($r) return $r;
+            }
             $stmt = $this->db->prepare("
                 SELECT position, played, points, goal_diff
                 FROM league_standings
