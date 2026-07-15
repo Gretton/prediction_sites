@@ -84,3 +84,17 @@ git commit -m "feat: PRO tab Bayesian picks, mobile responsive, disable track-re
 git pull --rebase origin main
 git push
 ```
+
+## Push 3: ML pipeline (XGBoost) + weighted recency
+```powershell
+cd E:\xampp\htdocs\PRED
+git add migrations/006_create_ml_predictions.sql cron/fetch_ml_predictions.php cron/ml_features.php cron/ml_train.py .github/workflows/ml-predict.yml classes/BayesianModel.php
+git commit -m "feat: ML pipeline (XGBoost on GH runners) + weighted recency in BayesianModel"
+git pull --rebase origin main
+git push
+```
+
+## Remaining work (identified, not yet built)
+- **Team identity normalization**: Create canonical `teams` table, add `home_team_id`/`away_team_id` FK to match_results, backfill. This enables cleaner features for ML.
+- **Full feature store**: Feature matrix table with pre-computed form/H2H/standings per match for faster ML training.
+- **ML inference in PHP**: Read trained XGBoost weights (JSON) in PHP for server-side predictions without GH dependency.
