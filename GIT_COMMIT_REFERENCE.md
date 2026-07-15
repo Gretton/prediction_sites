@@ -94,7 +94,22 @@ git pull --rebase origin main
 git push
 ```
 
+## Push 4: Team identity normalization (teams table + FK IDs)
+```powershell
+cd E:\xampp\htdocs\PRED
+git add migrations/007_create_teams.sql cron/normalize_teams.php cron/fetch_scores.php classes/BayesianModel.php
+git commit -m "feat: team identity normalization - teams table, team_id FK across match_results + league_standings"
+git push
+```
+
+## To run the migration on Namecheap
+```powershell
+# Via GH Actions (recommended - no manual step):
+# The script checks tables exist + backfills on first run.
+# Alternative - trigger manually:
+curl -s -X POST "https://predixa.co.tz/cron/normalize_teams.php?key=pred-tz"
+```
+
 ## Remaining work (identified, not yet built)
-- **Team identity normalization**: Create canonical `teams` table, add `home_team_id`/`away_team_id` FK to match_results, backfill. This enables cleaner features for ML.
 - **Full feature store**: Feature matrix table with pre-computed form/H2H/standings per match for faster ML training.
 - **ML inference in PHP**: Read trained XGBoost weights (JSON) in PHP for server-side predictions without GH dependency.
