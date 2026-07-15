@@ -36,7 +36,7 @@ jobs:
           curl -s -X POST -A "Mozilla/5.0 (compatible; PREDIXA-Bot)" \
             -H "Content-Type: application/json" \
             -d @output/picks.json \
-            "https://predixa.co.tz/cron/receiver.php?key=pred-tz"
+            "https://predixa.co.tz/cron/receiver.php?key=pred_f3cc603ea4f0e1a6038171dba59f41b601c0f815d1c1d580"
         continue-on-error: true
 
       - name: Commit picks.json

@@ -8,12 +8,12 @@
  * 4. Adds team_id to league_standings, backfills
  * 5. Creates missing team entries for league_standings teams
  *
- * Usage: php cron/normalize_teams.php pred-tz
- *   or via HTTP: https://predixa.co.tz/cron/normalize_teams.php?key=pred-tz
+ * Usage: php cron/normalize_teams.php pred_f3cc603ea4f0e1a6038171dba59f41b601c0f815d1c1d580
+ *   or via HTTP: https://predixa.co.tz/cron/normalize_teams.php?key=pred_f3cc603ea4f0e1a6038171dba59f41b601c0f815d1c1d580
  */
 
 $isCLI = php_sapi_name() === 'cli';
-$secretKey = 'pred-tz';
+$secretKey = 'pred_f3cc603ea4f0e1a6038171dba59f41b601c0f815d1c1d580';
 $providedKey = $isCLI ? ($argv[1] ?? '') : ($_GET['key'] ?? '');
 if ($providedKey !== $secretKey) {
     http_response_code(403);

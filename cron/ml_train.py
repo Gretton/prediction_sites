@@ -19,7 +19,7 @@ from xgboost import XGBClassifier
 
 
 API_BASE = os.environ.get("API_BASE", "https://predixa.co.tz")
-API_KEY = os.environ.get("API_KEY", "pred-tz")
+API_KEY = os.environ.get("API_KEY", "pred_f3cc603ea4f0e1a6038171dba59f41b601c0f815d1c1d580")
 LOOKBACK_DAYS = int(os.environ.get("LOOKBACK_DAYS", "730"))
 MIN_SAMPLES = 100
 

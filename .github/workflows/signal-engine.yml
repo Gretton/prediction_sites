@@ -12,5 +12,5 @@ jobs:
       - name: Trigger signal engine
         run: |
           curl -s -A "Mozilla/5.0 (compatible; PREDIXA-Bot)" \
-            "https://predixa.co.tz/cron/signal_engine.php?key=pred-tz" || \
+            "https://predixa.co.tz/cron/signal_engine.php?key=pred_f3cc603ea4f0e1a6038171dba59f41b601c0f815d1c1d580" || \
             echo "Signal engine trigger failed (will retry next schedule)"

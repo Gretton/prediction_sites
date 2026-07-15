@@ -10,5 +10,5 @@ jobs:
       - name: Trigger team normalization on predixa.co.tz
         run: |
           curl -s -X POST -A "PREDIXA-Bot" \
-            "https://predixa.co.tz/cron/normalize_teams.php?key=pred-tz" || \
+            "https://predixa.co.tz/cron/normalize_teams.php?key=pred_f3cc603ea4f0e1a6038171dba59f41b601c0f815d1c1d580" || \
             echo "normalize_teams failed"

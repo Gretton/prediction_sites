@@ -107,7 +107,7 @@ git push
 # Via GH Actions (recommended - no manual step):
 # The script checks tables exist + backfills on first run.
 # Alternative - trigger manually:
-curl -s -X POST "https://predixa.co.tz/cron/normalize_teams.php?key=pred-tz"
+curl -s -X POST "https://predixa.co.tz/cron/normalize_teams.php?key=pred_f3cc603ea4f0e1a6038171dba59f41b601c0f815d1c1d580"
 ```
 
 ## Remaining work (identified, not yet built)

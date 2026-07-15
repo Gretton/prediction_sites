@@ -1,6 +1,6 @@
 <?php
 $isCLI = php_sapi_name() === 'cli';
-$secretKey = 'pred-tz';
+$secretKey = 'pred_f3cc603ea4f0e1a6038171dba59f41b601c0f815d1c1d580';
 $providedKey = $isCLI ? ($argv[1] ?? '') : ($_GET['key'] ?? '');
 
 if ($providedKey !== $secretKey) {
