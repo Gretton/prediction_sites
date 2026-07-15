@@ -4,6 +4,7 @@ require_once __DIR__ . '/../config.php';
 class BayesianModel {
     private $db;
     private $priorStrength = 20;
+    private $recencyHalfLife = 90;
     private $leaguePriors = [];
     private static $teamAliases = [];
 
@@ -601,20 +602,25 @@ class BayesianModel {
             $rows = $stmt->fetchAll();
             if (empty($rows)) return $default;
 
-            $wins = 0; $draws = 0; $losses = 0; $gf = 0; $ga = 0; $form = [];
+            $nowTs = time();
+            $wins = 0; $draws = 0; $losses = 0; $gf = 0; $ga = 0; $totalWeight = 0; $form = [];
             foreach ($rows as $r) {
+                $daysAgo = ($nowTs - strtotime($r['match_date'])) / 86400;
+                $weight = exp(-$daysAgo / $this->recencyHalfLife);
+                $totalWeight += $weight;
                 $h = (int)$r['home_score'];
                 $a = (int)$r['away_score'];
-                if ($isHome) { $gf += $h; $ga += $a; $r_ = $h > $a ? 'W' : ($h === $a ? 'D' : 'L'); }
-                else { $gf += $a; $ga += $h; $r_ = $a > $h ? 'W' : ($a === $h ? 'D' : 'L'); }
-                if ($r_ === 'W') $wins++; elseif ($r_ === 'D') $draws++; else $losses++;
+                if ($isHome) { $gf += $h * $weight; $ga += $a * $weight; $r_ = $h > $a ? 'W' : ($h === $a ? 'D' : 'L'); }
+                else { $gf += $a * $weight; $ga += $h * $weight; $r_ = $a > $h ? 'W' : ($a === $h ? 'D' : 'L'); }
+                if ($r_ === 'W') $wins += $weight; elseif ($r_ === 'D') $draws += $weight; else $losses += $weight;
                 $form[] = $r_;
             }
+            $effectiveMatches = max(1, $totalWeight);
             return [
-                'matches' => count($rows), 'wins' => $wins, 'draws' => $draws, 'losses' => $losses,
-                'gf' => $gf, 'ga' => $ga,
+                'matches' => round($effectiveMatches, 1), 'wins' => round($wins, 1), 'draws' => round($draws, 1), 'losses' => round($losses, 1),
+                'gf' => round($gf, 1), 'ga' => round($ga, 1),
                 'form' => implode('', array_slice($form, 0, 5)),
-                'form_rating' => count($rows) > 0 ? round(($wins * 3 + $draws) / (count($rows) * 3) * 10, 1) : 5.0,
+                'form_rating' => round(($wins * 3 + $draws) / ($effectiveMatches * 3) * 10, 1),
             ];
         } catch (Exception $e) {
             error_log("BayesianModel::getTeamHistory: " . $e->getMessage());
@@ -628,7 +634,7 @@ class BayesianModel {
         try {
             $lookback = date('Y-m-d', strtotime("-{$lookbackDays} days"));
             $stmt = $this->db->prepare("
-                SELECT home_team, home_score, away_score
+                SELECT home_team, home_score, away_score, match_date
                 FROM match_results
                 WHERE ((home_team = ? AND away_team = ?) OR (home_team = ? AND away_team = ?))
                   AND match_date >= ? AND match_date <= CURDATE()
@@ -639,18 +645,22 @@ class BayesianModel {
             $rows = $stmt->fetchAll();
             if (empty($rows)) return $default;
 
-            $hw = 0; $d = 0; $aw = 0; $totalG = 0; $btts = 0;
+            $nowTs = time();
+            $hw = 0; $d = 0; $aw = 0; $totalG = 0; $btts = 0; $totalWeight = 0;
             foreach ($rows as $r) {
+                $daysAgo = ($nowTs - strtotime($r['match_date'])) / 86400;
+                $weight = exp(-$daysAgo / $this->recencyHalfLife);
+                $totalWeight += $weight;
                 $h = (int)$r['home_score']; $a = (int)$r['away_score'];
                 $isHomeActual = $r['home_team'] === $homeTeam;
-                if ($isHomeActual) { if ($h > $a) $hw++; elseif ($h === $a) $d++; else $aw++; }
-                else { if ($a > $h) $hw++; elseif ($a === $h) $d++; else $aw++; }
-                $totalG += $h + $a;
-                if ($h > 0 && $a > 0) $btts++;
+                if ($isHomeActual) { if ($h > $a) $hw += $weight; elseif ($h === $a) $d += $weight; else $aw += $weight; }
+                else { if ($a > $h) $hw += $weight; elseif ($a === $h) $d += $weight; else $aw += $weight; }
+                $totalG += ($h + $a) * $weight;
+                if ($h > 0 && $a > 0) $btts += $weight;
             }
-            $n = count($rows);
+            $n = max(1, $totalWeight);
             return [
-                'matches' => $n, 'home_wins' => $hw, 'draws' => $d, 'away_wins' => $aw,
+                'matches' => round($totalWeight, 1), 'home_wins' => round($hw, 1), 'draws' => round($d, 1), 'away_wins' => round($aw, 1),
                 'avg_goals' => round($totalG / $n, 2), 'btts_rate' => round($btts / $n * 100, 1),
             ];
         } catch (Exception $e) {
@@ -845,6 +855,14 @@ class BayesianModel {
 
     public function getPriorStrength() {
         return $this->priorStrength;
+    }
+
+    public function setRecencyHalfLife($days) {
+        $this->recencyHalfLife = max(14, min(730, (int)$days));
+    }
+
+    public function getRecencyHalfLife() {
+        return $this->recencyHalfLife;
     }
 
     public function getAccuracyTrend($days = 30) {
