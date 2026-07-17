@@ -16,6 +16,9 @@ $settled = 0;
 $failed = 0;
 $skipped = 0;
 
+// Remove stale placeholder settlements (0-0) from today so picks get re-processed with real scores
+$db->exec("DELETE FROM pick_settlements WHERE settlement_date = '$today' AND home_score = 0 AND away_score = 0");
+
 // === 1. Settle web_picks (odds-signals + manual picks) ===
 $stmt = $db->prepare("
     SELECT wp.* FROM web_picks wp
