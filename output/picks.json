@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-07-17T08:07:04.748Z",
-  "started_at": "2026-07-17T08:06:41.317Z",
+  "generated_at": "2026-07-17T11:20:21.055Z",
+  "started_at": "2026-07-17T11:20:00.607Z",
   "min_agreement": 2,
   "sources": {
     "allnigeriafootball": {
@@ -17,7 +17,7 @@
     },
     "bet_sites": {
       "status": "ok",
-      "count": 90
+      "count": 96
     },
     "wp_tables": {
       "status": "ok",
@@ -656,6 +656,33 @@
       "source": "bet_sites",
       "picks": [
         {
+          "match": "Levski vs Dunav",
+          "home": "Levski",
+          "away": "Dunav",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Fylkir vs Njardvik",
+          "home": "Fylkir",
+          "away": "Njardvik",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Bodo/Glimt vs Fredrikstad",
+          "home": "Bodo/Glimt",
+          "away": "Fredrikstad",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
           "match": "Pyunik vs Marsaxlokk",
           "home": "Pyunik",
           "away": "Marsaxlokk",
@@ -1056,6 +1083,33 @@
           "home": "Tukums",
           "away": "Super Nova",
           "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Levski vs Dunav",
+          "home": "Levski",
+          "away": "Dunav",
+          "pick": "1 Ov 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Bodo/Glimt vs Fredrikstad",
+          "home": "Bodo/Glimt",
+          "away": "Fredrikstad",
+          "pick": "1 Ov 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Celje vs Mura",
+          "home": "Celje",
+          "away": "Mura",
+          "pick": "1 Ov 1.5",
           "odds": "",
           "league": "",
           "time": ""
@@ -1736,6 +1790,48 @@
       "odds": "",
       "league": "Chinese Super League",
       "time": "12:35"
+    },
+    {
+      "match": "Levski Sofia vs FC Dunav Ruse",
+      "home": "Levski Sofia",
+      "away": "FC Dunav Ruse",
+      "pick": "Over 1.5",
+      "sources": [
+        "adibet",
+        "bet_sites"
+      ],
+      "source_count": 2,
+      "odds": "",
+      "league": "Bulgaria",
+      "time": ""
+    },
+    {
+      "match": "Fylkir vs Njardvik",
+      "home": "Fylkir",
+      "away": "Njardvik",
+      "pick": "Over 2.5",
+      "sources": [
+        "adibet",
+        "bet_sites"
+      ],
+      "source_count": 2,
+      "odds": "",
+      "league": "Iceland",
+      "time": ""
+    },
+    {
+      "match": "Bodo/Glimt vs Fredrikstad",
+      "home": "Bodo/Glimt",
+      "away": "Fredrikstad",
+      "pick": "Over 2.5",
+      "sources": [
+        "adibet",
+        "bet_sites"
+      ],
+      "source_count": 2,
+      "odds": "",
+      "league": "Norway",
+      "time": ""
     },
     {
       "match": "U. Cluj vs Dyn. Kyiv",
