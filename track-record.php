@@ -40,14 +40,21 @@ $voided = (int)$overall['voided'];
 $settled = $won + $lost;
 $winRate = $settled > 0 ? round($won / $settled * 100, 1) : 0;
 
-// Stats by pick type (only settled picks: won + lost)
+// Stats by pick type (only latest settlement per pick to avoid re-settlement duplicates)
 $byTypeRaw = $db->query("
     SELECT ps.pick_value, ps.match_name, 
            SUM(CASE WHEN result='won' THEN 1 ELSE 0 END) as won,
            SUM(CASE WHEN result='lost' THEN 1 ELSE 0 END) as lost
-    FROM pick_settlements ps
+    FROM (
+        SELECT p2.* FROM pick_settlements p2
+        INNER JOIN (
+            SELECT web_pick_id, MAX(id) AS max_id FROM pick_settlements
+            WHERE result IN ('won','lost')
+            GROUP BY web_pick_id
+        ) latest ON p2.id = latest.max_id
+    ) ps
     INNER JOIN web_picks wp ON ps.web_pick_id = wp.id
-    WHERE ps.result IN ('won','lost') AND wp.pick_type IN ('rollover','parlay','over_15')
+    WHERE wp.pick_type IN ('rollover','parlay','over_15')
     GROUP BY ps.pick_value, ps.match_name
     ORDER BY COUNT(*) DESC
 ")->fetchAll();
@@ -96,7 +103,7 @@ $byType = [];
 foreach ($byTypeRaw as $t) {
     $key = normalizePickType($t['pick_value'], $t['match_name'] ?? '');
     if (!isset($byType[$key])) $byType[$key] = ['pick_value' => $key, 'total' => 0, 'won' => 0, 'lost' => 0];
-    $byType[$key]['total'] += (int)$t['total'];
+    $byType[$key]['total'] += (int)$t['won'] + (int)$t['lost'];
     $byType[$key]['won'] += (int)$t['won'];
     $byType[$key]['lost'] += (int)$t['lost'];
 }

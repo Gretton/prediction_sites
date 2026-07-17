@@ -19,13 +19,13 @@ $skipped = 0;
 // === 1. Settle web_picks (odds-signals + manual picks) ===
 $stmt = $db->prepare("
     SELECT wp.* FROM web_picks wp
-    LEFT JOIN pick_settlements ps ON wp.id = ps.web_pick_id AND ps.result != 'pending'
+    LEFT JOIN pick_settlements ps ON wp.id = ps.web_pick_id AND ps.settlement_date = ? AND ps.result != 'pending'
     WHERE ps.id IS NULL
     AND DATE(wp.detected_at) >= ?
     AND wp.pick_type IN ('rollover','parlay','over_15')
     ORDER BY wp.id DESC
 ");
-$stmt->execute([$lookback]);
+$stmt->execute([$today, $lookback]);
 $picks = $stmt->fetchAll();
 
 foreach ($picks as $pick) {
@@ -38,11 +38,11 @@ foreach ($picks as $pick) {
 // === 2. Settle admin_featured_picks (scraper intersections) ===
 $stmt2 = $db->prepare("
     SELECT afp.*, (? + afp.id) AS ps_web_pick_id FROM admin_featured_picks afp
-    LEFT JOIN pick_settlements ps ON (? + afp.id) = ps.web_pick_id AND ps.result != 'pending'
+    LEFT JOIN pick_settlements ps ON (? + afp.id) = ps.web_pick_id AND ps.settlement_date = ? AND ps.result != 'pending'
     WHERE ps.id IS NULL AND DATE(afp.created_at) >= ?
     ORDER BY afp.id DESC
 ");
-$stmt2->execute([$AFP_OFFSET, $AFP_OFFSET, $lookback]);
+$stmt2->execute([$AFP_OFFSET, $AFP_OFFSET, $today, $lookback]);
 $afpPicks = $stmt2->fetchAll();
 
 foreach ($afpPicks as $pick) {
