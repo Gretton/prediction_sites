@@ -108,7 +108,7 @@ function findMatchResult($db, $homeTeam, $awayTeam, $today) {
     $yesterday = date('Y-m-d', strtotime($today . ' -1 day'));
     $twoDaysAgo = date('Y-m-d', strtotime($today . ' -2 days'));
     $tomorrow = date('Y-m-d', strtotime($today . ' +1 day'));
-    $dates = [$today, $yesterday, $tomorrow, $twoDaysAgo];
+    $dates = [$twoDaysAgo, $yesterday, $today, $tomorrow];
 
     foreach ($dates as $d) {
         // Exact match
