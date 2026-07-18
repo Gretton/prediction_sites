@@ -439,11 +439,15 @@ class BayesianModel {
                        bp.btts_yes, bp.btts_no, bp.recommended_pick,
                        ps.home_score, ps.away_score, ps.result as settlement_result
                 FROM bayesian_predictions bp
-                INNER JOIN pick_settlements ps ON bp.match_name = ps.match_name
-                    AND bp.match_date = DATE(ps.settlement_date)
+                INNER JOIN (
+                    SELECT p2.* FROM pick_settlements p2
+                    INNER JOIN (
+                        SELECT match_name, MAX(id) AS max_id FROM pick_settlements
+                        WHERE result IN ('won','lost') AND home_score IS NOT NULL
+                        GROUP BY match_name
+                    ) latest ON p2.id = latest.max_id
+                ) ps ON bp.match_name = ps.match_name
                 WHERE bp.result = 'pending'
-                  AND ps.result IN ('won','lost')
-                  AND ps.home_score IS NOT NULL
                 LIMIT 200
             ");
 
