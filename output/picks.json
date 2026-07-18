@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-07-18T11:01:50.020Z",
-  "started_at": "2026-07-18T11:01:28.073Z",
+  "generated_at": "2026-07-18T14:50:33.847Z",
+  "started_at": "2026-07-18T14:50:14.016Z",
   "min_agreement": 2,
   "sources": {
     "allnigeriafootball": {
@@ -21,7 +21,7 @@
     },
     "wp_tables": {
       "status": "ok",
-      "count": 28
+      "count": 4
     }
   },
   "sources_detail": [
@@ -1291,222 +1291,6 @@
       "source": "wp_tables",
       "picks": [
         {
-          "match": "Grotta vs Aegir",
-          "home": "Grotta",
-          "away": "Aegir",
-          "pick": "Draw(X)",
-          "odds": "",
-          "league": "",
-          "time": ""
-        },
-        {
-          "match": "Viking vs Sandefjord",
-          "home": "Viking",
-          "away": "Sandefjord",
-          "pick": "Draw(X)",
-          "odds": "",
-          "league": "",
-          "time": ""
-        },
-        {
-          "match": "Start vs Rosenborg",
-          "home": "Start",
-          "away": "Rosenborg",
-          "pick": "Draw(X)",
-          "odds": "",
-          "league": "",
-          "time": ""
-        },
-        {
-          "match": "AIK vs GAIS",
-          "home": "AIK",
-          "away": "GAIS",
-          "pick": "Draw(X)",
-          "odds": "",
-          "league": "",
-          "time": ""
-        },
-        {
-          "match": "Oddevold vs Varbergs",
-          "home": "Oddevold",
-          "away": "Varbergs",
-          "pick": "Draw(X)",
-          "odds": "",
-          "league": "",
-          "time": ""
-        },
-        {
-          "match": "Viking vs Sandefjord",
-          "home": "Viking",
-          "away": "Sandefjord",
-          "pick": "Home(1)",
-          "odds": "",
-          "league": "",
-          "time": ""
-        },
-        {
-          "match": "Helsinki vs Vaasa",
-          "home": "Helsinki",
-          "away": "Vaasa",
-          "pick": "1X",
-          "odds": "",
-          "league": "",
-          "time": ""
-        },
-        {
-          "match": "Osters vs Brage",
-          "home": "Osters",
-          "away": "Brage",
-          "pick": "Away(2)",
-          "odds": "",
-          "league": "",
-          "time": ""
-        },
-        {
-          "match": "Valur vs Fram",
-          "home": "Valur",
-          "away": "Fram",
-          "pick": "Away(2)",
-          "odds": "",
-          "league": "",
-          "time": ""
-        },
-        {
-          "match": "Viking vs Sandefjord",
-          "home": "Viking",
-          "away": "Sandefjord",
-          "pick": "Home(1)",
-          "odds": "",
-          "league": "",
-          "time": ""
-        },
-        {
-          "match": "AIK vs GAIS",
-          "home": "AIK",
-          "away": "GAIS",
-          "pick": "Draw(X)",
-          "odds": "",
-          "league": "",
-          "time": ""
-        },
-        {
-          "match": "Start vs Rosenborg",
-          "home": "Start",
-          "away": "Rosenborg",
-          "pick": "Home(1)",
-          "odds": "",
-          "league": "",
-          "time": ""
-        },
-        {
-          "match": "Viking vs Sandefjord",
-          "home": "Viking",
-          "away": "Sandefjord",
-          "pick": "Home(1)",
-          "odds": "",
-          "league": "",
-          "time": ""
-        },
-        {
-          "match": "Helsinki vs Vaasa",
-          "home": "Helsinki",
-          "away": "Vaasa",
-          "pick": "1X",
-          "odds": "",
-          "league": "",
-          "time": ""
-        },
-        {
-          "match": "Osters vs Brage",
-          "home": "Osters",
-          "away": "Brage",
-          "pick": "Away(2)",
-          "odds": "",
-          "league": "",
-          "time": ""
-        },
-        {
-          "match": "Valur vs Fram",
-          "home": "Valur",
-          "away": "Fram",
-          "pick": "Away(2)",
-          "odds": "",
-          "league": "",
-          "time": ""
-        },
-        {
-          "match": "Viking vs Sandefjord",
-          "home": "Viking",
-          "away": "Sandefjord",
-          "pick": "Home(1)",
-          "odds": "",
-          "league": "",
-          "time": ""
-        },
-        {
-          "match": "AIK vs GAIS",
-          "home": "AIK",
-          "away": "GAIS",
-          "pick": "Draw(X)",
-          "odds": "",
-          "league": "",
-          "time": ""
-        },
-        {
-          "match": "Start vs Rosenborg",
-          "home": "Start",
-          "away": "Rosenborg",
-          "pick": "Home(1)",
-          "odds": "",
-          "league": "",
-          "time": ""
-        },
-        {
-          "match": "Grotta vs Aegir",
-          "home": "Grotta",
-          "away": "Aegir",
-          "pick": "Draw(X)",
-          "odds": "",
-          "league": "",
-          "time": ""
-        },
-        {
-          "match": "Viking vs Sandefjord",
-          "home": "Viking",
-          "away": "Sandefjord",
-          "pick": "Draw(X)",
-          "odds": "",
-          "league": "",
-          "time": ""
-        },
-        {
-          "match": "Start vs Rosenborg",
-          "home": "Start",
-          "away": "Rosenborg",
-          "pick": "Draw(X)",
-          "odds": "",
-          "league": "",
-          "time": ""
-        },
-        {
-          "match": "AIK vs GAIS",
-          "home": "AIK",
-          "away": "GAIS",
-          "pick": "Draw(X)",
-          "odds": "",
-          "league": "",
-          "time": ""
-        },
-        {
-          "match": "Oddevold vs Varbergs",
-          "home": "Oddevold",
-          "away": "Varbergs",
-          "pick": "Draw(X)",
-          "odds": "",
-          "league": "",
-          "time": ""
-        },
-        {
           "match": "Moquegua vs Comerciantes Unidos",
           "home": "Moquegua",
           "away": "Comerciantes Unidos",
@@ -1547,21 +1331,6 @@
   ],
   "intersections": [
     {
-      "match": "Viking FK vs Sandefjord Fotball",
-      "home": "Viking FK",
-      "away": "Sandefjord Fotball",
-      "pick": "Home(1)",
-      "sources": [
-        "allnigeriafootball",
-        "adibet",
-        "wp_tables"
-      ],
-      "source_count": 3,
-      "odds": "",
-      "league": "Norway Eliteserien",
-      "time": "17:00"
-    },
-    {
       "match": "Molde vs SK Brann",
       "home": "Molde",
       "away": "SK Brann",
@@ -1574,6 +1343,20 @@
       "odds": "",
       "league": "Norway",
       "time": ""
+    },
+    {
+      "match": "Viking FK vs Sandefjord Fotball",
+      "home": "Viking FK",
+      "away": "Sandefjord Fotball",
+      "pick": "Home(1)",
+      "sources": [
+        "allnigeriafootball",
+        "adibet"
+      ],
+      "source_count": 2,
+      "odds": "",
+      "league": "Norway Eliteserien",
+      "time": "17:00"
     },
     {
       "match": "Valur vs Fram",
