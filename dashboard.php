@@ -1000,7 +1000,7 @@ if ($tpSort === 'time') {
 ?>
 <div class="tp-row" style="display:flex;align-items:center;gap:8px;padding:0.5rem 0.75rem;border-bottom:<?= $i < count($merged)-1 ? '1px solid #F3F4F6' : 'none' ?>;">
     <div style="flex:1;min-width:0;">
-        <div class="tp-match" style="font-weight:600;font-size:0.82rem;color:#1F2937;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?= htmlspecialchars($p['match_name'] ?? '') ?><?php if ($timeStr): ?> <span style="font-weight:400;color:#9CA3AF;font-size:0.7rem;"><?= $timeStr ?></span><?php endif; ?></div>
+        <div class="tp-match" style="font-weight:600;font-size:0.82rem;color:#1F2937;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?= htmlspecialchars($p['match_name'] ?? '') ?><?php if ($timeStr): ?> <span style="font-weight:400;color:#9CA3AF;font-size:0.7rem;"><?= $timeStr ?></span><?php endif; ?><?php if (!empty($p['league'])): ?> <span style="font-weight:400;color:#6B7280;font-size:0.65rem;">· <?= htmlspecialchars($p['league']) ?></span><?php endif; ?></div>
         <div style="font-size:0.65rem;color:var(--text-muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
             <span style="font-weight:700;color:#8B5CF6;"><?= htmlspecialchars($pv) ?></span>
             <?php if ($pickOdds !== 'Model'): ?><span style="color:#9CA3AF;">· <?= $pickOdds ?>x</span><?php endif; ?>
