@@ -29,8 +29,8 @@ $page = max(1, (int)($_GET['page'] ?? 1));
 $perPage = 20;
 $offset = ($page - 1) * $perPage;
 
-// Overall stats (only latest settlement per web_pick_id)
-$totalStmt = $db->query("SELECT COUNT(*) as total, SUM(CASE WHEN result='won' THEN 1 ELSE 0 END) as won, SUM(CASE WHEN result='lost' THEN 1 ELSE 0 END) as lost, SUM(CASE WHEN result='pending' THEN 1 ELSE 0 END) as pending, SUM(CASE WHEN result='void' THEN 1 ELSE 0 END) as voided FROM (SELECT p2.* FROM pick_settlements p2 INNER JOIN (SELECT web_pick_id, MAX(id) AS max_id FROM pick_settlements GROUP BY web_pick_id) latest ON p2.id = latest.max_id) ps INNER JOIN web_picks wp ON ps.web_pick_id = wp.id WHERE wp.pick_type IN ('rollover','parlay','over_15')");
+// Overall stats
+$totalStmt = $db->query("SELECT COUNT(*) as total, SUM(CASE WHEN result='won' THEN 1 ELSE 0 END) as won, SUM(CASE WHEN result='lost' THEN 1 ELSE 0 END) as lost, SUM(CASE WHEN result='pending' THEN 1 ELSE 0 END) as pending, SUM(CASE WHEN result='void' THEN 1 ELSE 0 END) as voided FROM pick_settlements ps INNER JOIN web_picks wp ON ps.web_pick_id = wp.id WHERE wp.pick_type IN ('rollover','parlay','over_15')");
 $overall = $totalStmt->fetch();
 $total = (int)$overall['total'];
 $won = (int)$overall['won'];
@@ -116,10 +116,10 @@ $allRecent = $db->query("
     FROM pick_settlements ps
     INNER JOIN web_picks wp ON ps.web_pick_id = wp.id
     WHERE ps.settlement_date >= '$recentCutoff' AND ps.result IN ('won','lost') AND wp.pick_type IN ('rollover','parlay','over_15')
-    ORDER BY ps.id DESC
+    ORDER BY ps.result DESC, ps.id DESC
 ")->fetchAll();
 
-// Dedup: per match_name, keep the latest settlement (highest id)
+// Dedup: per match_name, keep the best result (won > lost)
 $bestPerMatch = [];
 foreach ($allRecent as $r) {
     $mn = $r['match_name'];
@@ -131,8 +131,8 @@ $totalRecent = count($bestPerMatch);
 $recent = array_slice(array_values($bestPerMatch), $offset, $perPage);
 $totalPages = max(1, ceil($totalRecent / $perPage));
 
-// ROI (only latest settlement per web_pick_id)
-$roiData = $db->query("SELECT ps.odds, ps.result FROM (SELECT p2.* FROM pick_settlements p2 INNER JOIN (SELECT web_pick_id, MAX(id) AS max_id FROM pick_settlements WHERE result IN ('won','lost') GROUP BY web_pick_id) latest ON p2.id = latest.max_id) ps INNER JOIN web_picks wp ON ps.web_pick_id = wp.id WHERE wp.pick_type IN ('rollover','parlay','over_15')")->fetchAll();
+// ROI
+$roiData = $db->query("SELECT ps.odds, ps.result FROM pick_settlements ps INNER JOIN web_picks wp ON ps.web_pick_id = wp.id WHERE ps.result IN ('won','lost') AND wp.pick_type IN ('rollover','parlay','over_15')")->fetchAll();
 $totalStake = count($roiData);
 $totalReturn = 0;
 foreach ($roiData as $r) {
@@ -141,16 +141,16 @@ foreach ($roiData as $r) {
 $roi = $totalStake > 0 ? round(($totalReturn - $totalStake) / $totalStake * 100, 1) : 0;
 $profit = $totalReturn - $totalStake;
 
-// Win streak (only latest settlement per web_pick_id)
-$streak = $db->query("SELECT ps.result FROM (SELECT p2.* FROM pick_settlements p2 INNER JOIN (SELECT web_pick_id, MAX(id) AS max_id FROM pick_settlements WHERE result IN ('won','lost') GROUP BY web_pick_id) latest ON p2.id = latest.max_id) ps INNER JOIN web_picks wp ON ps.web_pick_id = wp.id WHERE wp.pick_type IN ('rollover','parlay','over_15') ORDER BY ps.id DESC LIMIT 20")->fetchAll();
+// Win streak
+$streak = $db->query("SELECT ps.result FROM pick_settlements ps INNER JOIN web_picks wp ON ps.web_pick_id = wp.id WHERE ps.result IN ('won','lost') AND wp.pick_type IN ('rollover','parlay','over_15') ORDER BY ps.id DESC LIMIT 20")->fetchAll();
 $winStreak = 0;
 foreach ($streak as $s) {
     if ($s['result'] === 'won') $winStreak++;
     else break;
 }
 
-// Recent results for sparkline (last 10, only latest settlement per web_pick_id)
-$recent10 = $db->query("SELECT ps.result FROM (SELECT p2.* FROM pick_settlements p2 INNER JOIN (SELECT web_pick_id, MAX(id) AS max_id FROM pick_settlements WHERE result IN ('won','lost') GROUP BY web_pick_id) latest ON p2.id = latest.max_id) ps INNER JOIN web_picks wp ON ps.web_pick_id = wp.id WHERE wp.pick_type IN ('rollover','parlay','over_15') ORDER BY ps.id DESC LIMIT 10")->fetchAll();
+// Recent results for sparkline (last 10)
+$recent10 = $db->query("SELECT ps.result FROM pick_settlements ps INNER JOIN web_picks wp ON ps.web_pick_id = wp.id WHERE ps.result IN ('won','lost') AND wp.pick_type IN ('rollover','parlay','over_15') ORDER BY ps.id DESC LIMIT 10")->fetchAll();
 $sparkline = '';
 foreach (array_reverse($recent10) as $r) {
     $sparkline .= $r['result'] === 'won' ? '<span style="color:#22C55E;font-weight:800;">&#9679;</span>' : '<span style="color:#EF4444;font-weight:800;">&#9679;</span>';
