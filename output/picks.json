@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-07-19T08:13:13.564Z",
-  "started_at": "2026-07-19T08:12:52.538Z",
+  "generated_at": "2026-07-19T11:08:08.014Z",
+  "started_at": "2026-07-19T11:07:46.700Z",
   "min_agreement": 2,
   "sources": {
     "allnigeriafootball": {
@@ -17,7 +17,7 @@
     },
     "bet_sites": {
       "status": "ok",
-      "count": 59
+      "count": 62
     },
     "wp_tables": {
       "status": "ok",
@@ -737,6 +737,33 @@
           "time": ""
         },
         {
+          "match": "Kuressaare vs Kalju",
+          "home": "Kuressaare",
+          "away": "Kalju",
+          "pick": "X2 &amp; Und 5.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Elfsborg vs Sirius",
+          "home": "Elfsborg",
+          "away": "Sirius",
+          "pick": "X2",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Hammarby vs Degerfors",
+          "home": "Hammarby",
+          "away": "Degerfors",
+          "pick": "1 Ov 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
           "match": "Riga FC vs Tukums",
           "home": "Riga FC",
           "away": "Tukums",
@@ -1410,6 +1437,20 @@
       "sources": [
         "adibet",
         "wp_tables"
+      ],
+      "source_count": 2,
+      "odds": "",
+      "league": "Sweden",
+      "time": ""
+    },
+    {
+      "match": "IF Elfsborg vs IK Sirius",
+      "home": "IF Elfsborg",
+      "away": "IK Sirius",
+      "pick": "X2",
+      "sources": [
+        "adibet",
+        "bet_sites"
       ],
       "source_count": 2,
       "odds": "",
