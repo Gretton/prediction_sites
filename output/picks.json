@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-07-19T14:54:07.318Z",
-  "started_at": "2026-07-19T14:53:45.162Z",
+  "generated_at": "2026-07-19T19:03:22.764Z",
+  "started_at": "2026-07-19T19:03:05.044Z",
   "min_agreement": 2,
   "sources": {
     "allnigeriafootball": {
@@ -17,7 +17,7 @@
     },
     "bet_sites": {
       "status": "ok",
-      "count": 62
+      "count": 70
     },
     "wp_tables": {
       "status": "ok",
@@ -664,6 +664,78 @@
     {
       "source": "bet_sites",
       "picks": [
+        {
+          "match": "Slavia Sofia vs CSKA Sofia",
+          "home": "Slavia Sofia",
+          "away": "CSKA Sofia",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "TPS vs Ilves",
+          "home": "TPS",
+          "away": "Ilves",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "KPV Kokkola vs Rovaniemi",
+          "home": "KPV Kokkola",
+          "away": "Rovaniemi",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Hafnarfjordur vs Breikdablik",
+          "home": "Hafnarfjordur",
+          "away": "Breikdablik",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Kopavogur vs Vestri",
+          "home": "Kopavogur",
+          "away": "Vestri",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Jelgava vs RFS",
+          "home": "Jelgava",
+          "away": "RFS",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Super Nova vs Grobina",
+          "home": "Super Nova",
+          "away": "Grobina",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Orgryte vs Djurgarden",
+          "home": "Orgryte",
+          "away": "Djurgarden",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
         {
           "match": "Ludogorets vs Lod. Plovdiv",
           "home": "Ludogorets",
