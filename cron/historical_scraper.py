@@ -297,6 +297,23 @@ def season_dirs(repo):
     return repo not in flat_repos
 
 
+WINTER_LEAGUES = {
+    "eng-premier-league", "eng-championship", "eng-league-one",
+    "ger-bundesliga", "ger-2-bundesliga",
+    "ita-serie-a", "ita-serie-b",
+    "spa-primera-division", "spa-segunda-division",
+    "bel-pro-league", "aut-bundesliga",
+    "fra-ligue-1", "fra-ligue-2",
+    "ned-eredivisie", "por-primeira-liga",
+    "sco-premiership", "tur-sueperlig", "gre-superleague",
+    "den-superliga", "sui-super-league",
+    "pol-ekstraklasa", "cze-first-league",
+    "rou-liga-i", "cro-hnl", "ser-superliga",
+    "hun-nb-i", "bul-first-league",
+    "ukr-premyer-liga", "rus-premier-liga",
+}
+
+
 def scrape_league(slug, display_name, repo, file_pattern, seasons=3):
     """Download Football.TXT files and parse."""
     all_matches = []
@@ -304,8 +321,12 @@ def scrape_league(slug, display_name, repo, file_pattern, seasons=3):
     summer_leagues = {"swe-allsvenskan", "nor-eliteserien", "bra-serie-a",
                       "arg-liga-profesional"}
 
+    # Winter leagues (Aug-May) need offset=1 because the latest completed
+    # season (2025-26) may not be published yet as of mid-2026.
+    season_offset = 1 if slug in WINTER_LEAGUES else 0
+
     for s in range(seasons):
-        season_start = CURRENT_YEAR - s
+        season_start = CURRENT_YEAR - s - season_offset
 
         if slug in summer_leagues:
             # Summer leagues use single-year: "2025"
