@@ -30,9 +30,6 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
-        run: pip install cloudscraper requests
-
       - name: Run historical scraper
         env:
           KEY: ${{ secrets.FETCH_SCORES_KEY }}

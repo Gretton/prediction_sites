@@ -1,299 +1,175 @@
 #!/usr/bin/env python3
 """
 Historical match scraper: backfills match_results with past scores + leagues.
-Primary source: worldfootball.net (static HTML).
-Fallback: ESPN FC.
+Source: OpenFootballData CSV files on GitHub (free, no API key, no blocking).
 
 Usage:
-  python cron/historical_scraper.py [--key=SECRET] [--seasons=3] [--leagues=subset]
-  python cron/historical_scraper.py --key=SECRET --seasons=2 --dry-run
+  python cron/historical_scraper.py --key=SECRET --seasons=3
   python cron/historical_scraper.py --key=SECRET --recent
+  python cron/historical_scraper.py --key=SECRET --seasons=2 --dry-run
 
 Options:
   --key=SECRET     Key for fetch_scores.php endpoint (required)
   --seasons=N      How many past seasons to scrape (default: 3)
   --recent         Only scrape last 7 days (for daily cron)
-  --leagues=NAME   Comma-separated league slugs (default: all major)
+  --leagues=NAME   Comma-separated league slugs (default: all)
   --dry-run        Print matches without posting
-  --hook=URL       Optional webhook URL
+  --hook=URL       Optional webhook URL (default: predixa.co.tz)
 """
 
-import os, sys, re, json, time, urllib.parse
+import sys, csv, io, json, time, re, urllib.request, urllib.parse
+from datetime import datetime, timedelta
 
-# ─── CONFIG ───────────────────────────────────────────────
-SITE_BASE = "https://www.worldfootball.net"
+# ─── League definitions ───────────────────────────────────
+# Each entry: slug -> (display_name, owner/repo/path_pattern, season_format)
+# CSV format: Round,Day,Date,Team 1,FT,Team 2 (or similar)
+# Downloaded from raw.githubusercontent.com
 
-# League slugs + ESPN league IDs for fallback
-MAJOR_LEAGUES = {
-    "eng-premier-league":   ("England - Premier League", "ENG.1"),
-    "eng-championship":     ("England - Championship", "ENG.2"),
-    "eng-league-one":       ("England - League One", "ENG.3"),
-    "spa-primera-division": ("Spain - La Liga", "ESP.1"),
-    "spa-segunda-division": ("Spain - La Liga 2", "ESP.2"),
-    "ita-serie-a":          ("Italy - Serie A", "ITA.1"),
-    "ita-serie-b":          ("Italy - Serie B", "ITA.2"),
-    "ger-bundesliga":       ("Germany - Bundesliga", "GER.1"),
-    "ger-2-bundesliga":     ("Germany - 2. Bundesliga", "GER.2"),
-    "fra-ligue-1":          ("France - Ligue 1", "FRA.1"),
-    "fra-ligue-2":          ("France - Ligue 2", "FRA.2"),
-    "por-primeira-liga":    ("Portugal - Primeira Liga", "POR.1"),
-    "ned-eredivisie":       ("Netherlands - Eredivisie", "NED.1"),
-    "bel-pro-league":       ("Belgium - Pro League", "BEL.1"),
-    "sco-premiership":      ("Scotland - Premiership", "SCO.1"),
-    "tur-sueperlig":        ("Turkey - Süper Lig", "TUR.1"),
-    "gre-superleague":      ("Greece - Super League", "GRE.1"),
-    "sui-super-league":     ("Switzerland - Super League", "SUI.1"),
-    "aut-bundesliga":       ("Austria - Bundesliga", "AUT.1"),
-    "den-superliga":        ("Denmark - Superliga", "DEN.1"),
-    "swe-allsvenskan":      ("Sweden - Allsvenskan", "SWE.1"),
-    "nor-eliteserien":      ("Norway - Eliteserien", "NOR.1"),
-    "rus-premier-liga":     ("Russia - Premier Liga", "RUS.1"),
-    "ukr-premyer-liga":     ("Ukraine - Premier League", "UKR.1"),
-    "cze-first-league":     ("Czech Republic - First League", "CZE.1"),
-    "rou-liga-i":           ("Romania - Liga I", "ROU.1"),
-    "bul-first-league":     ("Bulgaria - First League", "BUL.1"),
-    "cro-hnl":              ("Croatia - HNL", "CRO.1"),
-    "hun-nb-i":             ("Hungary - NB I", "HUN.1"),
-    "pol-ekstraklasa":      ("Poland - Ekstraklasa", "POL.1"),
-    "ser-superliga":        ("Serbia - Super Liga", "SRB.1"),
-    "jpn-j1-league":        ("Japan - J1 League", "JPN.1"),
-    "sau-saudi-league":     ("Saudi Arabia - Saudi League", "SAU.1"),
-    "bra-serie-a":          ("Brazil - Série A", "BRA.1"),
-    "arg-liga-profesional": ("Argentina - Liga Profesional", "ARG.1"),
+LEAGUES = {
+    # England
+    "eng-premier-league":   ("England - Premier League", "openfootball/eng-england/master/2020s/{season}/1-premierleague.csv"),
+    "eng-championship":     ("England - Championship", "openfootball/eng-england/master/2020s/{season}/2-championship.csv"),
+    "eng-league-one":       ("England - League One", "openfootball/eng-england/master/2020s/{season}/3-leagueone.csv"),
+    # Spain
+    "spa-primera-division": ("Spain - La Liga", "openfootball/esp-spain/master/2020s/{season}/1-laliga.csv"),
+    # Italy
+    "ita-serie-a":          ("Italy - Serie A", "openfootball/ita-italy/master/2020s/{season}/1-seriea.csv"),
+    # Germany
+    "ger-bundesliga":       ("Germany - Bundesliga", "openfootball/ger-germany/master/2020s/{season}/1-bundesliga.csv"),
+    "ger-2-bundesliga":     ("Germany - 2. Bundesliga", "openfootball/ger-germany/master/2020s/{season}/2-bundesliga2.csv"),
+    # France
+    "fra-ligue-1":          ("France - Ligue 1", "openfootball/fra-france/master/2020s/{season}/1-ligue1.csv"),
+    "fra-ligue-2":          ("France - Ligue 2", "openfootball/fra-france/master/2020s/{season}/2-ligue2.csv"),
+    # Netherlands
+    "ned-eredivisie":       ("Netherlands - Eredivisie", "openfootball/ned-netherlands/master/2020s/{season}/1-eredivisie.csv"),
+    # Portugal
+    "por-primeira-liga":    ("Portugal - Primeira Liga", "openfootball/por-portugal/master/2020s/{season}/1-primeiraliga.csv"),
+    # Belgium
+    "bel-pro-league":       ("Belgium - Pro League", "openfootball/bel-belgium/master/2020s/{season}/1-proleague.csv"),
+    # Scotland
+    "sco-premiership":      ("Scotland - Premiership", "openfootball/sco-scotland/master/2020s/{season}/1-premiership.csv"),
+    # Turkey
+    "tur-sueperlig":        ("Turkey - Süper Lig", "openfootball/tur-turkey/master/2020s/{season}/1-superlig.csv"),
+    # Greece
+    "gre-superleague":      ("Greece - Super League", "openfootball/gre-greece/master/2020s/{season}/1-superleague.csv"),
+    # Switzerland
+    "sui-super-league":     ("Switzerland - Super League", "openfootball/sui-switzerland/master/2020s/{season}/1-superleague.csv"),
+    # Austria
+    "aut-bundesliga":       ("Austria - Bundesliga", "openfootball/aut-austria/master/2020s/{season}/1-bundesliga.csv"),
+    # Denmark
+    "den-superliga":        ("Denmark - Superliga", "openfootball/den-denmark/master/2020s/{season}/1-superliga.csv"),
+    # Sweden
+    "swe-allsvenskan":      ("Sweden - Allsvenskan", "openfootball/swe-sweden/master/2020s/{season}/1-allsvenskan.csv"),
+    # Norway
+    "nor-eliteserien":      ("Norway - Eliteserien", "openfootball/nor-norway/master/2020s/{season}/1-eliteserien.csv"),
+    # Poland
+    "pol-ekstraklasa":      ("Poland - Ekstraklasa", "openfootball/pol-poland/master/2020s/{season}/1-ekstraklasa.csv"),
+    # Czech Republic
+    "cze-first-league":     ("Czech Republic - First League", "openfootball/cze-czech-republic/master/2020s/{season}/1-firstleague.csv"),
+    # Romania
+    "rou-liga-i":           ("Romania - Liga I", "openfootball/rou-romania/master/2020s/{season}/1-liga1.csv"),
+    # Croatia
+    "cro-hnl":              ("Croatia - HNL", "openfootball/cro-croatia/master/2020s/{season}/1-hnl.csv"),
+    # Brazil
+    "bra-serie-a":          ("Brazil - Série A", "openfootball/bra-brazil/master/2020s/{season}/1-seriea.csv"),
+    # Argentina
+    "arg-liga-profesional": ("Argentina - Liga Profesional", "openfootball/arg-argentina/master/2020s/{season}/1-ligaprofesional.csv"),
 }
 
-CHROME_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
 CURRENT_YEAR = time.localtime().tm_year
+UA = "Mozilla/5.0"
 
 
 def log(msg):
-    print(f"[{time.strftime('%H:%M:%S')}] {msg}")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}")
 
 
-# ─── HTTP with session ────────────────────────────────────
-_http = None
-
-def get_http():
-    global _http
-    if _http is not None:
-        return _http
-    try:
-        # Try cloudscraper first (bypasses Cloudflare/WAF)
-        try:
-            import cloudscraper
-            _http = cloudscraper.create_scraper()
-            _http.headers.update({
-                "User-Agent": CHROME_UA,
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                "Accept-Language": "en-US,en;q=0.9,de;q=0.8",
-                "Accept-Encoding": "gzip, deflate, br",
-            })
-            log("  using cloudscraper")
-            return _http
-        except ImportError:
-            pass
-        import requests as req
-        sess = req.Session()
-        sess.headers.update({
-            "User-Agent": CHROME_UA,
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.9,de;q=0.8",
-            "Accept-Encoding": "gzip, deflate, br",
-            "Referer": "https://www.google.com/",
-            "DNT": "1",
-            "Connection": "keep-alive",
-            "Upgrade-Insecure-Requests": "1",
-            "Sec-Fetch-Dest": "document",
-            "Sec-Fetch-Mode": "navigate",
-            "Sec-Fetch-Site": "none",
-            "Sec-Fetch-User": "?1",
-        })
-        _http = sess
-        return sess
-    except ImportError:
-        log("  requests not available, using urllib")
-    return None
-
-
-def get_html(url, retries=3):
-    """Fetch a page with retries. Tries cloudscraper first, then fallback."""
-    http = get_http()
-    if http:
-        for attempt in range(retries):
-            try:
-                resp = http.get(url, timeout=30)
-                if resp.status_code == 200:
-                    txt = resp.text
-                    if "standard_tabelle" in txt or "Spielplan" in txt or "schedule" in txt:
-                        return txt, "wf"
-                    log(f"  -> no table found, retry {attempt+1}")
-                else:
-                    log(f"  -> HTTP {resp.status_code}, retry {attempt+1}")
-                    if attempt < retries - 1:
-                        time.sleep(1.5 ** attempt)
-            except Exception as e:
-                log(f"  -> error: {e}, retry {attempt+1}")
-                if attempt < retries - 1:
-                    time.sleep(1.5 ** attempt)
-        return None, None
-
-    # Fallback: urllib
-    hdrs = {"User-Agent": CHROME_UA, "Accept": "text/html", "Accept-Language": "en-US,en;q=0.9"}
-    for attempt in range(retries):
-        try:
-            req = urllib.request.Request(url, headers=hdrs)
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                data = resp.read().decode("utf-8", errors="replace")
-                if "standard_tabelle" in data or "Spielplan" in data or "schedule" in data:
-                    return data, "wf"
-        except Exception:
-            time.sleep(1.5 ** attempt)
-    return None, None
-
-
-# ─── ESPN fallback ────────────────────────────────────────
-ESPN_BASE = "https://www.espn.com/soccer/scoreboard/_/league"
-
-def get_espn_html(league_id, year, month, day, retries=2):
-    """Try ESPN as fallback for a specific date."""
-    http = get_http()
-    if not http:
-        return None
-    url = f"{ESPN_BASE}/{league_id}/date/{year}{month:02d}{day:02d}"
+def fetch_csv(url, retries=3):
+    """Download a CSV file from a URL."""
+    hdrs = {"User-Agent": UA}
     for a in range(retries):
         try:
-            resp = http.get(url, timeout=20)
-            if resp.status_code == 200:
-                return resp.text
-        except Exception:
-            time.sleep(1)
+            req = urllib.request.Request(url, headers=hdrs)
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                return resp.read().decode("utf-8", errors="replace")
+        except Exception as e:
+            log(f"  fetch error: {e}, retry {a+1}")
+            if a < retries - 1: time.sleep(1.5 ** a)
     return None
 
 
-def parse_espn_matches(html, league_display):
-    """Parse ESPN scoreboard HTML for finished matches."""
+def parse_csv_matches(csv_text, league_display, season_year):
+    """Parse OpenFootballData CSV into match dicts."""
     matches = []
-    # ESPN embeds match data in a script tag with __NEXT_DATA__ or in data- attributes
-    # Look for match cards with final scores
-    # Pattern: score cells with "fullScore" or "final" class
+    reader = csv.DictReader(io.StringIO(csv_text))
     
-    # Find __NEXT_DATA__ JSON blob (Next.js sites)
-    nd_match = re.search(r'<script id="__NEXT_DATA__"[^>]*type="application/json"[^>]*>(.*?)</script>', html, re.DOTALL)
-    if nd_match:
+    for row in reader:
+        # Try common column name variants
+        date = row.get("Date") or row.get("date") or row.get("Day") or ""
+        home = row.get("Team 1") or row.get("Home") or row.get("home_team") or ""
+        away = row.get("Team 2") or row.get("Away") or row.get("away_team") or ""
+        score = row.get("FT") or row.get("Score") or row.get("score") or row.get("Result") or ""
+        
+        if not home or not away or not score:
+            continue
+        
+        # Normalize date: DD.MM.YYYY or YYYY-MM-DD or DD/MM/YYYY
+        md = ""
+        if "-" in date:
+            parts = date.split("-")
+            if len(parts) == 3:
+                if len(parts[0]) == 4: md = date  # YYYY-MM-DD
+                else: md = f"{parts[2]}-{parts[1].zfill(2)}-{parts[0].zfill(2)}"
+        elif "." in date:
+            parts = date.split(".")
+            if len(parts) == 3:
+                if len(parts[0]) == 4: md = f"{parts[0]}-{parts[1].zfill(2)}-{parts[2].zfill(2)}"
+                else: md = f"{parts[2]}-{parts[1].zfill(2)}-{parts[0].zfill(2)}"
+        elif "/" in date:
+            parts = date.split("/")
+            if len(parts) == 3:
+                if len(parts[0]) == 4: md = f"{parts[0]}-{parts[1].zfill(2)}-{parts[2].zfill(2)}"
+                elif len(parts[2]) == 4: md = f"{parts[2]}-{parts[1].zfill(2)}-{parts[0].zfill(2)}"
+        
+        # If still no date, infer from season
+        if not md:
+            md = f"{season_year}-06-15"
+        
+        # Parse score: "2-1" or "2:1" or "2 – 1"
+        score = score.replace("\u2013", "-").replace("\u2014", "-").replace("\u2015", "-").replace("\u00a0", "")
+        if ":" in score:
+            score = score.replace(":", "-")
+        score = score.replace(" ", "")
+        
+        sm = re.search(r'(\d+)\s*[-–]\s*(\d+)', score)
+        if not sm:
+            continue
+        
         try:
-            data = json.loads(nd_match.group(1))
-            # Navigate to find matches - ESPN's Next.js state varies
-            def walk(obj, depth=0):
-                results = []
-                if depth > 7 or not isinstance(obj, (dict, list)):
-                    return results
-                if isinstance(obj, list):
-                    for v in obj:
-                        results.extend(walk(v, depth + 1))
-                    return results
-                if isinstance(obj, dict):
-                    if all(k in obj for k in ["homeTeam", "awayTeam", "homeScore", "awayScore", "status"]):
-                        results.append(obj)
-                    for v in obj.values():
-                        results.extend(walk(v, depth + 1))
-                return results
-            
-            all_matches_in_state = walk(data)
-            for m in all_matches_in_state:
-                try:
-                    status = m.get("status", {})
-                    if isinstance(status, dict):
-                        st_type = status.get("type", "")
-                        st_detail = status.get("detail", "")
-                        if st_type not in ("finished", "completed") and "FT" not in str(st_detail):
-                            continue
-                    h_name = m.get("homeTeam", {}).get("name", "") or m.get("homeTeam", {}).get("displayName", "")
-                    a_name = m.get("awayTeam", {}).get("name", "") or m.get("awayTeam", {}).get("displayName", "")
-                    hs = m.get("homeScore", {})
-                    as_ = m.get("awayScore", {})
-                    if isinstance(hs, dict): hs_score = hs.get("score") or hs.get("value") or hs.get("current")
-                    else: hs_score = hs
-                    if isinstance(as_, dict): as_score = as_.get("score") or as_.get("value") or as_.get("current")
-                    else: as_score = as_
-                    if not h_name or not a_name or hs_score is None or as_score is None:
-                        continue
-                    matches.append({
-                        "home_team": str(h_name).strip(),
-                        "away_team": str(a_name).strip(),
-                        "home_score": int(hs_score),
-                        "away_score": int(as_score),
-                        "league": league_display,
-                    })
-                except (ValueError, TypeError, AttributeError):
-                    continue
-        except (json.JSONDecodeError, Exception):
-            pass
-        if matches:
-            return matches
-
-    # Fallback: regex for pattern in HTML
-    # Look for scoreboard__card or similar structures
-    card_pattern = re.compile(
-        r'<div[^>]*class="[^"]*ScoreboardScoreCell[^"]*"[^>]*>.*?'
-        r'<span[^>]*class="[^"]*ScoreCell__TeamName[^"]*"[^>]*>([^<]+)</span>.*?'
-        r'<span[^>]*class="[^"]*ScoreCell__Score[^"]*"[^>]*>(\d+)</span>.*?'
-        r'<span[^>]*class="[^"]*ScoreCell__TeamName[^"]*"[^>]*>([^<]+)</span>.*?'
-        r'<span[^>]*class="[^"]*ScoreCell__Score[^"]*"[^>]*>(\d+)</span>',
-        re.DOTALL
-    )
-    for cm in card_pattern.finditer(html):
+            hs = int(sm.group(1))
+            as_ = int(sm.group(2))
+        except (ValueError, AttributeError):
+            continue
+        
+        home = home.strip()
+        away = away.strip()
+        if not home or not away:
+            continue
+        
         matches.append({
-            "home_team": cm.group(1).strip(),
-            "away_team": cm.group(3).strip(),
-            "home_score": int(cm.group(2)),
-            "away_score": int(cm.group(4)),
+            "home_team": home,
+            "away_team": away,
+            "home_score": hs,
+            "away_score": as_,
+            "match_date": md,
             "league": league_display,
         })
     
     return matches
 
 
-# ─── Worldfootball parser ─────────────────────────────────
-def parse_wf_rows(html, league_display):
-    """Extract matches from worldfootball.net table rows."""
-    matches = []
-    row_re = re.compile(
-        r'<tr[^>]*>.*?'
-        r'<td[^>]*class[^>]*>[^<]*(\d{2}\.\d{2}\.\d{4})[^<]*</td>.*?'
-        r'<td[^>]*>.*?<a[^>]*>([^<]+)</a>.*?</td>.*?'
-        r'<td[^>]*class[^>]*>.*?(\d+)[:\s](-?\s?\d+).*?</td>.*?'
-        r'<td[^>]*>.*?<a[^>]*>([^<]+)</a>.*?</td>.*?'
-        r'</tr>', re.DOTALL | re.IGNORECASE
-    )
-    for rm in row_re.finditer(html):
-        date_str = rm.group(1).strip()
-        home = rm.group(2).strip()
-        score_h = rm.group(3).strip()
-        score_a_raw = rm.group(4).strip().replace(" ", "")
-        away = rm.group(5).strip()
-        parts = date_str.split(".")
-        if len(parts) != 3: continue
-        match_date = f"{parts[2]}-{parts[1].zfill(2)}-{parts[0].zfill(2)}"
-        try:
-            hs = int(score_h)
-            ascore = int(score_a_raw) if score_a_raw.lstrip("-").isdigit() else None
-        except ValueError:
-            continue
-        if ascore is None: continue
-        home = re.sub(r'\s+', ' ', home).strip()
-        away = re.sub(r'\s+', ' ', away).strip()
-        if not home or not away: continue
-        matches.append({
-            "home_team": home, "away_team": away,
-            "home_score": hs, "away_score": ascore,
-            "match_date": match_date, "league": league_display,
-        })
-    return matches
-
-
-# ─── League scraping ──────────────────────────────────────
-def scrape_league(slug, display_name, espn_id, seasons=3):
-    """Scrape past N seasons for a league from worldfootball.net, fallback ESPN."""
+def scrape_league(slug, display_name, csv_pattern, seasons=3):
+    """Download CSV files from GitHub for each season and parse."""
     all_matches = []
     
     for s in range(seasons):
@@ -301,80 +177,31 @@ def scrape_league(slug, display_name, espn_id, seasons=3):
         season_end = season_start + 1
         season_str = f"{season_start}-{season_end}"
         
-        # Try worldfootball URLs
-        urls = [
-            f"{SITE_BASE}/schedule/{slug}-{season_str}-spieltag/",
-            f"{SITE_BASE}/schedule/{slug}-{season_start}-spieltag/",
-            f"{SITE_BASE}/competition/{slug}/",
-        ]
-        if season_start < CURRENT_YEAR:
-            urls.append(f"{SITE_BASE}/competition/{slug}/?season={season_start}")
+        # Build GitHub raw URL
+        filepath = csv_pattern.replace("{season}", season_str)
+        url = f"https://raw.githubusercontent.com/{filepath}"
         
-        html = None
-        source = None
-        used_url = None
-        for u in urls:
-            html, source = get_html(u)
-            if html:
-                used_url = u
-                break
+        log(f"  fetching {slug} {season_str}...")
+        csv_text = fetch_csv(url)
+        if not csv_text:
+            # Try alternate season format (single year)
+            filepath2 = csv_pattern.replace("{season}", str(season_start))
+            url2 = f"https://raw.githubusercontent.com/{filepath2}"
+            log(f"  trying {slug} {season_start}...")
+            csv_text = fetch_csv(url2)
         
-        rows = []
-        if html and source == "wf":
-            rows = parse_wf_rows(html, display_name)
-        
-        if rows:
-            log(f"  [{slug}] Season {season_str}: {len(rows)} matches (worldfootball)")
-            all_matches.extend(rows)
-            time.sleep(0.8)
+        if not csv_text:
+            log(f"  [{slug}] No CSV for {season_str}")
             continue
         
-        # Fallback: ESPN (try a few dates in the season)
-        if espn_id:
-            log(f"  [{slug}] Season {season_str}: trying ESPN fallback...")
-            espn_matches = set()
-            # Sample dates: mid-season (Oct-Dec, Feb-May) for the season
-            try:
-                import calendar
-                # Determine start/end year for the season
-                sy = season_start
-                if season_end == CURRENT_YEAR + 1:
-                    ey = CURRENT_YEAR
-                else:
-                    ey = season_end
-                
-                # Sample months
-                months_to_try = []
-                for m in range(8, 13):  # Aug-Dec
-                    months_to_try.append((sy, m))
-                for m in range(1, 6):   # Jan-May
-                    months_to_try.append((ey, m))
-                
-                for yr, mo in months_to_try:
-                    if yr > CURRENT_YEAR or (yr == CURRENT_YEAR and mo > time.localtime().tm_mon):
-                        continue
-                    max_day = min(28, calendar.monthrange(yr, mo)[1])
-                    espn_html = get_espn_html(espn_id, yr, mo, 15)
-                    if not espn_html:
-                        continue
-                    espn_rows = parse_espn_matches(espn_html, display_name)
-                    for r in espn_rows:
-                        key = f"{r['home_team']}|{r['away_team']}|{r['home_score']}|{r['away_score']}"
-                        if key not in espn_matches:
-                            espn_matches.add(key)
-                            # ESPN doesn't give dates easily; approximate
-                            r["match_date"] = f"{yr}-{mo:02d}-15"
-                            all_matches.append(r)
-                    time.sleep(0.5)
-                
-                if all_matches:
-                    log(f"  [{slug}] ESPN fallback: {len(espn_matches)} unique matches")
-            except Exception as e:
-                log(f"  [{slug}] ESPN fallback error: {e}")
+        rows = parse_csv_matches(csv_text, display_name, season_start)
+        if rows:
+            log(f"  [{slug}] {season_str}: {len(rows)} matches")
+            all_matches.extend(rows)
         else:
-            log(f"  [{slug}] Season {season_str}: no matches found")
+            log(f"  [{slug}] {season_str}: CSV found but no matches parsed")
         
-        time.sleep(0.5)
+        time.sleep(0.3)
     
     return all_matches
 
@@ -382,10 +209,11 @@ def scrape_league(slug, display_name, espn_id, seasons=3):
 def post_matches(matches, secret_key, hook_url=None, dry_run=False):
     if not matches:
         return 0
+    
     if dry_run:
         log(f"  DRY RUN: would post {len(matches)} matches")
         for m in matches[:3]:
-            log(f"    {m.get('match_date','?')} {m['home_team']} {m['home_score']}-{m['away_score']} {m['away_team']} [{m['league']}]")
+            log(f"    {m['match_date']} {m['home_team']} {m['home_score']}-{m['away_score']} {m['away_team']} [{m['league']}]")
         if len(matches) > 3:
             log(f"    ... and {len(matches)-3} more")
         return len(matches)
@@ -393,23 +221,9 @@ def post_matches(matches, secret_key, hook_url=None, dry_run=False):
     base_url = hook_url or "https://predixa.co.tz/cron/fetch_scores.php"
     url = f"{base_url}?key={urllib.parse.quote(secret_key)}"
     payload = json.dumps({"matches": matches}).encode("utf-8")
+    hdrs = {"User-Agent": UA, "Content-Type": "application/json"}
     
-    http = get_http()
-    if http:
-        for attempt in range(3):
-            try:
-                resp = http.post(url, data=payload, timeout=60)
-                result = resp.json()
-                log(f"  POST result: {result}")
-                return result.get("inserted", 0)
-            except Exception as e:
-                log(f"  POST error (attempt {attempt+1}): {e}")
-                if attempt < 2: time.sleep(3)
-        return 0
-    
-    # fallback urllib
-    hdrs = {"User-Agent": CHROME_UA, "Content-Type": "application/json"}
-    for attempt in range(3):
+    for a in range(3):
         try:
             req = urllib.request.Request(url, data=payload, headers=hdrs, method="POST")
             with urllib.request.urlopen(req, timeout=60) as resp:
@@ -417,8 +231,8 @@ def post_matches(matches, secret_key, hook_url=None, dry_run=False):
                 log(f"  POST result: {result}")
                 return result.get("inserted", 0)
         except Exception as e:
-            log(f"  POST error (attempt {attempt+1}): {e}")
-            if attempt < 2: time.sleep(3)
+            log(f"  POST error (attempt {a+1}): {e}")
+            if a < 2: time.sleep(3)
     return 0
 
 
@@ -431,44 +245,46 @@ def main():
     hook_url = None
     recent_days = 0
     
-    for a in argv:
+    i = 0
+    while i < len(argv):
+        a = argv[i]
         if a == "--dry-run": dry_run = True
         elif a == "--recent": recent_days = 7
         elif a.startswith("--key="): secret_key = a.split("=", 1)[1]
         elif a.startswith("--seasons="): seasons = int(a.split("=", 1)[1])
         elif a.startswith("--leagues="): league_filter = a.split("=", 1)[1].split(",")
         elif a.startswith("--hook="): hook_url = a.split("=", 1)[1]
+        i += 1
     
     if not secret_key and not dry_run:
         print("Error: --key=SECRET is required (or use --dry-run)")
         sys.exit(1)
     
-    leagues_to_scrape = []
+    leagues_scrape = []
     if league_filter:
         for slug in league_filter:
             slug = slug.strip()
-            if slug in MAJOR_LEAGUES:
-                leagues_to_scrape.append((slug, MAJOR_LEAGUES[slug][0], MAJOR_LEAGUES[slug][1]))
+            if slug in LEAGUES:
+                leagues_scrape.append((slug, LEAGUES[slug][0], LEAGUES[slug][1]))
             else:
                 log(f"Unknown league slug: {slug}")
     else:
-        leagues_to_scrape = [(k, v[0], v[1]) for k, v in MAJOR_LEAGUES.items()]
+        leagues_scrape = [(k, v[0], v[1]) for k, v in LEAGUES.items()]
     
     mode = "RECENT (7 days)" if recent_days else f"{seasons} season(s)"
-    log(f"Scraping {len(leagues_to_scrape)} leagues, {mode}, dry_run={dry_run}")
+    log(f"Scraping {len(leagues_scrape)} leagues, {mode}, dry_run={dry_run}")
     
     recent_cutoff = None
     if recent_days:
-        from datetime import datetime, timedelta
         recent_cutoff = (datetime.now() - timedelta(days=recent_days)).strftime("%Y-%m-%d")
         log(f"  Only matches after {recent_cutoff}")
     
     total_posted = 0
     total_found = 0
     
-    for slug, display, espn_id in leagues_to_scrape:
+    for slug, display, csv_pattern in leagues_scrape:
         log(f"\n--- {display} ({slug}) ---")
-        matches = scrape_league(slug, display, espn_id, seasons)
+        matches = scrape_league(slug, display, csv_pattern, seasons)
         if not matches:
             continue
         
@@ -480,13 +296,12 @@ def main():
             continue
         total_found += len(matches)
         
-        batch_size = 50
-        for i in range(0, len(matches), batch_size):
-            batch = matches[i:i+batch_size]
+        for i in range(0, len(matches), 50):
+            batch = matches[i:i+50]
             posted = post_matches(batch, secret_key, hook_url, dry_run)
             total_posted += posted
             if not dry_run:
-                time.sleep(1)
+                time.sleep(0.5)
     
     log(f"\n=== Done ===")
     log(f"  Matches found: {total_found}")
