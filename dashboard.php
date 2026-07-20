@@ -452,7 +452,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-soft); color: var(
 <a href="aviator" class="header-link"><i class="fas fa-plane me-1" style="color:#F59E0B;"></i>Aviator</a>
 <?php endif; ?>
 <a href="dropping-odds" class="header-link"><i class="fas fa-arrow-down me-1" style="color:#EF4444;"></i>Dropping Odds</a>
-<a href="#" class="header-link"><i class="fas fa-chart-line me-1" style="color:#FBBF24;"></i>Performance</a>
+<a href="track-record" class="header-link"><i class="fas fa-chart-line me-1" style="color:#FBBF24;"></i>Performance</a>
 <a href="betting-school" class="header-link"><i class="fas fa-book-open me-1"></i>Betting School</a>
 <div class="dropdown d-inline-block">
     <a class="header-link" href="pikka?post=1" style="cursor:pointer;"><i class="fas fa-pen me-1"></i>Post Free Tips</a>
@@ -532,18 +532,6 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-soft); color: var(
     </a>
 </div>
 <?php endif; ?>
-
-<div style="background:linear-gradient(135deg,#0B1D3A 0%,#1A3A6B 30%,#2D5F8A 60%,#0B1D3A 100%);border-radius:12px;padding:0.6rem 1.2rem;margin-bottom:1rem;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0.5rem;border:1px solid rgba(255,215,0,0.25);box-shadow:0 2px 12px rgba(255,215,0,0.08);">
-  <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
-    <div style="width:36px;height:36px;background:linear-gradient(135deg,#FFD700,#FFA500);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem;color:#0B1D3A;flex-shrink:0;">WC</div>
-    <div>
-      <div style="font-weight:700;font-size:0.85rem;color:#FFD700;line-height:1.3;"><i class="fas fa-futbol me-1" style="color:#FFD700;"></i>World Cup 2026 — <span style="color:#fff;">Get match predictions &amp; betting codes</span></div>
-    </div>
-  </div>
-  <a href="#" onclick="event.preventDefault();var t=document.querySelector('[data-bs-target=&quot;#codes&quot;]');if(t){t.click();setTimeout(function(){document.getElementById('availableCodesSection')?.scrollIntoView({behavior:'smooth'});},300);}" style="display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,#FFD700,#FFA500);color:#0B1D3A;padding:5px 16px;border-radius:6px;font-weight:700;font-size:0.8rem;text-decoration:none;white-space:nowrap;transition:all .2s;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'"><i class="fas fa-ticket-alt"></i> Browse Codes</a>
-</div>
-
-
 
 <div class="tab-content">
 
@@ -842,57 +830,87 @@ foreach ($merged as &$p) {
 }
 unset($p);
 
-// Add top Bayesian predictions as independent entries
+// Add Bayesian predictions as independent entries (no confidence threshold)
 try {
     if (!isset($bm)) {
         require_once __DIR__ . '/classes/BayesianModel.php';
         $bm = new BayesianModel();
     }
+    if (!isset($db2) || !$db2) $db2 = getDB();
+    if (!$db2) throw new Exception('No DB');
+
+    // Load today's source matches for intersection filter
+    $todaySrc = [];
+    foreach (['web_picks' => 'detected_at', 'scraper_results' => 'detected_at', 'admin_featured_picks' => 'created_at'] as $tbl => $col) {
+        $q = $db2->query("SELECT DISTINCT match_name FROM $tbl WHERE DATE($col) = CURDATE()");
+        if ($q) foreach ($q->fetchAll(PDO::FETCH_ASSOC) as $r) $todaySrc[$r['match_name']] = true;
+    }
+
+    // Normalize helper
+    $norm = function($n) { return trim(preg_replace('/\s+(if|fk|sk|fc|sc|cf|ac|as)$/i', '', preg_replace('/^(if|fk|sk|fc|sc|cf|ac|as)\s+/i', '', strtolower(trim($n))))); };
+
+    // Flag pairs predicted yesterday (already played)
+    $yestPair = [];
+    $q = $db2->query("SELECT home_team, away_team FROM bayesian_predictions WHERE match_date = DATE_SUB(CURDATE(), INTERVAL 1 DAY)");
+    if ($q) foreach ($q->fetchAll(PDO::FETCH_ASSOC) as $r) $yestPair[$norm($r['home_team']) . '|' . $norm($r['away_team'])] = true;
+
     $bayesianPicks = $db2->query("
-        SELECT match_name, recommended_pick, confidence, league
-        FROM bayesian_predictions
-        WHERE match_date = CURDATE()
-          AND confidence >= 60
-          AND recommended_pick IS NOT NULL
-          AND recommended_pick != ''
-        ORDER BY confidence DESC
-        LIMIT 15
+        SELECT bp.match_name, bp.recommended_pick, bp.confidence, bp.league,
+               bp.home_team, bp.away_team, bp.market_odds_1, bp.market_odds_x, bp.market_odds_2
+        FROM bayesian_predictions bp
+        WHERE bp.match_date = CURDATE()
+          AND bp.recommended_pick IS NOT NULL
+          AND bp.recommended_pick != ''
+        ORDER BY bp.confidence DESC
     ")->fetchAll(PDO::FETCH_ASSOC);
 
     foreach ($bayesianPicks as $bp) {
+        // Must be detected today by a source
+        if (!isset($todaySrc[$bp['match_name']])) continue;
+        // Skip if same normalized pair was predicted yesterday
+        if (isset($yestPair[$norm($bp['home_team']) . '|' . $norm($bp['away_team'])])) continue;
+
         $recs = explode(',', $bp['recommended_pick']);
-        $primary = trim($recs[0] ?? '');
-        $parts = explode(':', $primary);
-        if (count($parts) !== 2) continue;
-        $pickType = $parts[0];
-        $pickProb = (float)$parts[1];
+        foreach ($recs as $rec) {
+            $rec = trim($rec);
+            $parts = explode(':', $rec);
+            if (count($parts) !== 2) continue;
+            $pickType = $parts[0];
+            $pickProb = (float)$parts[1];
 
-        $key = $bp['match_name'] . '|' . $pickType;
-        if (in_array($key, $seenKeys)) continue;
+            $key = $bp['match_name'] . '|' . $pickType;
+            if (in_array($key, $seenKeys)) continue;
 
-        $merged[] = [
-            'match_name' => $bp['match_name'],
-            'pick_value' => $pickType,
-            'actual_odds' => 0,
-            'odds' => 0,
-            'pattern_badge' => 'BAYESIAN',
-            'match_time' => '',
-            '_blended_conf' => round(($bp['confidence'] + $pickProb) / 2),
-            'is_bayesian' => true,
-            'home_odds' => 0,
-            'draw_odds' => 0,
-            'away_odds' => 0,
-            'fav_delta' => 0,
-            'opp_delta' => 0,
-            'draw_delta' => 0,
-            'is_home_fav' => true,
-            'league' => $bp['league'] ?? '',
-            'win_rate_low' => 0,
-            'details' => 'Bayesian Model Prediction',
-            'safety_notes' => '',
-            'risk_tier' => '',
-        ];
-        $seenKeys[] = $key;
+            $bestOdds = 0;
+            $mv = strtoupper($pickType);
+            if ($mv === '1') $bestOdds = (float)($bp['market_odds_1'] ?? 0);
+            elseif ($mv === 'X') $bestOdds = (float)($bp['market_odds_x'] ?? 0);
+            elseif ($mv === '2') $bestOdds = (float)($bp['market_odds_2'] ?? 0);
+
+            $merged[] = [
+                'match_name' => $bp['match_name'],
+                'pick_value' => $pickType,
+                'actual_odds' => $bestOdds,
+                'odds' => $bestOdds,
+                'pattern_badge' => 'VALUE',
+                'match_time' => '',
+                '_blended_conf' => round($pickProb),
+                'is_bayesian' => true,
+                'home_odds' => (float)($bp['market_odds_1'] ?? 0),
+                'draw_odds' => (float)($bp['market_odds_x'] ?? 0),
+                'away_odds' => (float)($bp['market_odds_2'] ?? 0),
+                'fav_delta' => 0,
+                'opp_delta' => 0,
+                'draw_delta' => 0,
+                'is_home_fav' => true,
+                'league' => $bp['league'] ?? '',
+                'win_rate_low' => 0,
+                'details' => 'Bayesian Model Prediction',
+                'safety_notes' => '',
+                'risk_tier' => '',
+            ];
+            $seenKeys[] = $key;
+        }
     }
 } catch (Exception $e) {}
 
@@ -1012,11 +1030,12 @@ if ($tpSort === 'time') {
     </div>
     <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;">
         <?php if ($badges): $bp2 = explode(' ', trim($badges)); foreach ($bp2 as $b): $b = trim($b); if (!$b) continue;
-            $bc = $b === 'VERIFIED' ? '#10B981' : ($b === 'BANKER' ? '#06B6D4' : ($b === 'NOISY' ? '#EF4444' : ($b === 'BAYESIAN' ? '#7C3AED' : '#6B7280')));
+            $bc = $b === 'VERIFIED' ? '#10B981' : ($b === 'BANKER' ? '#06B6D4' : ($b === 'NOISY' ? '#EF4444' : ($b === 'VALUE' ? '#22C55E' : '#6B7280')));
         ?>
-        <span style="display:inline-flex;align-items:center;gap:3px;background:rgba(<?= $b === 'VERIFIED' ? '16,185,129' : ($b === 'BANKER' ? '6,182,212' : ($b === 'NOISY' ? '239,68,68' : ($b === 'BAYESIAN' ? '124,58,237' : '107,114,128'))) ?>,0.15);color:<?= $bc ?>;padding:1px 6px;border-radius:4px;font-weight:600;font-size:0.65rem;"><?= htmlspecialchars($b) ?></span>
+        <span style="display:inline-flex;align-items:center;gap:3px;background:rgba(<?= $b === 'VERIFIED' ? '16,185,129' : ($b === 'BANKER' ? '6,182,212' : ($b === 'NOISY' ? '239,68,68' : ($b === 'VALUE' ? '34,197,94' : '107,114,128'))) ?>,0.15);color:<?= $bc ?>;padding:1px 6px;border-radius:4px;font-weight:600;font-size:0.65rem;"><?= htmlspecialchars($b) ?></span>
         <?php endforeach; endif; ?>
     </div>
+    <button onclick='openH2H("<?= htmlspecialchars($p['match_name'] ?? '', ENT_QUOTES) ?>")' style="border:1px solid var(--primary);background:transparent;color:var(--primary);padding:3px 10px;border-radius:5px;font-weight:600;font-size:0.7rem;text-decoration:none;white-space:nowrap;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--primary-light)';this.style.color='var(--primary-light)'" onmouseout="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'">Match Details</button>
     <div style="text-align:right;min-width:36px;">
         <div style="font-size:0.55rem;color:var(--text-muted);font-weight:500;line-height:1;">Confidence</div>
         <span style="font-weight:700;font-size:0.85rem;color:<?= $confColor ?>;"><?= $conf ?>%</span>
@@ -1025,14 +1044,33 @@ if ($tpSort === 'time') {
 <?php endforeach; ?>
 </div>
 <?php if ($tpShowPagination): ?>
-<div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:0.5rem 0.75rem;border-top:1px solid var(--border-color);font-size:0.75rem;">
+<div style="display:flex;align-items:center;justify-content:center;gap:4px;padding:0.5rem 0.75rem;border-top:1px solid var(--border-color);font-size:0.75rem;flex-wrap:wrap;">
     <?php if ($tpPage > 1): ?>
-    <a href="?tab=toppredictions&tp_page=<?= $tpPage - 1 ?>&tp_sort=<?= $tpSort ?>" style="padding:4px 10px;background:#F3F4F6;border-radius:6px;color:var(--primary);font-weight:600;text-decoration:none;"><i class="fas fa-chevron-left me-1"></i>Prev</a>
+    <a href="?tab=toppredictions&tp_page=<?= $tpPage - 1 ?>&tp_sort=<?= $tpSort ?>" style="padding:4px 8px;background:#F3F4F6;border-radius:6px;color:var(--primary);font-weight:600;text-decoration:none;" title="Previous"><i class="fas fa-chevron-left"></i></a>
     <?php endif; ?>
-    <span style="color:var(--text-muted);">Page <?= $tpPage ?> of <?= $tpTotalPages ?> (<?= $tpTotal ?> picks)</span>
+    <?php
+    $window = 5;
+    $start = max(1, $tpPage - $window);
+    $end = min($tpTotalPages, $tpPage + $window);
+    if ($start > 1): ?>
+        <a href="?tab=toppredictions&tp_page=1&tp_sort=<?= $tpSort ?>" style="padding:4px 8px;border-radius:6px;color:var(--primary);font-weight:600;text-decoration:none;">1</a>
+        <?php if ($start > 2): ?><span style="color:var(--text-muted);">…</span><?php endif; ?>
+    <?php endif; ?>
+    <?php for ($i = $start; $i <= $end; $i++): ?>
+        <?php if ($i === $tpPage): ?>
+        <span style="padding:4px 8px;border-radius:6px;background:var(--primary);color:#fff;font-weight:700;text-decoration:none;"><?= $i ?></span>
+        <?php else: ?>
+        <a href="?tab=toppredictions&tp_page=<?= $i ?>&tp_sort=<?= $tpSort ?>" style="padding:4px 8px;border-radius:6px;color:var(--primary);font-weight:600;text-decoration:none;"><?= $i ?></a>
+        <?php endif; ?>
+    <?php endfor; ?>
+    <?php if ($end < $tpTotalPages): ?>
+        <?php if ($end < $tpTotalPages - 1): ?><span style="color:var(--text-muted);">…</span><?php endif; ?>
+        <a href="?tab=toppredictions&tp_page=<?= $tpTotalPages ?>&tp_sort=<?= $tpSort ?>" style="padding:4px 8px;border-radius:6px;color:var(--primary);font-weight:600;text-decoration:none;"><?= $tpTotalPages ?></a>
+    <?php endif; ?>
     <?php if ($tpPage < $tpTotalPages): ?>
-    <a href="?tab=toppredictions&tp_page=<?= $tpPage + 1 ?>&tp_sort=<?= $tpSort ?>" style="padding:4px 10px;background:#F3F4F6;border-radius:6px;color:var(--primary);font-weight:600;text-decoration:none;">Next<i class="fas fa-chevron-right ms-1"></i></a>
+    <a href="?tab=toppredictions&tp_page=<?= $tpPage + 1 ?>&tp_sort=<?= $tpSort ?>" style="padding:4px 8px;background:#F3F4F6;border-radius:6px;color:var(--primary);font-weight:600;text-decoration:none;" title="Next"><i class="fas fa-chevron-right"></i></a>
     <?php endif; ?>
+    <span style="color:var(--text-muted);margin-left:4px;">(<?= $tpTotal ?> picks)</span>
 </div>
 <?php endif; ?>
 <div style="padding:0.4rem 0.75rem;background:#F9FAFB;border-top:1px solid var(--border-color);font-size:0.65rem;color:var(--text-muted);text-align:center;">
@@ -1894,6 +1932,103 @@ function escapeHtml(t) {
     var d = document.createElement('div');
     d.textContent = t;
     return d.innerHTML;
+}
+</script>
+
+<!-- H2H Modal -->
+<div class="modal fade" id="h2hModal" tabindex="-1" aria-hidden="true">
+<div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+<div class="modal-content" style="background:#1A1D24;border:1px solid var(--border-color);border-radius:16px;">
+<div class="modal-header border-0">
+    <h5 class="modal-title fw-bold" style="color:#fff;"><i class="fas fa-history me-2" style="color:var(--accent);"></i><span id="h2hTitle">Match History</span></h5>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+</div>
+<div class="modal-body" id="h2hBody">
+    <div class="text-center py-4" id="h2hLoader" style="color:var(--text-muted);"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</div>
+    <div id="h2hContent" style="display:none;"></div>
+</div>
+</div>
+</div>
+</div>
+
+<script>
+function openH2H(matchName) {
+    var titleEl = document.getElementById('h2hTitle');
+    var loader = document.getElementById('h2hLoader');
+    var content = document.getElementById('h2hContent');
+    titleEl.textContent = matchName + ' — Match History';
+    loader.style.display = '';
+    content.style.display = 'none';
+    content.innerHTML = '';
+    new bootstrap.Modal(document.getElementById('h2hModal')).show();
+
+    fetch('ajax_h2h.php?match_name=' + encodeURIComponent(matchName))
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            loader.style.display = 'none';
+            if (d.error) { content.innerHTML = '<p class="text-danger">' + d.error + '</p>'; content.style.display = ''; return; }
+            var html = '<div class="row g-3">';
+
+            // H2H section
+            html += '<div class="col-12"><h6 style="color:var(--accent);font-weight:700;"><i class="fas fa-swords me-1"></i>Head to Head: ' + escapeHtml(d.home_team) + ' vs ' + escapeHtml(d.away_team) + '</h6>';
+            if (d.h2h.length === 0) { html += '<p class="text-muted small">No previous meetings found.</p>'; }
+            else { html += '<div style="max-height:300px;overflow-y:auto;">';
+            d.h2h.forEach(function(m) {
+                var isHome = m.home_team === d.home_team;
+                var hs = parseInt(m.home_score), as = parseInt(m.away_score);
+                var winner = hs > as ? m.home_team : (hs < as ? m.away_team : 'Draw');
+                var badge = winner === d.home_team ? '<span style="color:#22C55E;font-weight:700;">W</span>' : (winner === d.away_team ? '<span style="color:#EF4444;font-weight:700;">L</span>' : '<span style="color:#FBBF24;font-weight:700;">D</span>');
+                html += '<div style="display:flex;align-items:center;gap:10px;padding:6px 8px;border-bottom:1px solid var(--border-color);font-size:0.82rem;">';
+                html += '<span style="color:var(--text-muted);min-width:80px;font-size:0.75rem;">' + (m.match_date || '') + '</span>';
+                html += '<span style="flex:1;">' + escapeHtml(m.home_team) + ' <strong>' + hs + '-' + as + '</strong> ' + escapeHtml(m.away_team) + '</span>';
+                html += '<span>' + badge + '</span></div>';
+            });
+            html += '</div>'; }
+            html += '</div>';
+
+            // Home team recent
+            html += '<div class="col-md-6"><h6 style="color:#22C55E;font-weight:700;font-size:0.85rem;"><i class="fas fa-home me-1"></i>' + escapeHtml(d.home_team) + ' — Recent 10</h6>';
+            if (d.home_recent.length === 0) { html += '<p class="text-muted small">No recent matches.</p>'; }
+            else { html += '<div style="max-height:300px;overflow-y:auto;">';
+            d.home_recent.forEach(function(m) {
+                var hs = parseInt(m.home_score), as = parseInt(m.away_score);
+                var isHome = m.home_team === d.home_team;
+                var result = isHome ? (hs > as ? 'W' : (hs < as ? 'L' : 'D')) : (as > hs ? 'W' : (as < hs ? 'L' : 'D'));
+                var color = result === 'W' ? '#22C55E' : (result === 'L' ? '#EF4444' : '#FBBF24');
+                html += '<div style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-bottom:1px solid var(--border-color);font-size:0.78rem;">';
+                html += '<span style="color:' + color + ';font-weight:700;min-width:20px;">' + result + '</span>';
+                html += '<span style="flex:1;">' + escapeHtml(m.home_team) + ' <strong>' + hs + '-' + as + '</strong> ' + escapeHtml(m.away_team) + '</span>';
+                html += '<span style="color:var(--text-muted);font-size:0.7rem;min-width:80px;text-align:right;">' + (m.match_date || '') + '</span></div>';
+            });
+            html += '</div>'; }
+            html += '</div>';
+
+            // Away team recent
+            html += '<div class="col-md-6"><h6 style="color:#EF4444;font-weight:700;font-size:0.85rem;"><i class="fas fa-arrow-right me-1"></i>' + escapeHtml(d.away_team) + ' — Recent 10</h6>';
+            if (d.away_recent.length === 0) { html += '<p class="text-muted small">No recent matches.</p>'; }
+            else { html += '<div style="max-height:300px;overflow-y:auto;">';
+            d.away_recent.forEach(function(m) {
+                var hs = parseInt(m.home_score), as = parseInt(m.away_score);
+                var isHome = m.home_team === d.away_team;
+                var result = isHome ? (hs > as ? 'W' : (hs < as ? 'L' : 'D')) : (as > hs ? 'W' : (as < hs ? 'L' : 'D'));
+                var color = result === 'W' ? '#22C55E' : (result === 'L' ? '#EF4444' : '#FBBF24');
+                html += '<div style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-bottom:1px solid var(--border-color);font-size:0.78rem;">';
+                html += '<span style="color:' + color + ';font-weight:700;min-width:20px;">' + result + '</span>';
+                html += '<span style="flex:1;">' + escapeHtml(m.home_team) + ' <strong>' + hs + '-' + as + '</strong> ' + escapeHtml(m.away_team) + '</span>';
+                html += '<span style="color:var(--text-muted);font-size:0.7rem;min-width:80px;text-align:right;">' + (m.match_date || '') + '</span></div>';
+            });
+            html += '</div>'; }
+            html += '</div>';
+
+            html += '</div>';
+            content.innerHTML = html;
+            content.style.display = '';
+        })
+        .catch(function(e) {
+            loader.style.display = 'none';
+            content.innerHTML = '<p class="text-danger">Error loading data.</p>';
+            content.style.display = '';
+        });
 }
 </script>
 </body>
