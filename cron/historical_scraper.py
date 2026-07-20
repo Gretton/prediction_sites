@@ -333,7 +333,7 @@ def scrape_league(slug, display_name, repo, file_pattern, seasons=3):
             season_str = str(season_start)
         else:
             season_end = season_start + 1
-            season_str = f"{season_start}-{season_end:02d}"
+            season_str = f"{season_start}-{season_end % 100:02d}"
 
         filepath = file_pattern.replace("{season}", season_str)
         url = f"https://raw.githubusercontent.com/{repo}/master/{filepath}"
