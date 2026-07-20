@@ -20,6 +20,8 @@ Options:
 import sys, json, time, re, urllib.request, urllib.parse
 from datetime import datetime, timedelta
 
+CURRENT_YEAR = time.localtime().tm_year
+
 # ─── League definitions ───────────────────────────────────
 # Format: slug -> (display_name, repo, file_path_pattern)
 # {season} = "2024-25" for winter leagues, "2025" for summer leagues
