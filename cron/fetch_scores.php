@@ -33,7 +33,6 @@ $db->exec("CREATE TABLE IF NOT EXISTS `match_results` (
 // Add column if missing (existing DB)
 try { $db->exec("ALTER TABLE match_results ADD COLUMN first_seen_at DATETIME DEFAULT NULL AFTER created_at"); } catch (PDOException $e) {}
 
-$today = date('Y-m-d');
 $inserted = 0;
 $skipped = 0;
 
@@ -83,7 +82,11 @@ foreach ($input['matches'] as $m) {
     $league = trim($m['league'] ?? '');
     if (empty($home) || empty($away)) { $skipped++; continue; }
 
-    $checkStmt->execute([$home, $away, $today]);
+    $matchDate = trim($m['match_date'] ?? '');
+    if (empty($matchDate)) { $skipped++; continue; }
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $matchDate)) { $skipped++; continue; }
+
+    $checkStmt->execute([$home, $away, $matchDate]);
     $existing = $checkStmt->fetch();
 
     if ($existing) {
@@ -104,9 +107,9 @@ foreach ($input['matches'] as $m) {
     } else {
         $hid = resolveTeamId($db, $home, $home);
         $aid = resolveTeamId($db, $away, $away);
-        $insertStmt->execute([$home, $away, $hs, $as, $today, $league ?: null, $hid, $aid]);
+        $insertStmt->execute([$home, $away, $hs, $as, $matchDate, $league ?: null, $hid, $aid]);
         $inserted++;
     }
 }
 
-echo json_encode(['status' => 'ok', 'inserted' => $inserted, 'skipped' => $skipped, 'date' => $today]);
+echo json_encode(['status' => 'ok', 'inserted' => $inserted, 'skipped' => $skipped]);
