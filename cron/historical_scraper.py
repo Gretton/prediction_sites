@@ -77,7 +77,7 @@ LEAGUES = {
     "bel-pro-league": (
         "Belgium - Pro League",
         "openfootball/belgium",
-        "{season}/1-proleague.txt",
+        "{season}/be1.txt",
     ),
     "aut-bundesliga": (
         "Austria - Bundesliga",
@@ -228,23 +228,62 @@ def fetch_txt(url, retries=3):
 
 
 def parse_football_txt(text, league_display, season_year):
-    """Parse Football.TXT format into match dicts."""
+    """Parse Football.TXT format into match dicts.
+
+    Handles both formats:
+      New (2024+):  Team v Team 1-0 (0-0)     with dates "Fri Aug 16 2024"
+      Old (pre-2024): Team 0-3 (0-2) Team      with dates "Fri Aug 11" (year in header)
+    """
     matches = []
     current_date = None
+    # Year extracted from header comment, used for date lines without year
+    header_year_start = None
+    header_year_end = None
+    # Track which year we're in. The date range in the header tells us when
+    # the season splits across years. Dates before the split use header_year_start,
+    # dates after use header_year_end.
+    season_split_day = None
+    season_split_mon = None
+
     months_re = re.compile(
-        r"(mon|tue|wed|thu|fri|sat|sun)\s+(\w+)\s+(\d+)\s+(\d{4})", re.IGNORECASE
+        r"(mon|tue|wed|thu|fri|sat|sun)\s+(\w+)\s+(\d+)\s*(\d{4})?", re.IGNORECASE
     )
-    match_re = re.compile(
+    # New format: "Team v Team 1-0 (0-0)"
+    match_new = re.compile(
         r"^\s*(?:\d+:\d+\s+)?(.+?)\s+v\s+(.+?)\s+(\d+)[-–](\d+)(?:\s+\(.*?\))?\s*$",
+        re.IGNORECASE,
+    )
+    # Old format: "Team 0-3 (0-2) Team" or "Team 0-0 Team" (score between teams, no v)
+    match_old = re.compile(
+        r"^\s*(?:\d+:\d+\s+)?(.+?)\s+(\d+)[-–](\d+)(?:\s+\(.*?\))?\s+(.+?)\s*$",
+        re.IGNORECASE,
+    )
+    # Header date range: "# Date Fri Aug 11 2023 - Sun May 19 2024"
+    # Groups: month_word, day, year_start, month_word2, day2, year_end
+    header_re = re.compile(
+        r"#\s+Date\s+\w+\s+(\w+)\s+(\d+)\s+(\d{4})\s*-\s*\w+\s+(\w+)\s+(\d+)\s+(\d{4})",
         re.IGNORECASE,
     )
 
     for line in text.split("\n"):
         line = line.rstrip()
 
-        # Skip empty lines, comments, and section headers
         if not line:
             continue
+
+        # Parse header date range for year context and split point
+        if line.lstrip().startswith("# Date"):
+            hd = header_re.search(line)
+            if hd:
+                start_mon = hd.group(1).lower()[:3]
+                header_year_start = int(hd.group(3))
+                header_year_end = int(hd.group(6))
+                split_mon = MONTHS.get(start_mon)
+                if split_mon:
+                    season_split_day = int(hd.group(2))
+                    season_split_mon = split_mon
+            continue
+
         if line.lstrip().startswith("#"):
             continue
         if line.lstrip().startswith("\u25aa"):
@@ -252,21 +291,44 @@ def parse_football_txt(text, league_display, season_year):
         if line.lstrip().startswith("▪"):
             continue
 
-        # Check for date line: "Fri Aug 16 2024"
+        # Check for date line
         dm = months_re.search(line)
         if dm:
             month_name = dm.group(2).lower()[:3]
             month_num = MONTHS.get(month_name)
-            if month_num:
-                day = int(dm.group(3))
-                year = int(dm.group(4))
+            if not month_num:
+                continue
+            day = int(dm.group(3))
+            year_str = dm.group(4)
+
+            if year_str:
+                # Full date: "Fri Aug 16 2024"
+                year = int(year_str)
                 if year <= 99:
                     year += 2000
                 current_date = f"{year:04d}-{month_num:02d}-{day:02d}"
+                # Track the split point (first date with year tells us the boundary)
+                if header_year_start and not season_split_day:
+                    season_split_day = day
+                    season_split_mon = month_num
+            else:
+                # Date without year: "Fri Aug 11" — use header year range
+                # Determine which year: before the split date = header_year_start,
+                # after = header_year_end
+                if header_year_start is not None and header_year_end is not None and season_split_mon:
+                    if month_num < season_split_mon or (month_num == season_split_mon and day < season_split_day):
+                        year = header_year_end
+                    else:
+                        year = header_year_start
+                elif header_year_start is not None:
+                    year = header_year_start
+                else:
+                    continue
+                current_date = f"{year:04d}-{month_num:02d}-{day:02d}"
             continue
 
-        # Check for match line
-        mm = match_re.search(line)
+        # Try new format first (with v separator)
+        mm = match_new.search(line)
         if mm and current_date:
             home = mm.group(1).strip()
             away = mm.group(2).strip()
@@ -275,18 +337,30 @@ def parse_football_txt(text, league_display, season_year):
                 as_ = int(mm.group(4))
             except ValueError:
                 continue
+            if home and away:
+                matches.append({
+                    "home_team": home, "away_team": away,
+                    "home_score": hs, "away_score": as_,
+                    "match_date": current_date, "league": league_display,
+                })
+            continue
 
-            if not home or not away:
+        # Try old format (score between teams, no v)
+        mm = match_old.search(line)
+        if mm and current_date:
+            home = mm.group(1).strip()
+            try:
+                hs = int(mm.group(2))
+                as_ = int(mm.group(3))
+            except ValueError:
                 continue
-
-            matches.append({
-                "home_team": home,
-                "away_team": away,
-                "home_score": hs,
-                "away_score": as_,
-                "match_date": current_date,
-                "league": league_display,
-            })
+            away = mm.group(4).strip()
+            if home and away:
+                matches.append({
+                    "home_team": home, "away_team": away,
+                    "home_score": hs, "away_score": as_,
+                    "match_date": current_date, "league": league_display,
+                })
 
     return matches
 

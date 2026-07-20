@@ -8,11 +8,18 @@ if (!$db) { die(json_encode(['error' => 'DB unavailable'])); }
 $matchName = trim($_GET['match_name'] ?? '');
 if (!$matchName) { die(json_encode(['error' => 'match_name required'])); }
 
+function normalizeTeam($name) {
+    $name = trim(preg_replace('/\s+/', ' ', $name));
+    $name = preg_replace('/^(FC|CF|AC|SC|RC|SS|CD|AS|SK|FK|NK|UD|CD|CA|CR|EC|AA|AE|SSC|Real|Atletico)\s+/i', '', $name);
+    $name = preg_replace('/\s+(FC|CF|AC|SC|RC|SS|CD|AS|SK|FK|NK|UD|CD|CA|CR|EC|AA|AE|SSC)$/i', '', $name);
+    return trim(mb_strtolower($name));
+}
+
 // Parse "HomeTeam vs AwayTeam"
 $parts = preg_split('/\s+vs\.?\s+/i', $matchName, 2);
 if (count($parts) < 2) { die(json_encode(['error' => 'Cannot parse teams'])); }
-$home = trim($parts[0]);
-$away = trim($parts[1]);
+$home = normalizeTeam(trim($parts[0]));
+$away = normalizeTeam(trim($parts[1]));
 
 $result = [
     'home_team' => $home,
