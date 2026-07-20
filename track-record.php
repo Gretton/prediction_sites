@@ -37,7 +37,7 @@ $won = (int)$overall['won'];
 $lost = (int)$overall['lost'];
 $pending = (int)$overall['pending'];
 $voided = (int)$overall['voided'];
-$settled = $won + $lost;
+$settled = $won + $lost + $voided;
 $winRate = $settled > 0 ? round($won / $settled * 100, 1) : 0;
 
 // Stats by pick type (only latest settlement per pick to avoid re-settlement duplicates)
@@ -108,6 +108,28 @@ foreach ($byTypeRaw as $t) {
     $byType[$key]['lost'] += (int)$t['lost'];
 }
 uasort($byType, fn($a, $b) => $b['total'] <=> $a['total']);
+
+// Stats by league
+$allLeagueRows = $db->query("
+    SELECT wp.league,
+           SUM(CASE WHEN ps.result='won' THEN 1 ELSE 0 END) as won,
+           SUM(CASE WHEN ps.result='lost' THEN 1 ELSE 0 END) as lost
+    FROM (
+        SELECT p2.* FROM pick_settlements p2
+        INNER JOIN (
+            SELECT web_pick_id, MAX(id) AS max_id FROM pick_settlements
+            WHERE result IN ('won','lost')
+            GROUP BY web_pick_id
+        ) latest ON p2.id = latest.max_id
+    ) ps
+    INNER JOIN web_picks wp ON ps.web_pick_id = wp.id
+    WHERE wp.pick_type IN ('rollover','parlay','over_15')
+    GROUP BY wp.league
+    ORDER BY COUNT(*) DESC
+")->fetchAll();
+$byLeague = $allLeagueRows;
+$totalLeagues = count($allLeagueRows);
+$byLeague = array_slice($allLeagueRows, 0, 14);
 
 // Recent settlements (last 7 days, only settled picks)
 $recentCutoff = date('Y-m-d', strtotime('-7 days'));
@@ -292,7 +314,8 @@ footer a:hover { color: var(--primary); }
 
     <!-- Stats Badges -->
     <div class="d-flex flex-wrap gap-2 mb-4 justify-content-center">
-        <div class="stats-badge"><div class="num" style="color:var(--accent);"><?= $total ?></div><div class="lbl">Total Picks</div></div>
+        <div class="stats-badge"><div class="num" style="color:var(--accent);"><?= $settled ?></div><div class="lbl">Settled</div></div>
+        <div class="stats-badge"><div class="num" style="color:var(--accent);"><?= $total ?></div><div class="lbl">All Picks</div></div>
         <div class="stats-badge"><div class="num" style="color:#22C55E;"><?= $winRate ?>%</div><div class="lbl">Win Rate</div></div>
         <div class="stats-badge"><div class="num" style="color:<?= $profit >= 0 ? '#22C55E' : '#EF4444' ?>;"><?= ($profit >= 0 ? '+' : '') . number_format($profit, 1) ?>u</div><div class="lbl">Profit (ROI <?= ($roi >= 0 ? '+' : '') . $roi ?>%)</div></div>
         <div class="stats-badge"><div class="num" style="color:#FBBF24;"><?= $pending ?></div><div class="lbl">Pending</div></div>
@@ -328,11 +351,36 @@ footer a:hover { color: var(--primary); }
         ?>
             <div class="pick-type-item">
                 <div class="label"><?= htmlspecialchars($t['pick_value']) ?></div>
-                <div class="sub"><?= $tSettled ?> picks &middot; <?= $tRate !== null ? $tRate . '% win rate' : '<span style="color:var(--text-muted);">no settled picks</span>' ?></div>
-                <div style="font-size:0.7rem;margin-top:4px;"><span style="color:#22C55E;"><?= $t['won'] ?>W</span> <span style="color:#EF4444;margin-left:4px;"><?= $t['lost'] ?>L</span></div>
+                <div class="sub" style="line-height:1.6;"><?= $tSettled ?> picks<br><?= $tRate !== null ? '<strong style="color:var(--accent);font-size:0.7rem;">' . $tRate . '%</strong> win rate' : '<span style="color:var(--text-muted);">no settled picks</span>' ?></div>
+                <div style="font-size:0.7rem;margin-top:2px;"><span style="color:#22C55E;font-weight:600;"><?= $t['won'] ?>W</span> <span style="color:#EF4444;font-weight:600;margin-left:4px;"><?= $t['lost'] ?>L</span></div>
             </div>
         <?php endforeach; ?>
         </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- League Breakdown -->
+    <?php if (!empty($byLeague)): ?>
+    <div class="mb-4" style="background:linear-gradient(135deg,rgba(139,92,246,0.12) 0%,rgba(6,182,212,0.06) 100%);border:1px solid rgba(139,92,246,0.2);border-radius:12px;padding:18px;">
+        <h5 style="font-weight:700;font-size:0.95rem;margin-bottom:12px;"><i class="fas fa-trophy me-1" style="color:var(--accent);"></i>Performance by League</h5>
+        <div class="pick-type-grid">
+        <?php foreach ($byLeague as $t):
+            $tSettled = (int)$t['won'] + (int)$t['lost'];
+            $tRate = $tSettled > 0 ? round((int)$t['won'] / $tSettled * 100, 1) : null;
+            $leagueShort = strlen($t['league']) > 40 ? substr($t['league'], 0, 40) . '...' : $t['league'];
+        ?>
+            <div class="pick-type-item">
+                <div class="label" style="font-size:0.82rem;"><?= htmlspecialchars($leagueShort) ?></div>
+                <div class="sub" style="line-height:1.6;"><?= $tSettled ?> picks<br><?= $tRate !== null ? '<strong style="color:var(--accent);font-size:0.7rem;">' . $tRate . '%</strong> win rate' : '<span style="color:var(--text-muted);">no settled picks</span>' ?></div>
+                <div style="font-size:0.7rem;margin-top:2px;"><span style="color:#22C55E;font-weight:600;"><?= $t['won'] ?>W</span> <span style="color:#EF4444;font-weight:600;margin-left:4px;"><?= $t['lost'] ?>L</span></div>
+            </div>
+        <?php endforeach; ?>
+        </div>
+        <?php if ($totalLeagues > 14): ?>
+        <div class="text-center mt-3">
+            <a href="track-record-leagues" style="display:inline-flex;align-items:center;gap:6px;color:var(--accent);font-weight:600;font-size:0.85rem;text-decoration:none;transition:all .2s;">View All Leagues <i class="fas fa-arrow-right" style="font-size:0.75rem;"></i></a>
+        </div>
+        <?php endif; ?>
     </div>
     <?php endif; ?>
 
@@ -380,7 +428,7 @@ footer a:hover { color: var(--primary); }
                 <span class="score"><?= (int)$r['home_score'] ?>-<?= (int)$r['away_score'] ?></span>
                 <?php endif; ?>
                 <?= getResultBadge($r['result']) ?>
-                <small class="text-muted" style="font-size:0.7rem;white-space:nowrap;"><?= date('j M', strtotime($r['settlement_date'] ?? $r['detected_at'])) ?></small>
+
             </div>
         </div>
         <?php endforeach; ?>
@@ -438,7 +486,7 @@ footer a:hover { color: var(--primary); }
                 <h6 class="mb-3" style="font-weight:700;color:var(--text-light);">Free Tools</h6>
                 <ul class="list-unstyled" style="font-size:0.85rem;">
                     <li class="mb-2"><a href="signals"><i class="fas fa-microchip me-1" style="color:#22C55E;"></i> Smart Picks</a></li>
-                    <li class="mb-2"><a href="#"><i class="fas fa-chart-line me-1" style="color:#FBBF24;"></i> Performance</a></li>
+                    <li class="mb-2"><a href="track-record"><i class="fas fa-chart-line me-1" style="color:#FBBF24;"></i> Performance</a></li>
                     <li class="mb-2"><a href="dropping-odds"><i class="fas fa-arrow-trend-down me-1" style="color:#EF4444;"></i> Dropping Odds</a></li>
                     <li class="mb-2"><a href="betting-school"><i class="fas fa-book me-1" style="color:#8B5CF6;"></i> Betting School</a></li>
                     <li class="mb-2"><a href="pikka"><i class="fas fa-futbol me-1" style="color:#6366F1;"></i> Pikka</a></li>

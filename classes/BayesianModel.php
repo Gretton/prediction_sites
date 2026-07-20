@@ -64,6 +64,16 @@ class BayesianModel {
             try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_1` DECIMAL(8,2) DEFAULT NULL AFTER `value_pick`"); } catch (Exception $e) {}
             try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_x` DECIMAL(8,2) DEFAULT NULL AFTER `market_odds_1`"); } catch (Exception $e) {}
             try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_2` DECIMAL(8,2) DEFAULT NULL AFTER `market_odds_x`"); } catch (Exception $e) {}
+            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `prob_over_15` DECIMAL(5,2) DEFAULT NULL AFTER `under_25`"); } catch (Exception $e) {}
+            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `prob_under_15` DECIMAL(5,2) DEFAULT NULL AFTER `prob_over_15`"); } catch (Exception $e) {}
+            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `prob_over_35` DECIMAL(5,2) DEFAULT NULL AFTER `prob_under_15`"); } catch (Exception $e) {}
+            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `prob_under_35` DECIMAL(5,2) DEFAULT NULL AFTER `prob_over_35`"); } catch (Exception $e) {}
+            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_over15` DECIMAL(8,2) DEFAULT NULL AFTER `market_odds_2`"); } catch (Exception $e) {}
+            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_under25` DECIMAL(8,2) DEFAULT NULL AFTER `market_odds_over15`"); } catch (Exception $e) {}
+            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_under35` DECIMAL(8,2) DEFAULT NULL AFTER `market_odds_under25`"); } catch (Exception $e) {}
+            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_btts_yes` DECIMAL(8,2) DEFAULT NULL AFTER `market_odds_under35`"); } catch (Exception $e) {}
+            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_btts_no` DECIMAL(8,2) DEFAULT NULL AFTER `market_odds_btts_yes`"); } catch (Exception $e) {}
+            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `match_time` VARCHAR(50) DEFAULT NULL AFTER `match_date`"); } catch (Exception $e) {}
         } catch (Exception $e) {
             error_log("BayesianModel::ensureTable: " . $e->getMessage());
         }
@@ -352,7 +362,7 @@ class BayesianModel {
         ];
     }
 
-    public function storePrediction($homeTeam, $awayTeam, $league, $pred) {
+    public function storePrediction($homeTeam, $awayTeam, $league, $pred, $matchTime = null) {
         if (!$this->db) return false;
         $matchName = $homeTeam . ' vs ' . $awayTeam;
         $recPick = '';
@@ -366,27 +376,33 @@ class BayesianModel {
         try {
             $stmt = $this->db->prepare("
                 INSERT INTO bayesian_predictions
-                    (home_team, away_team, match_name, league, match_date,
+                    (home_team, away_team, match_name, league, match_date, match_time,
                      prob_1, prob_x, prob_2, prob_1x, prob_x2, prob_12,
-                     over_25, under_25, btts_yes, btts_no, expected_goals,
+                     over_25, under_25, prob_over_15, prob_under_15, prob_over_35, prob_under_35,
+                     btts_yes, btts_no, expected_goals,
                      confidence, recommended_pick)
-                VALUES (?, ?, ?, ?, CURDATE(),
+                VALUES (?, ?, ?, ?, CURDATE(), ?,
                         ?, ?, ?, ?, ?, ?,
-                        ?, ?, ?, ?, ?,
+                        ?, ?, ?, ?, ?, ?,
+                        ?, ?, ?,
                         ?, ?)
                 ON DUPLICATE KEY UPDATE
                     prob_1 = VALUES(prob_1), prob_x = VALUES(prob_x), prob_2 = VALUES(prob_2),
                     prob_1x = VALUES(prob_1x), prob_x2 = VALUES(prob_x2), prob_12 = VALUES(prob_12),
                     over_25 = VALUES(over_25), under_25 = VALUES(under_25),
+                    prob_over_15 = VALUES(prob_over_15), prob_under_15 = VALUES(prob_under_15),
+                    prob_over_35 = VALUES(prob_over_35), prob_under_35 = VALUES(prob_under_35),
                     btts_yes = VALUES(btts_yes), btts_no = VALUES(btts_no),
                     expected_goals = VALUES(expected_goals), confidence = VALUES(confidence),
                     recommended_pick = VALUES(recommended_pick)
             ");
             return $stmt->execute([
-                $homeTeam, $awayTeam, $matchName, $league,
+                $homeTeam, $awayTeam, $matchName, $league, $matchTime,
                 $pred['probs']['1'], $pred['probs']['X'], $pred['probs']['2'],
                 $pred['probs']['1X'], $pred['probs']['X2'], $pred['probs']['12'],
                 $pred['over_under']['over_25'], $pred['over_under']['under_25'],
+                $pred['over_under']['over_15'], $pred['over_under']['under_15'],
+                $pred['over_under']['over_35'], $pred['over_under']['under_35'],
                 $pred['btts']['yes'], $pred['btts']['no'],
                 $pred['over_under']['expected_total_goals'],
                 $pred['confidence'], $recPick,
@@ -403,12 +419,12 @@ class BayesianModel {
 
         // Get distinct matches from scraper_results + web_picks for today
         $stmt = $this->db->query("
-            SELECT DISTINCT match_name, league FROM (
-                SELECT CONVERT(match_name USING utf8mb4) COLLATE utf8mb4_unicode_ci AS match_name, CONVERT(league USING utf8mb4) COLLATE utf8mb4_unicode_ci AS league FROM scraper_results WHERE DATE(detected_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+            SELECT match_name, league, match_time FROM (
+                SELECT CONVERT(match_name USING utf8mb4) COLLATE utf8mb4_unicode_ci AS match_name, CONVERT(league USING utf8mb4) COLLATE utf8mb4_unicode_ci AS league, match_time FROM scraper_results WHERE DATE(detected_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
                 UNION
-                SELECT CONVERT(match_name USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT(league USING utf8mb4) COLLATE utf8mb4_unicode_ci FROM web_picks WHERE DATE(detected_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+                SELECT CONVERT(match_name USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT(league USING utf8mb4) COLLATE utf8mb4_unicode_ci, match_time FROM web_picks WHERE DATE(detected_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
                 UNION
-                SELECT CONVERT(match_name USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT(league USING utf8mb4) COLLATE utf8mb4_unicode_ci FROM admin_featured_picks WHERE DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+                SELECT CONVERT(match_name USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT(league USING utf8mb4) COLLATE utf8mb4_unicode_ci, NULL as match_time FROM admin_featured_picks WHERE DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
             ) t LIMIT 100
         ");
 
@@ -417,7 +433,7 @@ class BayesianModel {
             if (!$resolved) { $skipped++; continue; }
             try {
                 $pred = $this->predict($resolved['resolved_home'], $resolved['resolved_away'], $m['league']);
-                $this->storePrediction($resolved['resolved_home'], $resolved['resolved_away'], $m['league'], $pred);
+                $this->storePrediction($resolved['resolved_home'], $resolved['resolved_away'], $m['league'], $pred, $m['match_time']);
                 $stored++;
             } catch (Exception $e) {
                 $errors++;
@@ -528,17 +544,19 @@ class BayesianModel {
         } catch (Exception $e) { return []; }
     }
 
-    public function updateValueEdge($id, $edge1, $edgeX, $edge2, $valuePick, $odds1, $oddsX, $odds2) {
+    public function updateValueEdge($id, $edge1, $edgeX, $edge2, $valuePick, $odds1, $oddsX, $odds2, $oddsOver15 = null, $oddsUnder25 = null, $oddsBttsYes = null, $oddsBttsNo = null) {
         if (!$this->db) return false;
         try {
             $stmt = $this->db->prepare("
                 UPDATE bayesian_predictions SET
                     value_edge_1 = ?, value_edge_x = ?, value_edge_2 = ?,
                     value_pick = ?,
-                    market_odds_1 = ?, market_odds_x = ?, market_odds_2 = ?
+                    market_odds_1 = ?, market_odds_x = ?, market_odds_2 = ?,
+                    market_odds_over15 = ?, market_odds_under25 = ?,
+                    market_odds_btts_yes = ?, market_odds_btts_no = ?
                 WHERE id = ?
             ");
-            return $stmt->execute([$edge1, $edgeX, $edge2, $valuePick, $odds1, $oddsX, $odds2, $id]);
+            return $stmt->execute([$edge1, $edgeX, $edge2, $valuePick, $odds1, $oddsX, $odds2, $oddsOver15, $oddsUnder25, $oddsBttsYes, $oddsBttsNo, $id]);
         } catch (Exception $e) {
             error_log("BayesianModel::updateValueEdge: " . $e->getMessage());
             return false;

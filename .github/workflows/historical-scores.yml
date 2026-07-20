@@ -1,0 +1,36 @@
+name: Historical Scores Backfill
+
+on:
+  schedule:
+    # Daily at 06:00 UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      seasons:
+        description: 'Number of past seasons to scrape'
+        default: '1'
+        required: false
+      leagues:
+        description: 'League slugs (comma-separated, empty = all major)'
+        default: ''
+        required: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run historical scraper
+        env:
+          KEY: ${{ secrets.FETCH_SCORES_KEY }}
+        run: |
+          ARGS="--key=$KEY"
+          if [ -n "${{ inputs.seasons }}" ]; then ARGS="$ARGS --seasons=${{ inputs.seasons }}"; fi
+          if [ -n "${{ inputs.leagues }}" ]; then ARGS="$ARGS --leagues=${{ inputs.leagues }}"; fi
+          python cron/historical_scraper.py $ARGS

@@ -70,9 +70,9 @@ function resolveTeamId($db, $teamName, $normalizedName) {
     return $id;
 }
 
-$checkStmt = $db->prepare("SELECT id, home_score, away_score, first_seen_at, home_team_id, away_team_id FROM match_results WHERE home_team = ? AND away_team = ? AND match_date = ?");
-$insertStmt = $db->prepare("INSERT INTO match_results (home_team, away_team, home_score, away_score, match_date, first_seen_at, home_team_id, away_team_id) VALUES (?, ?, ?, ?, ?, NOW(), ?, ?)");
-$updateStmt = $db->prepare("UPDATE match_results SET home_score = ?, away_score = ? WHERE id = ?");
+$checkStmt = $db->prepare("SELECT id, home_score, away_score, first_seen_at, home_team_id, away_team_id, league FROM match_results WHERE home_team = ? AND away_team = ? AND match_date = ?");
+$insertStmt = $db->prepare("INSERT INTO match_results (home_team, away_team, home_score, away_score, match_date, league, first_seen_at, home_team_id, away_team_id) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?, ?)");
+$updateStmt = $db->prepare("UPDATE match_results SET home_score = ?, away_score = ?, league = COALESCE(NULLIF(?, ''), league) WHERE id = ?");
 $updateTeamIds = $db->prepare("UPDATE match_results SET home_team_id = ?, away_team_id = ? WHERE id = ?");
 
 foreach ($input['matches'] as $m) {
@@ -80,14 +80,18 @@ foreach ($input['matches'] as $m) {
     $away = normalizeTeam($m['away_team'] ?? '');
     $hs = (int)($m['home_score'] ?? 0);
     $as = (int)($m['away_score'] ?? 0);
+    $league = trim($m['league'] ?? '');
     if (empty($home) || empty($away)) { $skipped++; continue; }
 
     $checkStmt->execute([$home, $away, $today]);
     $existing = $checkStmt->fetch();
 
     if ($existing) {
-        if ((int)$existing['home_score'] !== $hs || (int)$existing['away_score'] !== $as) {
-            $updateStmt->execute([$hs, $as, $existing['id']]);
+        $needsUpdate = false;
+        if ((int)$existing['home_score'] !== $hs || (int)$existing['away_score'] !== $as) { $needsUpdate = true; }
+        $updatingLeague = $league && (!$existing['league'] || $existing['league'] !== $league);
+        if ($needsUpdate || $updatingLeague) {
+            $updateStmt->execute([$hs, $as, $updatingLeague ? $league : '', $existing['id']]);
             $inserted++;
         } else {
             $skipped++;
@@ -100,7 +104,7 @@ foreach ($input['matches'] as $m) {
     } else {
         $hid = resolveTeamId($db, $home, $home);
         $aid = resolveTeamId($db, $away, $away);
-        $insertStmt->execute([$home, $away, $hs, $as, $today, $hid, $aid]);
+        $insertStmt->execute([$home, $away, $hs, $as, $today, $league ?: null, $hid, $aid]);
         $inserted++;
     }
 }
