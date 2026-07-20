@@ -266,9 +266,13 @@ def main():
     dry_run = False
     hook_url = None
     
+    recent_days = 0
+    
     for a in argv:
         if a == "--dry-run":
             dry_run = True
+        elif a == "--recent":
+            recent_days = 7
         elif a.startswith("--key="):
             secret_key = a.split("=", 1)[1]
         elif a.startswith("--seasons="):
@@ -294,7 +298,15 @@ def main():
     else:
         leagues_to_scrape = list(MAJOR_LEAGUES.items())
     
-    log(f"Scraping {len(leagues_to_scrape)} leagues, {seasons} season(s) each, dry_run={dry_run}")
+    mode = "RECENT (7 days)" if recent_days else f"{seasons} season(s)"
+    log(f"Scraping {len(leagues_to_scrape)} leagues, {mode}, dry_run={dry_run}")
+    
+    # Recent cutoff date
+    recent_cutoff = None
+    if recent_days:
+        from datetime import datetime, timedelta
+        recent_cutoff = (datetime.now() - timedelta(days=recent_days)).strftime("%Y-%m-%d")
+        log(f"  Only matches after {recent_cutoff}")
     
     total_posted = 0
     total_found = 0
@@ -302,6 +314,14 @@ def main():
     for slug, display in leagues_to_scrape:
         log(f"\n--- {display} ({slug}) ---")
         matches = scrape_league(slug, display, seasons)
+        if not matches:
+            continue
+        
+        # Filter by recency if --recent
+        if recent_cutoff:
+            matches = [m for m in matches if m.get("match_date", "") >= recent_cutoff]
+            log(f"  After date filter: {len(matches)} matches remain")
+        
         if not matches:
             continue
         total_found += len(matches)

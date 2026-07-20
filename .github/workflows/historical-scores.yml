@@ -2,17 +2,21 @@ name: Historical Scores Backfill
 
 on:
   schedule:
-    # Daily at 06:00 UTC
+    # Daily at 06:00 UTC - only last 7 days
     - cron: '0 6 * * *'
   workflow_dispatch:
     inputs:
       seasons:
-        description: 'Number of past seasons to scrape'
+        description: 'Number of past seasons to scrape (--recent ignores this)'
         default: '1'
         required: false
       leagues:
         description: 'League slugs (comma-separated, empty = all major)'
         default: ''
+        required: false
+      mode:
+        description: 'Scrape mode: recent (7 days) or full (N seasons)'
+        default: 'recent'
         required: false
 
 jobs:
@@ -31,6 +35,12 @@ jobs:
           KEY: ${{ secrets.FETCH_SCORES_KEY }}
         run: |
           ARGS="--key=$KEY"
-          if [ -n "${{ inputs.seasons }}" ]; then ARGS="$ARGS --seasons=${{ inputs.seasons }}"; fi
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            ARGS="$ARGS --recent"
+          elif [ "${{ inputs.mode }}" = "recent" ]; then
+            ARGS="$ARGS --recent"
+          else
+            ARGS="$ARGS --seasons=${{ inputs.seasons }}"
+          fi
           if [ -n "${{ inputs.leagues }}" ]; then ARGS="$ARGS --leagues=${{ inputs.leagues }}"; fi
           python cron/historical_scraper.py $ARGS
