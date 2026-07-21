@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-07-21T08:25:12.985Z",
-  "started_at": "2026-07-21T08:24:47.342Z",
+  "generated_at": "2026-07-21T11:46:14.625Z",
+  "started_at": "2026-07-21T11:45:40.269Z",
   "min_agreement": 2,
   "sources": {
     "allnigeriafootball": {
@@ -17,7 +17,7 @@
     },
     "bet_sites": {
       "status": "ok",
-      "count": 70
+      "count": 73
     },
     "wp_tables": {
       "status": "ok",
@@ -732,6 +732,33 @@
           "home": "Aberdeen",
           "away": "Queens Park",
           "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Mjallby vs Lincoln Red Imps",
+          "home": "Mjallby",
+          "away": "Lincoln Red Imps",
+          "pick": "1 Ov 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Fenerbahce vs Gornik Z",
+          "home": "Fenerbahce",
+          "away": "Gornik Z",
+          "pick": "1 Ov 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "St. Mirren vs East Kilbride",
+          "home": "St. Mirren",
+          "away": "East Kilbride",
+          "pick": "1 Ov 1.5",
           "odds": "",
           "league": "",
           "time": ""
