@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-07-21T11:46:14.625Z",
-  "started_at": "2026-07-21T11:45:40.269Z",
+  "generated_at": "2026-07-21T15:42:07.616Z",
+  "started_at": "2026-07-21T15:41:43.672Z",
   "min_agreement": 2,
   "sources": {
     "allnigeriafootball": {
@@ -17,7 +17,7 @@
     },
     "bet_sites": {
       "status": "ok",
-      "count": 73
+      "count": 81
     },
     "wp_tables": {
       "status": "ok",
@@ -732,6 +732,78 @@
           "home": "Aberdeen",
           "away": "Queens Park",
           "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Shanhgai vs Qingdao",
+          "home": "Shanhgai",
+          "away": "Qingdao",
+          "pick": "1 &amp; Ov 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Mjallby vs Lincoln Red Imps",
+          "home": "Mjallby",
+          "away": "Lincoln Red Imps",
+          "pick": "1 Ov 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Aarhus vs Lech Poznan",
+          "home": "Aarhus",
+          "away": "Lech Poznan",
+          "pick": "1X",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Fenerbahce vs Gornik Z",
+          "home": "Fenerbahce",
+          "away": "Gornik Z",
+          "pick": "1 Ov 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Larne vs Crvena Zvezda",
+          "home": "Larne",
+          "away": "Crvena Zvezda",
+          "pick": "2 Ov 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Dundee Utd vs Spartans",
+          "home": "Dundee Utd",
+          "away": "Spartans",
+          "pick": "1 &amp; Ov 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Kilmarnock vs Hamilton",
+          "home": "Kilmarnock",
+          "away": "Hamilton",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "St. Mirren vs East Kilbride",
+          "home": "St. Mirren",
+          "away": "East Kilbride",
+          "pick": "1 Ov 1.5",
           "odds": "",
           "league": "",
           "time": ""
@@ -1534,6 +1606,34 @@
       "odds": "",
       "league": "UEFA Champions League",
       "time": "17:00"
+    },
+    {
+      "match": "Aarhus vs Lech Poznan",
+      "home": "Aarhus",
+      "away": "Lech Poznan",
+      "pick": "1X",
+      "sources": [
+        "adibet",
+        "bet_sites"
+      ],
+      "source_count": 2,
+      "odds": "",
+      "league": "Euro Competitions",
+      "time": ""
+    },
+    {
+      "match": "Kilmarnock vs Hamilton",
+      "home": "Kilmarnock",
+      "away": "Hamilton",
+      "pick": "Home(1)",
+      "sources": [
+        "adibet",
+        "bet_sites"
+      ],
+      "source_count": 2,
+      "odds": "",
+      "league": "Scotland",
+      "time": ""
     },
     {
       "match": "Kopavogur vs Vestri",
