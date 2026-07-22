@@ -7,6 +7,8 @@ class BayesianModel {
     private $recencyHalfLife = 90;
     private $leaguePriors = [];
     private static $teamAliases = [];
+    private static $tableEnsured = false;
+    private $homeAdvantageCache = [];
 
     public function __construct() {
         $this->db = getDB();
@@ -16,7 +18,7 @@ class BayesianModel {
     }
 
     private function ensureTable() {
-        if (!$this->db) return;
+        if (!$this->db || self::$tableEnsured) return;
         try {
             $this->db->exec("CREATE TABLE IF NOT EXISTS `bayesian_predictions` (
                 `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -57,23 +59,35 @@ class BayesianModel {
                 UNIQUE KEY `uq_bayesian_match` (`match_name`(100), `match_date`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `value_edge_1` DECIMAL(5,2) DEFAULT NULL AFTER `recommended_pick`"); } catch (Exception $e) {}
-            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `value_edge_x` DECIMAL(5,2) DEFAULT NULL AFTER `value_edge_1`"); } catch (Exception $e) {}
-            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `value_edge_2` DECIMAL(5,2) DEFAULT NULL AFTER `value_edge_x`"); } catch (Exception $e) {}
-            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `value_pick` VARCHAR(100) DEFAULT NULL AFTER `value_edge_2`"); } catch (Exception $e) {}
-            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_1` DECIMAL(8,2) DEFAULT NULL AFTER `value_pick`"); } catch (Exception $e) {}
-            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_x` DECIMAL(8,2) DEFAULT NULL AFTER `market_odds_1`"); } catch (Exception $e) {}
-            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_2` DECIMAL(8,2) DEFAULT NULL AFTER `market_odds_x`"); } catch (Exception $e) {}
-            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `prob_over_15` DECIMAL(5,2) DEFAULT NULL AFTER `under_25`"); } catch (Exception $e) {}
-            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `prob_under_15` DECIMAL(5,2) DEFAULT NULL AFTER `prob_over_15`"); } catch (Exception $e) {}
-            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `prob_over_35` DECIMAL(5,2) DEFAULT NULL AFTER `prob_under_15`"); } catch (Exception $e) {}
-            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `prob_under_35` DECIMAL(5,2) DEFAULT NULL AFTER `prob_over_35`"); } catch (Exception $e) {}
-            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_over15` DECIMAL(8,2) DEFAULT NULL AFTER `market_odds_2`"); } catch (Exception $e) {}
-            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_under25` DECIMAL(8,2) DEFAULT NULL AFTER `market_odds_over15`"); } catch (Exception $e) {}
-            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_under35` DECIMAL(8,2) DEFAULT NULL AFTER `market_odds_under25`"); } catch (Exception $e) {}
-            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_btts_yes` DECIMAL(8,2) DEFAULT NULL AFTER `market_odds_under35`"); } catch (Exception $e) {}
-            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_btts_no` DECIMAL(8,2) DEFAULT NULL AFTER `market_odds_btts_yes`"); } catch (Exception $e) {}
-            try { $this->db->exec("ALTER TABLE bayesian_predictions ADD COLUMN `match_time` VARCHAR(50) DEFAULT NULL AFTER `match_date`"); } catch (Exception $e) {}
+            $cols = [];
+            $q = $this->db->query("SHOW COLUMNS FROM bayesian_predictions");
+            foreach ($q->fetchAll(PDO::FETCH_COLUMN) as $c) $cols[] = $c;
+
+            $migrations = [
+                'value_edge_1' => "ALTER TABLE bayesian_predictions ADD COLUMN `value_edge_1` DECIMAL(5,2) DEFAULT NULL AFTER `recommended_pick`",
+                'value_edge_x' => "ALTER TABLE bayesian_predictions ADD COLUMN `value_edge_x` DECIMAL(5,2) DEFAULT NULL AFTER `value_edge_1`",
+                'value_edge_2' => "ALTER TABLE bayesian_predictions ADD COLUMN `value_edge_2` DECIMAL(5,2) DEFAULT NULL AFTER `value_edge_x`",
+                'value_pick' => "ALTER TABLE bayesian_predictions ADD COLUMN `value_pick` VARCHAR(100) DEFAULT NULL AFTER `value_edge_2`",
+                'market_odds_1' => "ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_1` DECIMAL(8,2) DEFAULT NULL AFTER `value_pick`",
+                'market_odds_x' => "ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_x` DECIMAL(8,2) DEFAULT NULL AFTER `market_odds_1`",
+                'market_odds_2' => "ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_2` DECIMAL(8,2) DEFAULT NULL AFTER `market_odds_x`",
+                'prob_over_15' => "ALTER TABLE bayesian_predictions ADD COLUMN `prob_over_15` DECIMAL(5,2) DEFAULT NULL AFTER `under_25`",
+                'prob_under_15' => "ALTER TABLE bayesian_predictions ADD COLUMN `prob_under_15` DECIMAL(5,2) DEFAULT NULL AFTER `prob_over_15`",
+                'prob_over_35' => "ALTER TABLE bayesian_predictions ADD COLUMN `prob_over_35` DECIMAL(5,2) DEFAULT NULL AFTER `prob_under_15`",
+                'prob_under_35' => "ALTER TABLE bayesian_predictions ADD COLUMN `prob_under_35` DECIMAL(5,2) DEFAULT NULL AFTER `prob_over_35`",
+                'market_odds_over15' => "ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_over15` DECIMAL(8,2) DEFAULT NULL AFTER `market_odds_2`",
+                'market_odds_under25' => "ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_under25` DECIMAL(8,2) DEFAULT NULL AFTER `market_odds_over15`",
+                'market_odds_under35' => "ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_under35` DECIMAL(8,2) DEFAULT NULL AFTER `market_odds_under25`",
+                'market_odds_btts_yes' => "ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_btts_yes` DECIMAL(8,2) DEFAULT NULL AFTER `market_odds_under35`",
+                'market_odds_btts_no' => "ALTER TABLE bayesian_predictions ADD COLUMN `market_odds_btts_no` DECIMAL(8,2) DEFAULT NULL AFTER `market_odds_btts_yes`",
+                'match_time' => "ALTER TABLE bayesian_predictions ADD COLUMN `match_time` VARCHAR(50) DEFAULT NULL AFTER `match_date`",
+            ];
+            foreach ($migrations as $col => $sql) {
+                if (!in_array($col, $cols)) {
+                    try { $this->db->exec($sql); } catch (Exception $e) {}
+                }
+            }
+            self::$tableEnsured = true;
         } catch (Exception $e) {
             error_log("BayesianModel::ensureTable: " . $e->getMessage());
         }
@@ -93,7 +107,15 @@ class BayesianModel {
                     $extra = json_decode($r['aliases'], true);
                     if (is_array($extra)) $names = array_merge($names, $extra);
                 }
-                self::$teamAliases[$key] = ['id' => (int)$r['id'], 'names' => $names];
+                $entry = ['id' => (int)$r['id'], 'names' => $names];
+                self::$teamAliases[$key] = $entry;
+                // Register each alias variant as an additional lookup key
+                foreach ($names as $n) {
+                    $aliasKey = $this->normalizeName($n);
+                    if ($aliasKey !== $key && !isset(self::$teamAliases[$aliasKey])) {
+                        self::$teamAliases[$aliasKey] = $entry;
+                    }
+                }
             }
             // If teams table is empty, fall back to match_results
             if (empty(self::$teamAliases)) {
@@ -112,7 +134,17 @@ class BayesianModel {
         if (isset(self::$teamAliases[$key]) && self::$teamAliases[$key]['id']) {
             return self::$teamAliases[$key]['id'];
         }
-        return null;
+        // Fuzzy fallback
+        $best = null; $bestScore = 0;
+        foreach (self::$teamAliases as $dbKey => $entry) {
+            if (!$entry['id']) continue;
+            $score = $this->bigramSimilarity($key, $dbKey);
+            if ($score > $bestScore && $score >= 0.55) {
+                $bestScore = $score;
+                $best = $entry['id'];
+            }
+        }
+        return $best;
     }
 
     public function resolveTeamName($scrapedName) {
@@ -123,7 +155,7 @@ class BayesianModel {
         $best = null; $bestScore = 0;
         foreach (self::$teamAliases as $dbKey => $entry) {
             $score = $this->bigramSimilarity($key, $dbKey);
-            if ($score > $bestScore && $score > 0.55) {
+            if ($score > $bestScore && $score >= 0.55) {
                 $bestScore = $score;
                 $best = $entry['names'][0] ?? null;
             }
@@ -132,37 +164,50 @@ class BayesianModel {
     }
 
     public function resolveTeamId($scrapedName) {
-        $key = $this->normalizeName($scrapedName);
-        if (isset(self::$teamAliases[$key]) && !empty(self::$teamAliases[$key]['id'])) {
-            return self::$teamAliases[$key]['id'];
-        }
-        return null;
+        return $this->getTeamId($scrapedName);
     }
 
     private function normalizeName($name) {
         $name = mb_strtolower(trim($name));
         $name = preg_replace('/[^a-z0-9\s\-\']/', '', $name);
         $name = preg_replace('/\s+/', ' ', $name);
-        $subs = [
-            'man utd' => 'manchester united', 'man united' => 'manchester united',
-            'man city' => 'manchester city', 'manchester cty' => 'manchester city',
+
+        // Strip common prefixes (these are safe str_replace since they have trailing space)
+        $prefixes = ['fc ','cf ','ac ','sc ','rc ','ss ','cd ','as ',
+                     'sk ','fk ','nk ','ud ','ca ','cr ','ec ','aa ',
+                     'ae ','ssc ','if ','bk '];
+        $name = str_replace($prefixes, '', $name);
+
+        // Abbreviation expansion — only apply if expanded form not already in the name
+        // Use word-boundary regex to avoid false matches (e.g. "inter" in "international")
+        $expansions = [
+            'man utd'       => 'manchester united',
+            'man united'    => 'manchester united',
+            'man city'      => 'manchester city',
+            'manchester cty' => 'manchester city',
+            'inter'         => 'inter milan',
+            'milan'         => 'ac milan',
+            'bayern'        => 'bayern munich',
+            'psg'           => 'paris saint germain',
+            'realmadrid'    => 'real madrid',
+            'bvb'           => 'borussia dortmund',
+        ];
+        foreach ($expansions as $abbr => $expanded) {
+            if (strpos($name, $expanded) === false) {
+                $name = preg_replace('/\b' . preg_quote($abbr, '/') . '\b/', $expanded, $name);
+            }
+        }
+
+        // Short-name aliases (always safe — single word to single word)
+        $shortcuts = [
             'tot' => 'tottenham', 'spurs' => 'tottenham',
             'ars' => 'arsenal', 'che' => 'chelsea',
             'liv' => 'liverpool', 'new' => 'newcastle',
-            'inter' => 'inter milan', 'milan' => 'ac milan',
             'juve' => 'juventus', 'nap' => 'napoli',
-            'barca' => 'barcelona', 'realmadrid' => 'real madrid',
-            'psg' => 'paris saint germain',
-            'bayern' => 'bayern munich', 'bvb' => 'borussia dortmund',
-            'fc ' => '', 'cf ' => '', 'ac ' => '', 'sc ' => '',
-            'rc ' => '', 'ss ' => '', 'cd ' => '', 'as ' => '',
-            'sk ' => '', 'fk ' => '', 'nk ' => '', 'ud ' => '',
-            'ca ' => '', 'cr ' => '', 'ec ' => '', 'aa ' => '',
-            'ae ' => '', 'ssc ' => '', 'if ' => '', 'bk ' => '',
+            'barca' => 'barcelona',
         ];
-        foreach ($subs as $a => $c) {
-            $name = str_replace($a, $c, $name);
-        }
+        $name = str_replace(array_keys($shortcuts), array_values($shortcuts), $name);
+
         $name = preg_replace('/\s+/', ' ', $name);
         return trim($name);
     }
@@ -275,28 +320,41 @@ class BayesianModel {
         return $this->leaguePriors[$league];
     }
 
-    public function predict($homeTeam, $awayTeam, $league = null, $lookbackDays = 365) {
+    public function predict($homeTeam, $awayTeam, $league = null, $lookbackDays = 365, $bookmakerOdds = null) {
         $prior = $this->getLeaguePrior($league);
         $homeForm = $this->getTeamHistory($homeTeam, $league, true, $lookbackDays);
         $awayForm = $this->getTeamHistory($awayTeam, $league, false, $lookbackDays);
         $h2h = $this->getHeadToHead($homeTeam, $awayTeam, $lookbackDays);
+        $homeDefense = $this->getDefenseStats($homeTeam, $lookbackDays);
+        $awayDefense = $this->getDefenseStats($awayTeam, $lookbackDays);
 
         $homeMatches = $homeForm['matches'];
-        $awayMatchCount = $awayForm['matches'];
+        $awayMatches = $awayForm['matches'];
         $k = $this->priorStrength;
 
-        $alphaHome = $prior['home_win_rate'] * $k + $homeForm['wins'];
-        $betaHome = (1 - $prior['home_win_rate']) * $k + ($homeMatches - $homeForm['wins']);
+        $teamHA = $this->getTeamHomeAdvantage($homeTeam, $league);
+        $effectiveHomeRate = $prior['home_win_rate'];
+        $effectiveAwayRate = $prior['away_win_rate'];
+        if ($teamHA && $teamHA['total'] >= 5) {
+            $teamWeight = min(0.7, $teamHA['total'] / ($teamHA['total'] + 20));
+            $effectiveHomeRate = $prior['home_win_rate'] * (1 - $teamWeight) + $teamHA['home_win_rate'] * $teamWeight;
+            $effectiveAwayRate = $prior['away_win_rate'] * (1 - $teamWeight) + $teamHA['loss_rate'] * $teamWeight;
+        }
+
+        $alphaHome = $effectiveHomeRate * $k + $homeForm['wins'];
+        $betaHome = (1 - $effectiveHomeRate) * $k + ($homeMatches - $homeForm['wins']);
         $postHome = $alphaHome / ($alphaHome + $betaHome);
 
-        $alphaDraw = $prior['draw_rate'] * $k + $homeForm['draws'];
-        $betaDraw = (1 - $prior['draw_rate']) * $k + ($homeMatches - $homeForm['draws']);
-        $alphaDraw += $awayForm['draws'];
-        $betaDraw += ($awayMatchCount - $awayForm['draws']);
+        $homeDrawRate = $homeMatches > 0 ? $homeForm['draws'] / $homeMatches : $prior['draw_rate'];
+        $awayDrawRate = $awayMatches > 0 ? $awayForm['draws'] / $awayMatches : $prior['draw_rate'];
+        $combinedDrawRate = ($homeDrawRate * $homeMatches + $awayDrawRate * $awayMatches) / max(1, $homeMatches + $awayMatches);
+        $totalMatches = $homeMatches + $awayMatches;
+        $alphaDraw = $prior['draw_rate'] * $k + $combinedDrawRate * $totalMatches;
+        $betaDraw = (1 - $prior['draw_rate']) * $k + $totalMatches * (1 - $combinedDrawRate);
         $postDraw = $alphaDraw / ($alphaDraw + $betaDraw);
 
-        $alphaAway = $prior['away_win_rate'] * $k + $awayForm['wins'];
-        $betaAway = (1 - $prior['away_win_rate']) * $k + ($awayMatchCount - $awayForm['wins']);
+        $alphaAway = $effectiveAwayRate * $k + $awayForm['wins'];
+        $betaAway = (1 - $effectiveAwayRate) * $k + ($awayMatches - $awayForm['wins']);
         $postAway = $alphaAway / ($alphaAway + $betaAway);
 
         $total = $postHome + $postDraw + $postAway;
@@ -311,6 +369,18 @@ class BayesianModel {
             $postAway = $postAway * 0.8 + $h2hAway * 0.2;
             $t2 = $postHome + $postDraw + $postAway;
             if ($t2 > 0) { $postHome /= $t2; $postDraw /= $t2; $postAway /= $t2; }
+        }
+
+        if ($homeDefense && $awayDefense && $homeDefense['total_matches'] >= 5 && $awayDefense['total_matches'] >= 5) {
+            $homeDefStrength = max(0, 1 - ($homeDefense['avg_conceded'] / 2));
+            $awayDefStrength = max(0, 1 - ($awayDefense['avg_conceded'] / 2));
+            $defDiff = $homeDefStrength - $awayDefStrength;
+            $defAdj = $defDiff * 0.04;
+            $postHome = max(0.01, $postHome + $defAdj);
+            $postAway = max(0.01, $postAway - $defAdj);
+            $postDraw = max(0.01, 1 - $postHome - $postAway);
+            $tDef = $postHome + $postDraw + $postAway;
+            if ($tDef > 0) { $postHome /= $tDef; $postDraw /= $tDef; $postAway /= $tDef; }
         }
 
         $homeStanding = $this->getTeamStanding($homeTeam, $league);
@@ -338,6 +408,20 @@ class BayesianModel {
         $uniform = 1/3;
         $confidence = round((abs($postHome - $uniform) + abs($postDraw - $uniform) + abs($postAway - $uniform)) / (2 * (1 - $uniform)) * 100, 1);
 
+        $dataPoints = $homeMatches + $awayMatches + $h2h['matches'];
+        $effectiveN = max(10, $dataPoints + $k);
+        $credible95 = [
+            'home' => $this->credibleInterval($postHome, $effectiveN),
+            'draw' => $this->credibleInterval($postDraw, $effectiveN),
+            'away' => $this->credibleInterval($postAway, $effectiveN),
+        ];
+
+        $tempPred = ['probs' => [
+            '1' => $postHome * 100, 'X' => $postDraw * 100, '2' => $postAway * 100,
+            '1X' => $dcHomeDraw * 100, 'X2' => $dcAwayDraw * 100, '12' => $dcHomeAway * 100,
+        ]];
+        $value = $this->detectValue($tempPred, $bookmakerOdds);
+
         return [
             'home_team' => $homeTeam,
             'away_team' => $awayTeam,
@@ -345,6 +429,8 @@ class BayesianModel {
             'prior' => $prior,
             'home_form' => $homeForm,
             'away_form' => $awayForm,
+            'home_defense' => $homeDefense,
+            'away_defense' => $awayDefense,
             'h2h' => $h2h,
             'probs' => [
                 '1' => round($postHome * 100, 1),
@@ -357,12 +443,14 @@ class BayesianModel {
             'over_under' => $ou,
             'btts' => $btts,
             'confidence' => $confidence,
+            'credible_intervals' => $credible95,
+            'value' => $value,
             'recommended_pick' => $this->getRecommendedPick($postHome, $postDraw, $postAway, $ou, $btts),
-            'data_quality' => $homeForm['matches'] + $awayForm['matches'] + $h2h['matches'],
+            'data_quality' => $dataPoints,
         ];
     }
 
-    public function storePrediction($homeTeam, $awayTeam, $league, $pred, $matchTime = null) {
+    public function storePrediction($homeTeam, $awayTeam, $league, $pred, $matchTime = null, $bookmakerOdds = null) {
         if (!$this->db) return false;
         $matchName = $homeTeam . ' vs ' . $awayTeam;
         $recPick = '';
@@ -373,6 +461,17 @@ class BayesianModel {
             }
             $recPick = implode(', ', $parts);
         }
+        $value = $pred['value'] ?? null;
+        if (!$value && $bookmakerOdds) {
+            $value = $this->detectValue($pred, $bookmakerOdds);
+        }
+        $ve1 = $value['edges']['1'] ?? null;
+        $veX = $value['edges']['X'] ?? null;
+        $ve2 = $value['edges']['2'] ?? null;
+        $vpick = (!empty($value['is_value']) && !empty($value['pick'])) ? $value['pick'] : null;
+        $mo1 = $bookmakerOdds['1'] ?? null;
+        $moX = $bookmakerOdds['X'] ?? null;
+        $mo2 = $bookmakerOdds['2'] ?? null;
         try {
             $stmt = $this->db->prepare("
                 INSERT INTO bayesian_predictions
@@ -380,12 +479,16 @@ class BayesianModel {
                      prob_1, prob_x, prob_2, prob_1x, prob_x2, prob_12,
                      over_25, under_25, prob_over_15, prob_under_15, prob_over_35, prob_under_35,
                      btts_yes, btts_no, expected_goals,
-                     confidence, recommended_pick)
+                     confidence, recommended_pick,
+                     value_edge_1, value_edge_x, value_edge_2, value_pick,
+                     market_odds_1, market_odds_x, market_odds_2)
                 VALUES (?, ?, ?, ?, CURDATE(), ?,
                         ?, ?, ?, ?, ?, ?,
                         ?, ?, ?, ?, ?, ?,
                         ?, ?, ?,
-                        ?, ?)
+                        ?, ?,
+                        ?, ?, ?, ?,
+                        ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
                     prob_1 = VALUES(prob_1), prob_x = VALUES(prob_x), prob_2 = VALUES(prob_2),
                     prob_1x = VALUES(prob_1x), prob_x2 = VALUES(prob_x2), prob_12 = VALUES(prob_12),
@@ -394,7 +497,11 @@ class BayesianModel {
                     prob_over_35 = VALUES(prob_over_35), prob_under_35 = VALUES(prob_under_35),
                     btts_yes = VALUES(btts_yes), btts_no = VALUES(btts_no),
                     expected_goals = VALUES(expected_goals), confidence = VALUES(confidence),
-                    recommended_pick = VALUES(recommended_pick)
+                    recommended_pick = VALUES(recommended_pick),
+                    value_edge_1 = VALUES(value_edge_1), value_edge_x = VALUES(value_edge_x),
+                    value_edge_2 = VALUES(value_edge_2), value_pick = VALUES(value_pick),
+                    market_odds_1 = VALUES(market_odds_1), market_odds_x = VALUES(market_odds_x),
+                    market_odds_2 = VALUES(market_odds_2)
             ");
             return $stmt->execute([
                 $homeTeam, $awayTeam, $matchName, $league, $matchTime,
@@ -406,6 +513,8 @@ class BayesianModel {
                 $pred['btts']['yes'], $pred['btts']['no'],
                 $pred['over_under']['expected_total_goals'],
                 $pred['confidence'], $recPick,
+                $ve1, $veX, $ve2, $vpick,
+                $mo1, $moX, $mo2,
             ]);
         } catch (Exception $e) {
             error_log("BayesianModel::storePrediction: " . $e->getMessage());
@@ -445,34 +554,48 @@ class BayesianModel {
 
     public function settlePredictions() {
         if (!$this->db) return ['settled' => 0, 'matched' => 0, 'unmatched' => 0];
-        $settled = 0; $matched = 0;
+        $settled = 0; $matched = 0; $unmatched = 0;
 
         try {
-            // Match pending predictions against pick_settlements by score
             $stmt = $this->db->query("
-                SELECT bp.id, bp.home_team, bp.away_team, bp.match_name, bp.match_date,
-                       bp.prob_1, bp.prob_x, bp.prob_2, bp.over_25, bp.under_25,
-                       bp.btts_yes, bp.btts_no, bp.recommended_pick,
-                       ps.home_score, ps.away_score, ps.result as settlement_result
-                FROM bayesian_predictions bp
-                INNER JOIN (
-                    SELECT p2.* FROM pick_settlements p2
-                    INNER JOIN (
-                        SELECT match_name, MAX(id) AS max_id FROM pick_settlements
-                        WHERE result IN ('won','lost') AND home_score IS NOT NULL
-                        GROUP BY match_name
-                    ) latest ON p2.id = latest.max_id
-                ) ps ON bp.match_name = ps.match_name
-                WHERE bp.result = 'pending'
+                SELECT id, home_team, away_team, match_name, match_date,
+                       prob_1, prob_x, prob_2, over_25, under_25,
+                       btts_yes, btts_no, recommended_pick
+                FROM bayesian_predictions
+                WHERE result = 'pending'
                 LIMIT 200
             ");
 
-            $updateCorrect = $this->db->prepare("UPDATE bayesian_predictions SET result = 'correct', home_score = ?, away_score = ?, settled_at = NOW() WHERE id = ?");
-            $updateIncorrect = $this->db->prepare("UPDATE bayesian_predictions SET result = 'incorrect', home_score = ?, away_score = ?, settled_at = NOW() WHERE id = ?");
+            $updateStmt = $this->db->prepare("UPDATE bayesian_predictions SET result = ?, home_score = ?, away_score = ?, settled_at = NOW() WHERE id = ?");
 
             foreach ($stmt->fetchAll() as $bp) {
-                $hs = (int)$bp['home_score'];
-                $as = (int)$bp['away_score'];
+                $homeId = $this->getTeamId($bp['home_team']);
+                $awayId = $this->getTeamId($bp['away_team']);
+                $matchRow = null;
+
+                // Try by team_id + date first
+                if ($homeId && $awayId) {
+                    $q = $this->db->prepare("SELECT home_score, away_score FROM match_results WHERE ((home_team_id = ? AND away_team_id = ?) OR (home_team_id = ? AND away_team_id = ?)) AND match_date = ? AND home_score IS NOT NULL AND away_score IS NOT NULL LIMIT 1");
+                    $q->execute([$homeId, $awayId, $awayId, $homeId, $bp['match_date']]);
+                    $matchRow = $q->fetch();
+                }
+                // Fallback: exact name match
+                if (!$matchRow) {
+                    $q = $this->db->prepare("SELECT home_score, away_score FROM match_results WHERE ((home_team = ? AND away_team = ?) OR (home_team = ? AND away_team = ?)) AND match_date = ? AND home_score IS NOT NULL AND away_score IS NOT NULL LIMIT 1");
+                    $q->execute([$bp['home_team'], $bp['away_team'], $bp['away_team'], $bp['home_team'], $bp['match_date']]);
+                    $matchRow = $q->fetch();
+                }
+                // Fallback: ±1 day by team_id
+                if (!$matchRow && $homeId && $awayId) {
+                    $q = $this->db->prepare("SELECT home_score, away_score FROM match_results WHERE ((home_team_id = ? AND away_team_id = ?) OR (home_team_id = ? AND away_team_id = ?)) AND match_date BETWEEN DATE_SUB(?, INTERVAL 1 DAY) AND DATE_ADD(?, INTERVAL 1 DAY) AND home_score IS NOT NULL AND away_score IS NOT NULL ORDER BY ABS(DATEDIFF(match_date, ?)) ASC LIMIT 1");
+                    $q->execute([$homeId, $awayId, $awayId, $homeId, $bp['match_date'], $bp['match_date'], $bp['match_date']]);
+                    $matchRow = $q->fetch();
+                }
+
+                if (!$matchRow) { $unmatched++; continue; }
+
+                $hs = (int)$matchRow['home_score'];
+                $as = (int)$matchRow['away_score'];
                 $actualWinner = $hs > $as ? '1' : ($hs === $as ? 'X' : '2');
                 $totalG = $hs + $as;
                 $bttsActual = ($hs > 0 && $as > 0);
@@ -480,7 +603,6 @@ class BayesianModel {
                 $correct = true;
                 $recPick = $bp['recommended_pick'] ?? '';
 
-                // Check recommended picks vs actual
                 if (str_contains($recPick, '1:') && !str_contains($recPick, '1X:') && !str_contains($recPick, '12:')) {
                     if ($actualWinner !== '1') $correct = false;
                 } elseif (str_contains($recPick, 'X:')) {
@@ -494,23 +616,21 @@ class BayesianModel {
                 } elseif (str_contains($recPick, '12:')) {
                     if ($actualWinner === 'X') $correct = false;
                 }
-                // Check Over/Under
-                if (str_contains($recPick, 'Over 2.5') && $totalG <= 2.5) $correct = false;
-                if (str_contains($recPick, 'Under 2.5') && $totalG > 2.5) $correct = false;
+                if (str_contains($recPick, 'Over 2.5') && $totalG <= 2) $correct = false;
+                if (str_contains($recPick, 'Under 2.5') && $totalG > 2) $correct = false;
+                if (str_contains($recPick, 'Over 1.5') && $totalG <= 1) $correct = false;
+                if (str_contains($recPick, 'Under 3.5') && $totalG > 3) $correct = false;
                 if (str_contains($recPick, 'GG') && !$bttsActual) $correct = false;
                 if (str_contains($recPick, 'NG') && $bttsActual) $correct = false;
 
-                if ($correct) {
-                    $updateCorrect->execute([$hs, $as, $bp['id']]);
-                } else {
-                    $updateIncorrect->execute([$hs, $as, $bp['id']]);
-                }
+                $outcome = $correct ? 'correct' : 'incorrect';
+                $updateStmt->execute([$outcome, $hs, $as, $bp['id']]);
                 $settled++;
             }
         } catch (Exception $e) {
             error_log("BayesianModel::settlePredictions: " . $e->getMessage());
         }
-        return ['settled' => $settled, 'matched' => $matched];
+        return ['settled' => $settled, 'matched' => $matched, 'unmatched' => $unmatched];
     }
 
     public function getAccuracyStats() {
@@ -691,6 +811,121 @@ class BayesianModel {
         }
     }
 
+    private function getTeamHomeAdvantage($team, $league) {
+        $teamId = $this->getTeamId($team);
+        if (!$teamId) return null;
+        $cacheKey = "ha_{$teamId}";
+        if (isset($this->homeAdvantageCache[$cacheKey])) return $this->homeAdvantageCache[$cacheKey];
+        try {
+            $stmt = $this->db->prepare("
+                SELECT COUNT(*) as total,
+                       SUM(CASE WHEN home_score > away_score THEN 1 ELSE 0 END) as home_wins,
+                       SUM(CASE WHEN home_score = away_score THEN 1 ELSE 0 END) as draws,
+                       SUM(CASE WHEN home_score < away_score THEN 1 ELSE 0 END) as losses
+                FROM match_results
+                WHERE home_team_id = ?
+                  AND match_date >= DATE_SUB(CURDATE(), INTERVAL 2 YEAR)
+                  AND home_score IS NOT NULL AND away_score IS NOT NULL
+            ");
+            $stmt->execute([$teamId]);
+            $r = $stmt->fetch();
+            if (!$r || $r['total'] < 5) return null;
+            $total = (int)$r['total'];
+            $result = [
+                'home_win_rate' => $r['home_wins'] / $total,
+                'draw_rate' => $r['draws'] / $total,
+                'loss_rate' => $r['losses'] / $total,
+                'total' => $total,
+            ];
+            $this->homeAdvantageCache[$cacheKey] = $result;
+            return $result;
+        } catch (Exception $e) { return null; }
+    }
+
+    private function getDefenseStats($team, $lookbackDays) {
+        $teamId = $this->getTeamId($team);
+        if (!$teamId) return null;
+        try {
+            $lookback = date('Y-m-d', strtotime("-{$lookbackDays} days"));
+            $stmt = $this->db->prepare("
+                SELECT
+                    SUM(CASE WHEN home_team_id = ? AND away_score = 0 THEN 1
+                             WHEN away_team_id = ? AND home_score = 0 THEN 1 ELSE 0 END) as clean_sheets,
+                    SUM(CASE WHEN home_team_id = ? THEN away_score ELSE home_score END) as goals_conceded,
+                    COUNT(*) as total_matches,
+                    AVG(CASE WHEN home_team_id = ? THEN away_score ELSE home_score END) as avg_conceded,
+                    SUM(CASE WHEN match_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) THEN
+                        CASE WHEN home_team_id = ? THEN away_score ELSE home_score END ELSE NULL END) as recent_conceded,
+                    SUM(CASE WHEN match_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE NULL END) as recent_matches
+                FROM match_results
+                WHERE (home_team_id = ? OR away_team_id = ?)
+                  AND match_date >= ? AND match_date <= CURDATE()
+                  AND home_score IS NOT NULL AND away_score IS NOT NULL
+            ");
+            $stmt->execute([$teamId, $teamId, $teamId, $teamId, $teamId, $teamId, $teamId, $lookback]);
+            $r = $stmt->fetch();
+            if (!$r || $r['total_matches'] < 3) return null;
+            $total = (int)$r['total_matches'];
+            $recentTotal = (int)($r['recent_matches'] ?? 0);
+            return [
+                'clean_sheet_pct' => $total > 0 ? $r['clean_sheets'] / $total * 100 : 0,
+                'avg_conceded' => (float)$r['avg_conceded'],
+                'recent_avg_conceded' => $recentTotal > 0 ? $r['recent_conceded'] / $recentTotal : (float)$r['avg_conceded'],
+                'total_matches' => $total,
+            ];
+        } catch (Exception $e) { return null; }
+    }
+
+    private function credibleInterval($prob, $n, $z = 1.96) {
+        $var = max(0.0001, $prob * (1 - $prob) / max(1, $n));
+        $se = sqrt($var);
+        return [
+            'lower' => round(max(0.01, $prob - $z * $se) * 100, 1),
+            'upper' => round(min(0.99, $prob + $z * $se) * 100, 1),
+        ];
+    }
+
+    private function detectValue($pred, $bookmakerOdds) {
+        if (empty($bookmakerOdds)) return null;
+        $result = ['edges' => [], 'pick' => null, 'max_edge' => 0, 'is_value' => false];
+        $modelProbs = [
+            '1' => ($pred['probs']['1'] ?? 0) / 100,
+            'X' => ($pred['probs']['X'] ?? 0) / 100,
+            '2' => ($pred['probs']['2'] ?? 0) / 100,
+        ];
+        $keys = ['1', 'X', '2'];
+        foreach ($keys as $k) {
+            if (!isset($bookmakerOdds[$k]) || $bookmakerOdds[$k] <= 1) continue;
+            $implied = 1 / $bookmakerOdds[$k];
+            $edge = $modelProbs[$k] - $implied;
+            $result['edges'][$k] = round($edge * 100, 2);
+            if ($edge > $result['max_edge']) {
+                $result['max_edge'] = round($edge * 100, 2);
+                $result['pick'] = $k;
+                $result['odds'] = $bookmakerOdds[$k];
+                $result['model_prob'] = round($modelProbs[$k] * 100, 1);
+                $result['implied_prob'] = round($implied * 100, 1);
+            }
+        }
+        $dcPairs = ['1X' => ['1','X'], 'X2' => ['X','2'], '12' => ['1','2']];
+        foreach ($dcPairs as $dcKey => $pair) {
+            if (!isset($bookmakerOdds[$dcKey]) || $bookmakerOdds[$dcKey] <= 1) continue;
+            $dcModelProb = $modelProbs[$pair[0]] + $modelProbs[$pair[1]];
+            $implied = 1 / $bookmakerOdds[$dcKey];
+            $edge = $dcModelProb - $implied;
+            $result['edges'][$dcKey] = round($edge * 100, 2);
+            if ($edge > $result['max_edge']) {
+                $result['max_edge'] = round($edge * 100, 2);
+                $result['pick'] = $dcKey;
+                $result['odds'] = $bookmakerOdds[$dcKey];
+                $result['model_prob'] = round($dcModelProb * 100, 1);
+                $result['implied_prob'] = round($implied * 100, 1);
+            }
+        }
+        $result['is_value'] = $result['max_edge'] >= 5;
+        return $result;
+    }
+
     private function getHeadToHead($homeTeam, $awayTeam, $lookbackDays) {
         $default = ['matches' => 0, 'home_wins' => 0, 'draws' => 0, 'away_wins' => 0, 'avg_goals' => 0, 'btts_rate' => 0];
         if (!$this->db) return $default;
@@ -700,7 +935,7 @@ class BayesianModel {
             $awayId = $this->getTeamId($awayTeam);
             if ($homeId && $awayId) {
                 $stmt = $this->db->prepare("
-                    SELECT mr.home_team, mr.home_score, mr.away_score, mr.match_date
+                    SELECT mr.home_team_id, mr.home_score, mr.away_score, mr.match_date
                     FROM match_results mr
                     WHERE ((mr.home_team_id = ? AND mr.away_team_id = ?) OR (mr.home_team_id = ? AND mr.away_team_id = ?))
                       AND mr.match_date >= ? AND mr.match_date <= CURDATE()
@@ -710,7 +945,7 @@ class BayesianModel {
                 $stmt->execute([$homeId, $awayId, $awayId, $homeId, $lookback]);
             } else {
                 $stmt = $this->db->prepare("
-                    SELECT home_team, home_score, away_score, match_date
+                    SELECT home_team, home_team_id, home_score, away_score, match_date
                     FROM match_results
                     WHERE ((home_team = ? AND away_team = ?) OR (home_team = ? AND away_team = ?))
                       AND match_date >= ? AND match_date <= CURDATE()
@@ -729,7 +964,8 @@ class BayesianModel {
                 $weight = exp(-$daysAgo / $this->recencyHalfLife);
                 $totalWeight += $weight;
                 $h = (int)$r['home_score']; $a = (int)$r['away_score'];
-                $isHomeActual = $r['home_team'] === $homeTeam;
+                // Use team_id if available for reliable winner detection
+                $isHomeActual = isset($r['home_team_id']) ? ((int)$r['home_team_id'] === $homeId) : ($r['home_team'] === $homeTeam);
                 if ($isHomeActual) { if ($h > $a) $hw += $weight; elseif ($h === $a) $d += $weight; else $aw += $weight; }
                 else { if ($a > $h) $hw += $weight; elseif ($a === $h) $d += $weight; else $aw += $weight; }
                 $totalG += ($h + $a) * $weight;
@@ -958,7 +1194,7 @@ class BayesianModel {
         if (!$this->db) return [];
         try {
             $start = date('Y-m-d', strtotime("-{$days} days"));
-            return $this->db->query("
+            $stmt = $this->db->prepare("
                 SELECT
                     DATE(match_date) as day,
                     COUNT(*) as total,
@@ -966,10 +1202,12 @@ class BayesianModel {
                     ROUND(SUM(CASE WHEN result = 'correct' THEN 1 ELSE 0 END) / COUNT(*) * 100, 1) as accuracy
                 FROM bayesian_predictions
                 WHERE result IN ('correct','incorrect')
-                  AND match_date >= '$start'
+                  AND match_date >= ?
                 GROUP BY DATE(match_date)
                 ORDER BY day ASC
-            ")->fetchAll();
+            ");
+            $stmt->execute([$start]);
+            return $stmt->fetchAll();
         } catch (Exception $e) { return []; }
     }
 
@@ -1009,5 +1247,120 @@ class BayesianModel {
                 ORDER BY bp.id DESC LIMIT $limit
             ")->fetchAll();
         } catch (Exception $e) { return []; }
+    }
+
+    public function backtest($days = 90, $minMatches = 50, $k = null) {
+        if (!$this->db) return null;
+        $originalK = $this->priorStrength;
+        if ($k !== null) $this->priorStrength = max(1, min(500, (int)$k));
+        try {
+            $start = date('Y-m-d', strtotime("-{$days} days"));
+            $stmt = $this->db->prepare("
+                SELECT bp.id, bp.home_team, bp.away_team, bp.league, bp.match_date,
+                       bp.prob_1, bp.prob_x, bp.prob_2, bp.over_25, bp.under_25,
+                       bp.btts_yes, bp.btts_no, bp.recommended_pick,
+                       mr.home_score, mr.away_score,
+                       CASE WHEN mr.home_team = bp.home_team THEN 0 ELSE 1 END as swapped
+                FROM bayesian_predictions bp
+                JOIN match_results mr ON (
+                    (mr.home_team = bp.home_team AND mr.away_team = bp.away_team)
+                    OR (mr.home_team = bp.away_team AND mr.away_team = bp.home_team)
+                ) AND mr.match_date = bp.match_date
+                WHERE bp.match_date >= ? AND bp.match_date <= CURDATE()
+                  AND mr.home_score IS NOT NULL AND mr.away_score IS NOT NULL
+                LIMIT 2000
+            ");
+            $stmt->execute([$start]);
+            $cases = $stmt->fetchAll();
+            if (count($cases) < $minMatches) {
+                if ($k !== null) $this->priorStrength = $originalK;
+                return ['error' => 'Not enough data', 'found' => count($cases), 'min_required' => $minMatches];
+            }
+            $stats = [];
+            $brier = ['1' => 0.0, 'X' => 0.0, '2' => 0.0, 'total' => 0];
+            $mainCorrect = 0;
+            $mainTotal = 0;
+            foreach ($cases as $tc) {
+                $hs = (int)$tc['home_score'];
+                $as = (int)$tc['away_score'];
+                $totalG = $hs + $as;
+                $swapped = (int)$tc['swapped'];
+                if ($swapped) {
+                    $actualWinner = $as > $hs ? '1' : ($as === $hs ? 'X' : '2');
+                } else {
+                    $actualWinner = $hs > $as ? '1' : ($hs === $as ? 'X' : '2');
+                }
+                $bttsActual = ($hs > 0 && $as > 0);
+                $picks = explode(', ', $tc['recommended_pick'] ?? '');
+                foreach ($picks as $p) {
+                    $parts = explode(':', $p);
+                    if (count($parts) !== 2) continue;
+                    $type = $parts[0];
+                    $prob = (float)$parts[1] / 100;
+                    if (!isset($stats[$type])) $stats[$type] = ['correct' => 0, 'total' => 0, 'sum_prob' => 0];
+                    $stats[$type]['total']++;
+                    $stats[$type]['sum_prob'] += $prob;
+                    $correct = false;
+                    switch ($type) {
+                        case '1': $correct = $hs > $as; break;
+                        case 'X': $correct = $hs === $as; break;
+                        case '2': $correct = $hs < $as; break;
+                        case '1X': $correct = $hs >= $as; break;
+                        case 'X2': $correct = $hs <= $as; break;
+                        case '12': $correct = $hs !== $as; break;
+                        case 'Over 2.5': $correct = $totalG > 2.5; break;
+                        case 'Under 2.5': $correct = $totalG < 2.5; break;
+                        case 'Over 1.5': $correct = $totalG > 1.5; break;
+                        case 'Under 3.5': $correct = $totalG < 3.5; break;
+                        case 'GG': $correct = $bttsActual; break;
+                        case 'NG': $correct = !$bttsActual; break;
+                    }
+                    if ($correct) $stats[$type]['correct']++;
+                }
+                $probs = [
+                    '1' => (float)$tc['prob_1'] / 100,
+                    'X' => (float)$tc['prob_x'] / 100,
+                    '2' => (float)$tc['prob_2'] / 100,
+                ];
+                $bestPick = array_search(max($probs), $probs);
+                if ($bestPick === $actualWinner) $mainCorrect++;
+                $mainTotal++;
+                foreach ($probs as $ok => $pv) {
+                    $actual = $ok === $actualWinner ? 1.0 : 0.0;
+                    $brier[$ok] += ($pv - $actual) ** 2;
+                    $brier['total']++;
+                }
+            }
+            $accuracy = [];
+            foreach ($stats as $type => $s) {
+                $accuracy[$type] = [
+                    'correct' => $s['correct'],
+                    'total' => $s['total'],
+                    'accuracy' => $s['total'] > 0 ? round($s['correct'] / $s['total'] * 100, 1) : 0,
+                    'avg_prob' => $s['total'] > 0 ? round($s['sum_prob'] / $s['total'] * 100, 1) : 0,
+                    'calibration_gap' => $s['total'] > 0
+                        ? round(abs(($s['sum_prob'] / $s['total']) - ($s['correct'] / $s['total'])) * 100, 1)
+                        : 0,
+                ];
+            }
+            $brierScore = $brier['total'] > 0
+                ? round(($brier['1'] + $brier['X'] + $brier['2']) / ($brier['total'] / 3), 4)
+                : null;
+            if ($k !== null) $this->priorStrength = $originalK;
+            return [
+                'total_matches' => count($cases),
+                'period_days' => $days,
+                'prior_strength' => $this->priorStrength,
+                'main_outcome_accuracy' => $mainTotal > 0 ? round($mainCorrect / $mainTotal * 100, 1) : 0,
+                'main_outcome_correct' => $mainCorrect,
+                'main_outcome_total' => $mainTotal,
+                'brier_score' => $brierScore,
+                'accuracy_by_type' => $accuracy,
+            ];
+        } catch (Exception $e) {
+            if ($k !== null) $this->priorStrength = $originalK;
+            error_log("BayesianModel::backtest: " . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
     }
 }

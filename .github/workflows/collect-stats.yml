@@ -1,0 +1,15 @@
+name: Collect Match Stats
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  collect-stats:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger stats collection
+        run: |
+          curl -s "https://predixa.co.tz/cron/run_stats.php?key=${{ secrets.STATS_SECRET_KEY }}" | python3 -m json.tool || echo "Collection failed"
+        continue-on-error: true

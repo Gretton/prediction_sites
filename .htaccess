@@ -1,0 +1,79 @@
+<Files "google_credentials.json">
+  Deny from all
+</Files>
+
+# Block abusive IPs
+Deny from 203.91.74.210
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /PRED/
+
+  # Block direct access to sensitive files
+  RewriteRule ^google_credentials\.json$ - [F,L]
+  RewriteRule ^composer\.(json|lock|phar)$ - [F,L]
+  RewriteRule ^prediksa_web\.sql$ - [F,L]
+  RewriteRule ^predixa\.zip$ - [F,L]
+  RewriteRule ^error_log$ - [F,L]
+  RewriteRule ^\.htaccess$ - [F,L]
+
+  # Redirect index.php to /
+  RewriteCond %{ENV:REDIRECT_STATUS} ^$
+  RewriteCond %{THE_REQUEST} /index\.php [NC]
+  RewriteCond %{REQUEST_METHOD} !POST [NC]
+  RewriteRule ^index\.php$ / [R=301,L,QSA]
+
+  # Redirect .php URLs to clean URL (except backend files that receive POST)
+  RewriteCond %{ENV:REDIRECT_STATUS} ^$
+  RewriteCond %{THE_REQUEST} /(.+)\.php [NC]
+  RewriteCond %{REQUEST_METHOD} !POST [NC]
+  RewriteCond %{REQUEST_URI} !/admin\.php [NC]
+  RewriteCond %{REQUEST_URI} !/scrape_control\.php [NC]
+  RewriteCond %{REQUEST_URI} !/auth\.php [NC]
+  RewriteCond %{REQUEST_URI} !/logout\.php [NC]
+  RewriteCond %{REQUEST_URI} !/login\.php [NC]
+  RewriteCond %{REQUEST_URI} !/signup\.php [NC]
+  RewriteCond %{REQUEST_URI} !/subscribe\.php [NC]
+  RewriteCond %{REQUEST_URI} !/verify_payment\.php [NC]
+  RewriteCond %{REQUEST_URI} !/ajax_search_users\.php [NC]
+  RewriteCond %{REQUEST_URI} !/prediction\.php [NC]
+  RewriteCond %{REQUEST_URI} !/sitemap\.php [NC]
+  RewriteCond %{REQUEST_URI} !/dropping-odds\.php [NC]
+  RewriteCond %{REQUEST_URI} !/odds-signals\.php [NC]
+  RewriteCond %{REQUEST_URI} !/betting_school\.php [NC]
+  RewriteCond %{REQUEST_URI} !/pikka\.php [NC]
+  RewriteCond %{REQUEST_URI} !/seed_articles\.php [NC]
+  RewriteCond %{REQUEST_URI} !/terms\.php [NC]
+  RewriteCond %{REQUEST_URI} !/run_stats\.php [NC]
+  RewriteCond %{REQUEST_URI} !/collect_match_stats\.php [NC]
+  RewriteRule ^(.+)\.php$ /$1 [R=301,L,QSA]
+
+  # SEO match prediction pages
+  RewriteRule ^prediction/(.+)$ prediction.php?slug=$1 [L,QSA]
+
+  # Sitemap
+  RewriteRule ^sitemap\.xml$ sitemap.php [L,QSA]
+
+  # Dropping Odds free tool
+  RewriteRule ^dropping-odds$ dropping-odds.php [L,QSA]
+
+  # Odds Signals private tool
+  RewriteRule ^odds-signals$ odds-signals.php [L,QSA]
+
+  # Betting School public pages
+  RewriteRule ^betting-school/(.+)$ betting_school.php?slug=$1 [L,QSA]
+  RewriteRule ^betting-school$ betting_school.php [L,QSA]
+
+  # Pikka — Community Tipster
+  RewriteRule ^pikka/leaderboard$ pikka.php?action=leaderboard [L,QSA]
+  RewriteRule ^pikka$ pikka.php [L,QSA]
+
+  # Terms of Service
+  RewriteRule ^terms$ terms.php [L,QSA]
+
+  # Internally rewrite clean URLs to .php files if they exist
+  RewriteCond %{ENV:REDIRECT_STATUS} ^$
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI}.php -f
+  RewriteRule ^(.+)$ $1.php [L,QSA]
+</IfModule>
