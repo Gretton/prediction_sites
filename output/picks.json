@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-07-22T08:25:28.778Z",
-  "started_at": "2026-07-22T08:25:03.570Z",
+  "generated_at": "2026-07-22T11:46:14.454Z",
+  "started_at": "2026-07-22T11:45:52.265Z",
   "min_agreement": 2,
   "sources": {
     "allnigeriafootball": {
@@ -17,7 +17,7 @@
     },
     "bet_sites": {
       "status": "ok",
-      "count": 81
+      "count": 92
     },
     "wp_tables": {
       "status": "ok",
@@ -683,6 +683,78 @@
           "time": ""
         },
         {
+          "match": "Omonia vs Kairat Almaty",
+          "home": "Omonia",
+          "away": "Kairat Almaty",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Levski vs Univ. Craiova",
+          "home": "Levski",
+          "away": "Univ. Craiova",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Egnatia vs Celje",
+          "home": "Egnatia",
+          "away": "Celje",
+          "pick": "X2",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Basaksehir vs Inter Turku",
+          "home": "Basaksehir",
+          "away": "Inter Turku",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Zeleznicar vs Braga",
+          "home": "Zeleznicar",
+          "away": "Braga",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Bodo/Glimt vs HamKam",
+          "home": "Bodo/Glimt",
+          "away": "HamKam",
+          "pick": "1 &amp; Ov 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Lillestrom vs Viking",
+          "home": "Lillestrom",
+          "away": "Viking",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Queen of South vs Aberdeen",
+          "home": "Queen of South",
+          "away": "Aberdeen",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
           "match": "Shanhgai vs Qingdao",
           "home": "Shanhgai",
           "away": "Qingdao",
@@ -750,6 +822,33 @@
           "home": "St. Mirren",
           "away": "East Kilbride",
           "pick": "1 Ov 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Basaksehir vs Inter Turku",
+          "home": "Basaksehir",
+          "away": "Inter Turku",
+          "pick": "1 Ov 1.5",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Zeleznicar vs Braga",
+          "home": "Zeleznicar",
+          "away": "Braga",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "",
+          "time": ""
+        },
+        {
+          "match": "Bodo/Glimt vs HamKam",
+          "home": "Bodo/Glimt",
+          "away": "HamKam",
+          "pick": "Over 2.5",
           "odds": "",
           "league": "",
           "time": ""
@@ -1511,6 +1610,21 @@
   ],
   "intersections": [
     {
+      "match": "FK Zeleznicar Pancevo vs Braga",
+      "home": "FK Zeleznicar Pancevo",
+      "away": "Braga",
+      "pick": "Away(2)",
+      "sources": [
+        "allnigeriafootball",
+        "adibet",
+        "bet_sites"
+      ],
+      "source_count": 3,
+      "odds": "",
+      "league": "UEFA Conference League",
+      "time": "20:00"
+    },
+    {
       "match": "Istanbul BB vs FC Inter Turku",
       "home": "Istanbul BB",
       "away": "FC Inter Turku",
@@ -1525,18 +1639,60 @@
       "time": "18:45"
     },
     {
-      "match": "FK Zeleznicar Pancevo vs Braga",
-      "home": "FK Zeleznicar Pancevo",
-      "away": "Braga",
-      "pick": "Away(2)",
+      "match": "Egnatia vs Celje",
+      "home": "Egnatia",
+      "away": "Celje",
+      "pick": "X2",
       "sources": [
-        "allnigeriafootball",
-        "adibet"
+        "adibet",
+        "bet_sites"
       ],
       "source_count": 2,
       "odds": "",
-      "league": "UEFA Conference League",
-      "time": "20:00"
+      "league": "Euro Competitions",
+      "time": ""
+    },
+    {
+      "match": "Basaksehir vs Inter Turku",
+      "home": "Basaksehir",
+      "away": "Inter Turku",
+      "pick": "Home(1)",
+      "sources": [
+        "adibet",
+        "bet_sites"
+      ],
+      "source_count": 2,
+      "odds": "",
+      "league": "Euro Competitions",
+      "time": ""
+    },
+    {
+      "match": "Bodo/Glimt vs HamKam",
+      "home": "Bodo/Glimt",
+      "away": "HamKam",
+      "pick": "Over 2.5",
+      "sources": [
+        "adibet",
+        "bet_sites"
+      ],
+      "source_count": 2,
+      "odds": "",
+      "league": "Norway",
+      "time": ""
+    },
+    {
+      "match": "Queen of South vs Aberdeen",
+      "home": "Queen of South",
+      "away": "Aberdeen",
+      "pick": "Over 1.5",
+      "sources": [
+        "adibet",
+        "bet_sites"
+      ],
+      "source_count": 2,
+      "odds": "",
+      "league": "Scotland",
+      "time": ""
     },
     {
       "match": "Aarhus vs Lech Poznan",
