@@ -85,6 +85,9 @@ $fixtures = $fixturesResp['response'];
 apiLog("Found " . count($fixtures) . " finished fixtures");
 
 $existingStmt = $db->prepare("SELECT id FROM match_statistics WHERE api_fixture_id = ?");
+
+try { $db->exec("ALTER TABLE match_statistics ADD COLUMN home_free_kicks INT DEFAULT NULL AFTER away_offsides, ADD COLUMN away_free_kicks INT DEFAULT NULL AFTER home_free_kicks"); } catch (Exception $e) {}
+
 $insertStmt = $db->prepare("INSERT INTO match_statistics
     (api_fixture_id, match_date, league_name, league_id_api, home_team_api, away_team_api,
      home_score, away_score, referee, venue,
@@ -93,6 +96,7 @@ $insertStmt = $db->prepare("INSERT INTO match_statistics
      home_shots_inside_box, away_shots_inside_box, home_shots_outside_box, away_shots_outside_box,
      home_ball_possession, away_ball_possession,
      home_corner_kicks, away_corner_kicks, home_offsides, away_offsides,
+     home_free_kicks, away_free_kicks,
      home_fouls, away_fouls, home_yellow_cards, away_yellow_cards,
      home_red_cards, away_red_cards,
      home_goalkeeper_saves, away_goalkeeper_saves,
@@ -101,7 +105,7 @@ $insertStmt = $db->prepare("INSERT INTO match_statistics
      home_expected_goals, away_expected_goals,
      home_goals_prevented, away_goals_prevented,
      raw_statistics, raw_fixture)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     ON DUPLICATE KEY UPDATE
      home_shots_on_goal=VALUES(home_shots_on_goal), away_shots_on_goal=VALUES(away_shots_on_goal),
      home_shots_off_goal=VALUES(home_shots_off_goal), away_shots_off_goal=VALUES(away_shots_off_goal),
@@ -112,6 +116,7 @@ $insertStmt = $db->prepare("INSERT INTO match_statistics
      home_ball_possession=VALUES(home_ball_possession), away_ball_possession=VALUES(away_ball_possession),
      home_corner_kicks=VALUES(home_corner_kicks), away_corner_kicks=VALUES(away_corner_kicks),
      home_offsides=VALUES(home_offsides), away_offsides=VALUES(away_offsides),
+     home_free_kicks=VALUES(home_free_kicks), away_free_kicks=VALUES(away_free_kicks),
      home_fouls=VALUES(home_fouls), away_fouls=VALUES(away_fouls),
      home_yellow_cards=VALUES(home_yellow_cards), away_yellow_cards=VALUES(away_yellow_cards),
      home_red_cards=VALUES(home_red_cards), away_red_cards=VALUES(away_red_cards),
@@ -204,6 +209,7 @@ foreach ($fixtures as $f) {
             parseStatStr($homeStats, 'Ball Possession'), parseStatStr($awayStats, 'Ball Possession'),
             parseStatInt($homeStats, 'Corner Kicks'), parseStatInt($awayStats, 'Corner Kicks'),
             parseStatInt($homeStats, 'Offsides'), parseStatInt($awayStats, 'Offsides'),
+            parseStatInt($homeStats, 'Free Kicks'), parseStatInt($awayStats, 'Free Kicks'),
             parseStatInt($homeStats, 'Fouls'), parseStatInt($awayStats, 'Fouls'),
             parseStatInt($homeStats, 'Yellow Cards'), parseStatInt($awayStats, 'Yellow Cards'),
             parseStatInt($homeStats, 'Red Cards'), parseStatInt($awayStats, 'Red Cards'),

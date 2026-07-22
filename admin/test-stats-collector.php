@@ -72,6 +72,11 @@ if ($stats) {
         .match-table th.sorted-asc .sort-icon, .match-table th.sorted-desc .sort-icon { opacity: 1; color: #a78bfa; }
         .match-table td { padding: 6px 8px; border-bottom: 1px solid rgba(139,92,246,0.08); vertical-align: middle; }
         .match-table tr:hover td { background: rgba(139,92,246,0.08); }
+        .match-table .match-row { cursor: pointer; }
+        .match-table .match-row:hover td { background: rgba(139,92,246,0.12); }
+        .detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px 16px; padding: 10px 16px; background: rgba(139,92,246,0.06); border-top: 1px solid rgba(139,92,246,0.15); }
+        .detail-item { font-size: 0.78rem; padding: 3px 0; }
+        .detail-label { color: #64748b; margin-right: 6px; font-size: 0.72rem; text-transform: uppercase; }
         .match-table .team-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .match-table .score { font-weight: 700; font-size: 0.95rem; color: #e2e8f0; text-align: center; }
         .match-table .stat-cell { text-align: center; color: #94a3b8; font-size: 0.78rem; white-space: nowrap; }
@@ -300,6 +305,7 @@ function render() {
             {k:'poss',l:'Poss',w:'7%'},
             {k:'xg',l:'xG',w:'8%'},
             {k:'ref',l:'Referee',w:'9%',n:true},
+            {k:'expand',l:'',w:'3%',n:true},
         ];
         cols.forEach(c => {
             const sorted = activeSortKey === c.k;
@@ -313,15 +319,8 @@ function render() {
 
         pageMatches.forEach(m => {
             const q = searchTerm.toLowerCase();
-            const sot = (m.home_shots_on_goal||0)*1 + (m.away_shots_on_goal||0)*1;
-            const shots = (m.home_total_shots||0)*1 + (m.away_total_shots||0)*1;
-            const corners = (m.home_corner_kicks||0)*1 + (m.away_corner_kicks||0)*1;
-            const fouls = (m.home_fouls||0)*1 + (m.away_fouls||0)*1;
-            const yc = (m.home_yellow_cards||0)*1 + (m.away_yellow_cards||0)*1;
-            const poss = parseInt(m.home_ball_possession)||0;
-            const xg = ((m.home_expected_goals||0)*1 + (m.away_expected_goals||0)*1);
 
-            html += '<tr>';
+            html += '<tr class="match-row" onclick="toggleDetail(this)" style="cursor:pointer;">';
             html += '<td class="team-name" title="' + esc(m.home_team_api) + '">' + hl(m.home_team_api, q) + '</td>';
             html += '<td class="score">' + m.home_score + '-' + m.away_score + '</td>';
             html += '<td class="team-name" title="' + esc(m.away_team_api) + '">' + hl(m.away_team_api, q) + '</td>';
@@ -332,8 +331,38 @@ function render() {
             html += '<td class="stat-cell">' + ((m.home_yellow_cards||0)*1 + (m.away_yellow_cards||0)*1 > 0 ? '<span class="home-val">' + nv(m.home_yellow_cards) + '</span> / <span class="away-val">' + nv(m.away_yellow_cards) + '</span>' : '-') + '</td>';
             html += '<td class="stat-cell"><small><span class="home-val">' + (m.home_ball_possession || '-') + '</span> / <span class="away-val">' + (m.away_ball_possession || '-') + '</span></small></td>';
             html += '<td class="stat-cell"><small>' + (m.home_expected_goals != null ? '<span class="home-val">' + parseFloat(m.home_expected_goals).toFixed(2) + '</span> / <span class="away-val">' + parseFloat(m.away_expected_goals).toFixed(2) + '</span>' : '-') + '</small></td>';
-            html += '<td><small class="text-muted" title="' + esc(m.referee || '') + '">' + esc(m.referee || '-') + '</small></td>';
+            html += '<td><small class="text-muted">' + esc(m.referee || '-') + '</small></td>';
+            html += '<td class="text-center" style="width:30px;"><i class="fas fa-chevron-down" style="font-size:0.6rem;color:#64748b;"></i></td>';
             html += '</tr>';
+
+            html += '<tr class="detail-row" style="display:none;"><td colspan="12" style="padding:0;">';
+            html += '<div class="detail-grid">';
+            const detailRows = [
+                ['Shots Off Target', nv(m.home_shots_off_goal), nv(m.away_shots_off_goal)],
+                ['Blocked Shots', nv(m.home_blocked_shots), nv(m.away_blocked_shots)],
+                ['Shots Inside Box', nv(m.home_shots_inside_box), nv(m.away_shots_inside_box)],
+                ['Shots Outside Box', nv(m.home_shots_outside_box), nv(m.away_shots_outside_box)],
+                ['Offsides', nv(m.home_offsides), nv(m.away_offsides)],
+                ['Free Kicks', nv(m.home_free_kicks), nv(m.away_free_kicks)],
+                ['Red Cards', ((m.home_red_cards||0)*1 + (m.away_red_cards||0)*1 > 0 ? nv(m.home_red_cards) + ' / ' + nv(m.away_red_cards) : '-')],
+                ['GK Saves', nv(m.home_goalkeeper_saves), nv(m.away_goalkeeper_saves)],
+                ['Total Passes', nv(m.home_total_passes), nv(m.away_total_passes)],
+                ['Passes Accurate', nv(m.home_passes_accurate), nv(m.away_passes_accurate)],
+                ['Pass Accuracy', nv(m.home_pass_accuracy), nv(m.away_pass_accuracy)],
+                ['Goals Prevented', m.home_goals_prevented != null ? parseFloat(m.home_goals_prevented).toFixed(2) : '-', m.away_goals_prevented != null ? parseFloat(m.away_goals_prevented).toFixed(2) : '-'],
+                ['Venue', esc(m.venue || '-'), ''],
+            ];
+            detailRows.forEach(dr => {
+                if (dr.length === 3 && dr[1] === '-' && dr[2] === '-') return;
+                html += '<div class="detail-item"><span class="detail-label">' + dr[0] + '</span>';
+                if (dr.length === 3 && dr[2] !== '') {
+                    html += '<span class="home-val">' + dr[1] + '</span> / <span class="away-val">' + dr[2] + '</span>';
+                } else {
+                    html += '<span>' + dr[1] + '</span>';
+                }
+                html += '</div>';
+            });
+            html += '</div></td></tr>';
         });
         html += '</tbody></table></div>';
 
@@ -394,6 +423,13 @@ function sortLeague(name, key) {
         sortState[name + '_asc'] = true;
     }
     render();
+}
+
+function toggleDetail(row) {
+    const detail = row.nextElementSibling;
+    if (detail && detail.classList.contains('detail-row')) {
+        detail.style.display = detail.style.display === 'none' ? '' : 'none';
+    }
 }
 
 searchInput.addEventListener('input', function() {
