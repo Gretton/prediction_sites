@@ -870,6 +870,9 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-soft); color: var(
 <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle Menu"><i class="fas fa-bars"></i></button>
 <div class="header-actions" id="headerMenu">
 <?php if ($isSuperAdmin): ?>
+<a href="best-picks-view" style="display:inline-flex;align-items:center;gap:4px;background:rgba(34,197,94,0.9);color:#fff;border:1px solid #22C55E;padding:4px 12px;border-radius:6px;text-decoration:none;font-size:0.8rem;font-weight:600;white-space:nowrap;" title="Best Picks for BetBot">
+    <i class="fas fa-robot me-1"></i>Best Picks
+</a>
 <button type="button" onclick="document.getElementById('presentationModal').classList.add('show');document.getElementById('presentationModal').style.display='flex';" style="display:inline-flex;align-items:center;gap:4px;background:transparent;color:#fff;border:1px dashed rgba(255,255,255,0.5);padding:4px 12px;border-radius:6px;cursor:pointer;font-size:0.8rem;font-weight:600;white-space:nowrap;" title="Presentation Mode">
     <i class="fas fa-eye-slash"></i> Demo
 </button>
@@ -935,6 +938,13 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-soft); color: var(
         <i class="fas fa-trophy"></i> Top Sellers (<?= count($topSellersThisMonth) ?>)
     </a>
     <?php endif; ?>
+    <span style="font-weight: 600; color: var(--text-dark); font-size: 0.85rem; display: flex; align-items: center; gap: 4px; margin-left: 8px; border-left: 1px solid var(--border-color); padding-left: 12px;"><i class="fas fa-wrench" style="color: #6366f1;"></i>Tools:</span>
+    <a href="admin/h2h-test" target="_blank" style="display: inline-flex; align-items: center; gap: 4px; background: #EEF2FF; color: #4338CA; padding: 4px 12px; border-radius: 6px; text-decoration: none; font-size: 0.8rem; font-weight: 600;">
+        <i class="fas fa-swords"></i> H2H Test
+    </a>
+    <a href="admin/test-stats-collector" target="_blank" style="display: inline-flex; align-items: center; gap: 4px; background: #ECFDF5; color: #047857; padding: 4px 12px; border-radius: 6px; text-decoration: none; font-size: 0.8rem; font-weight: 600;">
+        <i class="fas fa-chart-bar"></i> Stats Collector
+    </a>
 </div>
 <main class="main-content">
     <?php if ($activeTab === 'approve'): ?>

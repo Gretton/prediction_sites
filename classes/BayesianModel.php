@@ -327,6 +327,8 @@ class BayesianModel {
         $h2h = $this->getHeadToHead($homeTeam, $awayTeam, $lookbackDays);
         $homeDefense = $this->getDefenseStats($homeTeam, $lookbackDays);
         $awayDefense = $this->getDefenseStats($awayTeam, $lookbackDays);
+        $homeStats = $this->getTeamStatsProfile($homeTeam, $lookbackDays);
+        $awayStats = $this->getTeamStatsProfile($awayTeam, $lookbackDays);
 
         $homeMatches = $homeForm['matches'];
         $awayMatches = $awayForm['matches'];
@@ -398,8 +400,74 @@ class BayesianModel {
             if ($t3 > 0) { $postHome /= $t3; $postDraw /= $t3; $postAway /= $t3; }
         }
 
-        $ou = $this->predictOverUnder($homeTeam, $awayTeam, $league, $prior, $homeForm, $awayForm, $h2h, $lookbackDays);
-        $btts = $this->predictBTTS($homeTeam, $awayTeam, $league, $prior, $homeForm, $awayForm, $h2h, $lookbackDays);
+        if ($homeStats && $awayStats) {
+            $hWeight = $homeStats['data_weight'];
+            $aWeight = $awayStats['data_weight'];
+            $statsWeight = max($hWeight, $aWeight);
+            if ($statsWeight >= 0.13) {
+                $leagueStats = $this->getLeagueStatsBaseline($lookbackDays);
+                $lgAvgXgHome = ($leagueStats && $leagueStats['avg_xg_home'] > 0) ? $leagueStats['avg_xg_home'] : 1.5;
+                $lgAvgXgAway = ($leagueStats && $leagueStats['avg_xg_away'] > 0) ? $leagueStats['avg_xg_away'] : 1.1;
+                $lgAvgSotHome = ($leagueStats && $leagueStats['avg_sot_home'] > 0) ? $leagueStats['avg_sot_home'] : 4.5;
+                $lgAvgSotAway = ($leagueStats && $leagueStats['avg_sot_away'] > 0) ? $leagueStats['avg_sot_away'] : 3.8;
+
+                $homeOff = $homeStats['offensive_strength'] ?? null;
+                $awayOff = $awayStats['offensive_strength'] ?? null;
+                $homeDef = $homeStats['defensive_strength'] ?? null;
+                $awayDef = $awayStats['defensive_strength'] ?? null;
+                $homeCtrl = $homeStats['control_strength'] ?? null;
+                $awayCtrl = $awayStats['control_strength'] ?? null;
+
+                if ($homeOff !== null && $awayOff !== null) {
+                    $homeXgRatio = $homeStats['xg_for'] !== null ? $homeStats['xg_for'] / $lgAvgXgHome : 1.0;
+                    $awayXgRatio = $awayStats['xg_for'] !== null ? $awayStats['xg_for'] / $lgAvgXgAway : 1.0;
+                    $homeSotRatio = $lgAvgSotHome > 0 ? $homeStats['sot_for'] / $lgAvgSotHome : 1.0;
+                    $awaySotRatio = $lgAvgSotAway > 0 ? $awayStats['sot_for'] / $lgAvgSotAway : 1.0;
+
+                    if ($homeStats['xg_for'] !== null && $awayStats['xg_for'] !== null) {
+                        $offRatio = ($homeXgRatio * 0.6 + $homeSotRatio * 0.4) / max(0.3, ($awayXgRatio * 0.6 + $awaySotRatio * 0.4));
+                    } else {
+                        $offRatio = $homeSotRatio / max(0.3, $awaySotRatio);
+                    }
+                    $offAdj = log(max(0.3, min(3.0, $offRatio))) * 0.08;
+                    $postHome = max(0.01, $postHome + $offAdj);
+                    $postAway = max(0.01, $postAway - $offAdj);
+                    $t4 = $postHome + $postDraw + $postAway;
+                    if ($t4 > 0) { $postHome /= $t4; $postDraw /= $t4; $postAway /= $t4; }
+                }
+
+                if ($homeDef !== null && $awayDef !== null) {
+                    $defDiff2 = ($homeDef - $awayDef);
+                    $defAdj2 = $defDiff2 * 0.05;
+                    $postHome = max(0.01, $postHome + $defAdj2);
+                    $postAway = max(0.01, $postAway - $defAdj2);
+                    $t5 = $postHome + $postDraw + $postAway;
+                    if ($t5 > 0) { $postHome /= $t5; $postDraw /= $t5; $postAway /= $t5; }
+                }
+
+                if ($homeCtrl !== null && $awayCtrl !== null) {
+                    $ctrlDiff = ($homeCtrl - $awayCtrl);
+                    $ctrlAdj = $ctrlDiff * 0.03;
+                    $postHome = max(0.01, $postHome + $ctrlAdj);
+                    $postDraw = max(0.01, $postDraw + abs($ctrlAdj) * 0.15);
+                    $t6 = $postHome + $postDraw + $postAway;
+                    if ($t6 > 0) { $postHome /= $t6; $postDraw /= $t6; $postAway /= $t6; }
+                }
+
+                $homeDiscipline = $homeStats['cards_per_game'];
+                $awayDiscipline = $awayStats['cards_per_game'];
+                if ($homeDiscipline > 4 || $awayDiscipline > 4) {
+                    $homeDiscAdj = ($awayDiscipline - $homeDiscipline) * 0.005;
+                    $postHome = max(0.01, $postHome + $homeDiscAdj);
+                    $postAway = max(0.01, $postAway - $homeDiscAdj);
+                    $t7 = $postHome + $postDraw + $postAway;
+                    if ($t7 > 0) { $postHome /= $t7; $postDraw /= $t7; $postAway /= $t7; }
+                }
+            }
+        }
+
+        $ou = $this->predictOverUnder($homeTeam, $awayTeam, $league, $prior, $homeForm, $awayForm, $h2h, $lookbackDays, $homeStats, $awayStats);
+        $btts = $this->predictBTTS($homeTeam, $awayTeam, $league, $prior, $homeForm, $awayForm, $h2h, $lookbackDays, $homeStats, $awayStats);
 
         $dcHomeDraw = $postHome + $postDraw;
         $dcAwayDraw = $postAway + $postDraw;
@@ -431,6 +499,8 @@ class BayesianModel {
             'away_form' => $awayForm,
             'home_defense' => $homeDefense,
             'away_defense' => $awayDefense,
+            'home_stats' => $homeStats,
+            'away_stats' => $awayStats,
             'h2h' => $h2h,
             'probs' => [
                 '1' => round($postHome * 100, 1),
@@ -1028,7 +1098,7 @@ class BayesianModel {
         }
     }
 
-    private function predictOverUnder($homeTeam, $awayTeam, $league, $prior, $homeForm, $awayForm, $h2h, $lookbackDays) {
+    private function predictOverUnder($homeTeam, $awayTeam, $league, $prior, $homeForm, $awayForm, $h2h, $lookbackDays, $homeStats = null, $awayStats = null) {
         $avgGoals = $prior['avg_goals'];
         $homeGFperGame = $homeForm['matches'] > 0 ? $homeForm['gf'] / $homeForm['matches'] : $avgGoals / 2;
         $homeGAperGame = $homeForm['matches'] > 0 ? $homeForm['ga'] / $homeForm['matches'] : $avgGoals / 2;
@@ -1037,6 +1107,18 @@ class BayesianModel {
 
         $homeExpected = ($homeGFperGame + $awayGAperGame) / 2;
         $awayExpected = ($awayGFperGame + $homeGAperGame) / 2;
+
+        $statsUsed = false;
+        if ($homeStats && $awayStats && $homeStats['xg_for'] !== null && $awayStats['xg_for'] !== null) {
+            $statsBlend = min(0.6, ($homeStats['data_weight'] + $awayStats['data_weight']) / 2);
+            $homeExpected = $homeExpected * (1 - $statsBlend) + $homeStats['xg_for'] * $statsBlend;
+            $awayExpected = $awayExpected * (1 - $statsBlend) + $awayStats['xg_for'] * $statsBlend;
+            $statsUsed = true;
+        } elseif ($homeStats && $homeStats['shots_for'] > 0) {
+            $homeExpected += ($homeStats['shots_for'] / 14) * 0.15 * $homeStats['data_weight'];
+        } elseif ($awayStats && $awayStats['shots_for'] > 0) {
+            $awayExpected += ($awayStats['shots_for'] / 14) * 0.15 * $awayStats['data_weight'];
+        }
 
         if ($h2h['matches'] >= 2) {
             $h2hAvg = $h2h['avg_goals'];
@@ -1053,6 +1135,7 @@ class BayesianModel {
             'expected_total_goals' => round($expectedTotal, 2),
             'home_expected' => round($homeExpected, 2),
             'away_expected' => round($awayExpected, 2),
+            'stats_used' => $statsUsed,
             'over_15' => round($over15 * 100, 1),
             'over_25' => round($over25 * 100, 1),
             'over_35' => round($over35 * 100, 1),
@@ -1062,7 +1145,7 @@ class BayesianModel {
         ];
     }
 
-    private function predictBTTS($homeTeam, $awayTeam, $league, $prior, $homeForm, $awayForm, $h2h, $lookbackDays) {
+    private function predictBTTS($homeTeam, $awayTeam, $league, $prior, $homeForm, $awayForm, $h2h, $lookbackDays, $homeStats = null, $awayStats = null) {
         $bttsPrior = $prior['btts_rate'];
         if ($homeForm['matches'] > 0) {
             $homeScored = $homeForm['gf'] > 0 ? min(1, ($homeForm['wins'] + $homeForm['draws'] / 2) / $homeForm['matches']) : 0;
@@ -1073,6 +1156,14 @@ class BayesianModel {
             $awayScored = $awayForm['gf'] > 0 ? min(1, ($awayForm['wins'] + $awayForm['draws'] / 2) / $awayForm['matches']) : 0;
             $awayConceded = $awayForm['ga'] > 0 ? min(1, ($awayForm['losses'] + $awayForm['draws'] / 2) / $awayForm['matches']) : 0;
         } else { $awayScored = $bttsPrior; $awayConceded = $bttsPrior; }
+
+        if ($homeStats && $awayStats && $homeStats['xg_for'] !== null && $awayStats['xg_for'] !== null) {
+            $blend = min(0.4, ($homeStats['data_weight'] + $awayStats['data_weight']) / 2);
+            $homeScored = $homeScored * (1 - $blend) + min(1, $homeStats['xg_for'] / 2) * $blend;
+            $awayScored = $awayScored * (1 - $blend) + min(1, $awayStats['xg_for'] / 2) * $blend;
+            if ($homeStats['xg_against'] !== null) $homeConceded = $homeConceded * (1 - $blend) + min(1, $homeStats['xg_against'] / 2) * $blend;
+            if ($awayStats['xg_against'] !== null) $awayConceded = $awayConceded * (1 - $blend) + min(1, $awayStats['xg_against'] / 2) * $blend;
+        }
 
         $k = $this->priorStrength;
         $homeBTTS = $homeScored * $awayConceded;
@@ -1361,6 +1452,136 @@ class BayesianModel {
             if ($k !== null) $this->priorStrength = $originalK;
             error_log("BayesianModel::backtest: " . $e->getMessage());
             return ['error' => $e->getMessage()];
+        }
+    }
+
+    private function getTeamStatsProfile($teamName, $lookbackDays) {
+        if (!$this->db) return null;
+        try {
+            $lookback = date('Y-m-d', strtotime("-{$lookbackDays} days"));
+            $stmt = $this->db->prepare("
+                SELECT
+                    COUNT(*) as matches,
+                    AVG(CASE WHEN home_team_api = ? THEN home_expected_goals ELSE away_expected_goals END) as avg_xg_for,
+                    AVG(CASE WHEN home_team_api = ? THEN away_expected_goals ELSE home_expected_goals END) as avg_xg_against,
+                    AVG(CASE WHEN home_team_api = ? THEN home_shots_on_goal ELSE away_shots_on_goal END) as avg_sot_for,
+                    AVG(CASE WHEN home_team_api = ? THEN away_shots_on_goal ELSE home_shots_on_goal END) as avg_sot_against,
+                    AVG(CASE WHEN home_team_api = ? THEN home_total_shots ELSE away_total_shots END) as avg_shots_for,
+                    AVG(CASE WHEN home_team_api = ? THEN away_total_shots ELSE home_total_shots END) as avg_shots_against,
+                    AVG(CASE WHEN home_team_api = ? THEN CAST(REPLACE(home_ball_possession,'%','') AS DECIMAL) ELSE CAST(REPLACE(away_ball_possession,'%','') AS DECIMAL) END) as avg_possession,
+                    AVG(CASE WHEN home_team_api = ? THEN home_corner_kicks ELSE away_corner_kicks END) as avg_corners_for,
+                    AVG(CASE WHEN home_team_api = ? THEN home_fouls ELSE away_fouls END) as avg_fouls,
+                    AVG(CASE WHEN home_team_api = ? THEN home_yellow_cards + home_red_cards ELSE away_yellow_cards + away_red_cards END) as avg_cards,
+                    SUM(CASE WHEN home_team_api = ? AND away_score = 0 THEN 1 WHEN away_team_api = ? AND home_score = 0 THEN 1 ELSE 0 END) as clean_sheets,
+                    AVG(CASE WHEN home_team_api = ? THEN home_passes_accurate ELSE away_passes_accurate END) as avg_passes_accurate,
+                    AVG(CASE WHEN home_team_api = ? THEN home_total_passes ELSE away_total_passes END) as avg_passes_total,
+                    AVG(CASE WHEN home_team_api = ? THEN home_goals_prevented ELSE away_goals_prevented END) as avg_goals_prevented
+                FROM match_statistics
+                WHERE (home_team_api = ? OR away_team_api = ?)
+                  AND match_date >= ? AND match_date <= CURDATE()
+            ");
+            $params = array_fill(0, 17, $teamName);
+            $params[] = $lookback;
+            $stmt->execute($params);
+            $r = $stmt->fetch();
+            if (!$r || $r['matches'] < 2) return null;
+
+            $total = (int)$r['matches'];
+            $cs = (int)($r['clean_sheets'] ?? 0);
+            $xgFor = $r['avg_xg_for'] !== null ? (float)$r['avg_xg_for'] : null;
+            $xgAgainst = $r['avg_xg_against'] !== null ? (float)$r['avg_xg_against'] : null;
+            $sotFor = (float)($r['avg_sot_for'] ?? 0);
+            $sotAgainst = (float)($r['avg_sot_against'] ?? 0);
+            $shotsFor = (float)($r['avg_shots_for'] ?? 0);
+            $shotsAgainst = (float)($r['avg_shots_against'] ?? 0);
+            $possession = $r['avg_possession'] !== null ? (float)$r['avg_possession'] : null;
+            $cornersFor = (float)($r['avg_corners_for'] ?? 0);
+            $fouls = (float)($r['avg_fouls'] ?? 0);
+            $cards = (float)($r['avg_cards'] ?? 0);
+            $passAcc = ($r['avg_passes_total'] ?? 0) > 0
+                ? (float)$r['avg_passes_accurate'] / (float)$r['avg_passes_total'] * 100 : null;
+            $goalsPrevented = $r['avg_goals_prevented'] !== null ? (float)$r['avg_goals_prevented'] : null;
+
+            $offensiveStrength = 0;
+            $offensiveSignals = 0;
+            if ($xgFor !== null) { $offensiveStrength += $xgFor / 1.5; $offensiveSignals++; }
+            if ($sotFor > 0) { $offensiveStrength += $sotFor / 6; $offensiveSignals++; }
+            if ($shotsFor > 0) { $offensiveStrength += $shotsFor / 14; $offensiveSignals++; }
+            $offensiveStrength = $offensiveSignals > 0 ? $offensiveStrength / $offensiveSignals : null;
+
+            $defensiveStrength = 0;
+            $defensiveSignals = 0;
+            if ($xgAgainst !== null) { $defensiveStrength += max(0, 1 - $xgAgainst / 2); $defensiveSignals++; }
+            if ($sotAgainst > 0) { $defensiveStrength += max(0, 1 - $sotAgainst / 6); $defensiveSignals++; }
+            if ($shotsAgainst > 0) { $defensiveStrength += max(0, 1 - $shotsAgainst / 14); $defensiveSignals++; }
+            $defensiveStrength = $defensiveSignals > 0 ? $defensiveStrength / $defensiveSignals : null;
+
+            $controlStrength = null;
+            if ($possession !== null && $passAcc !== null) {
+                $controlStrength = ($possession / 100 * 0.5 + $passAcc / 100 * 0.5);
+            } elseif ($possession !== null) {
+                $controlStrength = $possession / 100;
+            }
+
+            return [
+                'matches' => $total,
+                'xg_for' => $xgFor,
+                'xg_against' => $xgAgainst,
+                'sot_for' => $sotFor,
+                'sot_against' => $sotAgainst,
+                'shots_for' => $shotsFor,
+                'shots_against' => $shotsAgainst,
+                'possession' => $possession,
+                'corners_for' => $cornersFor,
+                'fouls_per_game' => $fouls,
+                'cards_per_game' => $cards,
+                'clean_sheet_pct' => $total > 0 ? $cs / $total * 100 : 0,
+                'pass_accuracy' => $passAcc,
+                'goals_prevented' => $goalsPrevented,
+                'offensive_strength' => $offensiveStrength,
+                'defensive_strength' => $defensiveStrength,
+                'control_strength' => $controlStrength,
+                'data_weight' => min(1.0, $total / 15),
+            ];
+        } catch (Exception $e) {
+            error_log("BayesianModel::getTeamStatsProfile: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    private function getLeagueStatsBaseline($lookbackDays = 365) {
+        if (!$this->db) return null;
+        try {
+            $lookback = date('Y-m-d', strtotime("-{$lookbackDays} days"));
+            $r = $this->db->query("
+                SELECT
+                    AVG(home_expected_goals) as avg_xg_home,
+                    AVG(away_expected_goals) as avg_xg_away,
+                    AVG(home_shots_on_goal) as avg_sot_home,
+                    AVG(away_shots_on_goal) as avg_sot_away,
+                    AVG(home_total_shots) as avg_shots_home,
+                    AVG(away_total_shots) as avg_shots_away,
+                    AVG(CAST(REPLACE(home_ball_possession,'%','') AS DECIMAL)) as avg_poss_home,
+                    COUNT(*) as total
+                FROM match_statistics
+                WHERE match_date >= '$lookback' AND match_date <= CURDATE()
+                  AND home_expected_goals IS NOT NULL
+            ");
+            if (!$r) return null;
+            $row = $r->fetch();
+            if (!$row || $row['total'] < 10) return null;
+            return [
+                'avg_xg_home' => (float)$row['avg_xg_home'],
+                'avg_xg_away' => (float)$row['avg_xg_away'],
+                'avg_sot_home' => (float)$row['avg_sot_home'],
+                'avg_sot_away' => (float)$row['avg_sot_away'],
+                'avg_shots_home' => (float)$row['avg_shots_home'],
+                'avg_shots_away' => (float)$row['avg_shots_away'],
+                'avg_poss_home' => (float)$row['avg_poss_home'],
+                'total' => (int)$row['total'],
+            ];
+        } catch (Exception $e) {
+            return null;
         }
     }
 }
