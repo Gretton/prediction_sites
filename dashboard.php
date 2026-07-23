@@ -452,7 +452,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-soft); color: var(
 <a href="aviator" class="header-link"><i class="fas fa-plane me-1" style="color:#F59E0B;"></i>Aviator</a>
 <?php endif; ?>
 <a href="dropping-odds" class="header-link"><i class="fas fa-arrow-down me-1" style="color:#EF4444;"></i>Dropping Odds</a>
-<a href="h2h" class="header-link"><i class="fas fa-exchange-alt me-1" style="color:#8B5CF6;"></i>H2H</a>
+<a href="h2h" class="header-link"><i class="fas fa-exchange-alt me-1" style="color:#3A004C;"></i>H2H</a>
 <a href="track-record" class="header-link"><i class="fas fa-chart-line me-1" style="color:#FBBF24;"></i>Performance</a>
 <a href="betting-school" class="header-link"><i class="fas fa-book-open me-1"></i>Betting School</a>
 <div class="dropdown d-inline-block">
