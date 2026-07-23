@@ -237,13 +237,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 
                 <div class="mb-3">
-                    <div class="form-check" style="background:rgba(22,27,34,0.5);border:1px solid rgba(139,92,246,0.3);border-radius:8px;padding:12px 15px;">
-                        <input type="checkbox" name="accept_terms" value="1" class="form-check-input" id="acceptTerms" required
-                               style="border-color:rgba(139,92,246,0.6);background:rgba(22,27,34,0.7);">
-                        <label class="form-check-label" for="acceptTerms" style="color:var(--text-light);font-size:0.88rem;margin-left:6px;">
+                    <label style="display:flex;align-items:flex-start;gap:10px;background:rgba(22,27,34,0.5);border:1px solid rgba(139,92,246,0.3);border-radius:8px;padding:12px 15px;cursor:pointer;">
+                        <input type="checkbox" name="accept_terms" value="1" id="acceptTerms" required
+                               style="margin-top:3px;accent-color:var(--primary);flex-shrink:0;width:18px;height:18px;cursor:pointer;">
+                        <span style="color:var(--text-light);font-size:0.88rem;">
                             I agree to the <a href="terms" target="_blank" style="color:var(--accent);text-decoration:underline;">Terms &amp; Conditions</a> and <a href="privacy" target="_blank" style="color:var(--accent);text-decoration:underline;">Privacy Policy</a>
-                        </label>
-                    </div>
+                        </span>
+                    </label>
                 </div>
                 
                 <button type="submit" class="btn btn-register mb-3">
