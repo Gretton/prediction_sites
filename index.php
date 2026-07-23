@@ -756,7 +756,7 @@ try { $approvedSlips = getApprovedSlips(); } catch (Exception $e) {}
     <!-- Signup Modal -->
     <div class="modal fade" id="signupModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="background: linear-gradient(135deg, rgba(139,92,246,0.2) 0%, rgba(6,182,212,0.1) 100%); border: 1px solid rgba(139,92,246,0.3); border-radius: 16px; box-shadow: 0 10px 40px rgba(139,92,246,0.12);">
+            <div class="modal-content" style="background: linear-gradient(135deg, rgba(30,20,50,0.95) 0%, rgba(20,30,40,0.95) 100%); border: 1px solid rgba(139,92,246,0.3); border-radius: 16px; box-shadow: 0 10px 40px rgba(139,92,246,0.12);">
                 <div class="modal-header border-0 pb-0">
                     <div class="text-center w-100">
                         <h5 class="modal-title fw-bold" style="background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Join Predixa</h5>
