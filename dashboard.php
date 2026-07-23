@@ -116,33 +116,6 @@ $hasTopPicks = $hasRollover && $hasParlay;
 $mostCornersPicks = deduplicatePicks(fetchPicks('most_corners'));
 $topPicks = getAdminTopPicks();
 
-// Annotate tab picks with total source agreement (scrapers + odds-signals + run analysis)
-$sourceCounts = getSourceAgreementCounts();
-if (!empty($sourceCounts)) {
-    foreach ([&$uniqueRolloverPicks, &$uniqueParlayPicks, &$over15Picks, &$under25Picks, &$mostCornersPicks, &$topPicks] as &$tabPicks) {
-        foreach ($tabPicks as &$p) {
-            $key = normalizeIntersectionKey($p['match_name'] ?? '', $p['pick_value'] ?? '');
-            if (isset($sourceCounts[$key])) {
-                $p['intersection_sites'] = $sourceCounts[$key];
-            }
-        }
-    }
-    unset($tabPicks, $p);
-}
-// Cast unmatched scraper intersections to TOP PICKS
-$allTabKeys = [];
-foreach ([$uniqueRolloverPicks, $uniqueParlayPicks, $over15Picks, $under25Picks, $mostCornersPicks, $topPicks] as $tabPicks) {
-    foreach ($tabPicks as $p) {
-        $allTabKeys[] = normalizeIntersectionKey($p['match_name'] ?? '', $p['pick_value'] ?? '');
-    }
-}
-$scraperPicks = getUnmatchedScraperPicks(array_unique($allTabKeys));
-foreach ($scraperPicks as $sp) {
-    $sp['id'] = 0;
-    $sp['web_pick_id'] = 0;
-    $topPicks[] = $sp;
-}
-
 // Betting code marketplace
 $availableCodes = [];
 $userCodes = [];
