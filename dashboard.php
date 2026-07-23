@@ -452,6 +452,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-soft); color: var(
 <a href="aviator" class="header-link"><i class="fas fa-plane me-1" style="color:#F59E0B;"></i>Aviator</a>
 <?php endif; ?>
 <a href="dropping-odds" class="header-link"><i class="fas fa-arrow-down me-1" style="color:#EF4444;"></i>Dropping Odds</a>
+<a href="h2h" class="header-link"><i class="fas fa-exchange-alt me-1" style="color:#06B6D4;"></i>H2H</a>
 <a href="track-record" class="header-link"><i class="fas fa-chart-line me-1" style="color:#FBBF24;"></i>Performance</a>
 <a href="betting-school" class="header-link"><i class="fas fa-book-open me-1"></i>Betting School</a>
 <div class="dropdown d-inline-block">
@@ -533,6 +534,10 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-soft); color: var(
 </div>
 <?php endif; ?>
 
+
+
+
+
 <div class="tab-content">
 
 <?php
@@ -596,8 +601,10 @@ function renderPickCard($pick, $hasAccess, $lockTitle, $lockDesc, $lockTier, $pi
             <?php endif; ?>
             </div>
 <?php
-if (!empty($pick['match_name'])): ?>
-            <button onclick='openH2H("<?= htmlspecialchars($pick['match_name'] ?? '', ENT_QUOTES) ?>")' style="border:1px solid var(--primary);background:transparent;color:var(--primary);padding:3px 10px;border-radius:5px;font-weight:600;font-size:0.7rem;text-decoration:none;white-space:nowrap;cursor:pointer;transition:all .2s;align-self:flex-start;" onmouseover="this.style.borderColor='var(--primary-light)';this.style.color='var(--primary-light)'" onmouseout="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'">Match Details</button>
+$slug = strtolower(trim(preg_replace('/[^a-z0-9]+/', '-', $pick['match_name'] ?? ''), '-'));
+$linkId = (int)($pick['web_pick_id'] ?? $pick['id']);
+if ($slug): ?>
+            <a href="prediction/<?= $slug ?>-<?= $linkId ?>" style="display:inline-flex;align-items:center;gap:4px;border:1px solid var(--primary);background:transparent;color:var(--primary);padding:3px 10px;border-radius:5px;font-weight:600;font-size:0.7rem;text-decoration:none;white-space:nowrap;transition:all .2s;align-self:flex-start;" target="_blank" onmouseover="this.style.borderColor='var(--primary-light)';this.style.color='var(--primary-light)'" onmouseout="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'">Match Details</a>
 <?php endif; ?>
         </div>
         <div class="pick-meta">
@@ -658,8 +665,9 @@ if (!empty($mt) && !str_starts_with($mt, '0000') && strtolower($mt) !== 'tbd') {
     <div class="pick-header">
         <div><span style="background: var(--bg-soft); padding: 0.25rem 0.75rem; border-radius: 6px; font-weight: 700; margin-right: 0.5rem;">#<?= $i++ ?></span><span class="pick-match"><?= htmlspecialchars($pick['match_name'] ?? 'Unknown') ?></span></div>
 <?php
-if (!empty($pick['match_name'])): ?>
-        <button onclick='openH2H("<?= htmlspecialchars($pick['match_name'] ?? '', ENT_QUOTES) ?>")' style="border:1px solid var(--primary);background:transparent;color:var(--primary);padding:3px 10px;border-radius:5px;font-weight:600;font-size:0.7rem;text-decoration:none;white-space:nowrap;cursor:pointer;transition:all .2s;align-self:flex-start;" onmouseover="this.style.borderColor='var(--primary-light)';this.style.color='var(--primary-light)'" onmouseout="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'">Match Details</button>
+$slug = strtolower(trim(preg_replace('/[^a-z0-9]+/', '-', $pick['match_name'] ?? ''), '-'));
+if ($slug): ?>
+        <a href="prediction/<?= $slug ?>-<?= (int)$pick['id'] ?>" style="display:inline-flex;align-items:center;gap:4px;border:1px solid var(--primary);background:transparent;color:var(--primary);padding:3px 10px;border-radius:5px;font-weight:600;font-size:0.7rem;text-decoration:none;white-space:nowrap;transition:all .2s;align-self:flex-start;" target="_blank" onmouseover="this.style.borderColor='var(--primary-light)';this.style.color='var(--primary-light)'" onmouseout="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'">Match Details</a>
 <?php endif; ?>
     </div>
     <div class="pick-value"><?= htmlspecialchars($pick['pick_value'] ?? $pick['pick'] ?? '') ?><?php $bankerEv = getBankerEVValue($pick); $bv = getBestVerifiedStrength($verifiedAll); ?><?php if ($bankerEv !== null && $bankerEv >= 0.05 && !$isNoisy): $bCol = '#06B6D4'; $bBg = 'rgba(6,182,212,0.3)'; ?><span style="display:inline-flex;align-items:center;gap:3px;background:<?= $bBg ?>;color:<?= $bCol ?>;padding:1px 8px;border-radius:4px;font-size:0.65rem;font-weight:700;margin-left:4px;cursor:help;" title="+<?= round($bankerEv * 100) ?>% edge over true probability"><i class="fas fa-dollar-sign"></i> BANKER +<?= round($bankerEv * 100) ?>%</span><?php endif; ?><?php if ($con && !$isNoisy && $bv['strength'] >= 50): $vCol = $bv['strength'] >= 75 ? '#10B981' : '#FBBF24'; $vBg = $bv['strength'] >= 75 ? 'rgba(16,185,129,0.15)' : 'rgba(251,191,36,0.15)'; $vLabel = $bv['strength'] >= 75 ? 'Strong consensus' : 'Moderate agreement'; ?><span style="display:inline-flex;align-items:center;gap:3px;background:<?= $vBg ?>;color:<?= $vCol ?>;padding:1px 8px;border-radius:4px;font-size:0.65rem;font-weight:700;margin-left:6px;cursor:help;" title="<?= $vLabel ?> — <?= $bv['strength'] ?>% across <?= $bv['count'] ?>/<?= $bv['total'] ?> bookies<?= $bv['strength'] < 75 ? '. Use caution.' : '' ?>"><i class="fas fa-check-circle"></i> VERIFIED <?= $bv['strength'] ?>% (<?= $bv['count'] ?>/<?= $bv['total'] ?>)</span><?php endif; ?><?php if ($isNoisy): ?><span style="display:inline-flex;align-items:center;gap:3px;background:rgba(239,68,68,0.15);color:#EF4444;padding:1px 8px;border-radius:4px;font-size:0.65rem;font-weight:700;margin-left:4px;cursor:help;" title="Bookies disagree — unreliable. Avoid."><i class="fas fa-wave-square"></i> NOISY</span><?php endif; ?><?php $ixSites = $pick['intersection_sites'] ?? null; if ($ixSites && $ixSites >= 2): $ixCol = $ixSites >= 4 ? '#7C3AED' : ($ixSites >= 3 ? '#8B5CF6' : '#A78BFA'); $ixBg = $ixSites >= 4 ? 'rgba(124,58,237,0.25)' : ($ixSites >= 3 ? 'rgba(139,92,246,0.2)' : 'rgba(167,139,250,0.15)'); $ixLabel = $ixSites >= 4 ? 'Very strong — 4-5 of 5 sources agree' : ($ixSites >= 3 ? 'Strong — 3 of 5 sources agree' : 'Moderate — 2 of 5 sources agree'); ?><span style="display:inline-flex;align-items:center;gap:3px;background:<?= $ixBg ?>;color:<?= $ixCol ?>;padding:1px 8px;border-radius:4px;font-size:0.65rem;font-weight:700;margin-left:4px;cursor:help;" title="<?= $ixLabel ?>"><i class="fas fa-crosshairs"></i> <?= $ixSites ?>/5</span><?php endif; ?></div>
@@ -1032,7 +1040,6 @@ if ($tpSort === 'time') {
         <span style="display:inline-flex;align-items:center;gap:3px;background:rgba(<?= $b === 'VERIFIED' ? '16,185,129' : ($b === 'BANKER' ? '6,182,212' : ($b === 'NOISY' ? '239,68,68' : ($b === 'VALUE' ? '34,197,94' : '107,114,128'))) ?>,0.15);color:<?= $bc ?>;padding:1px 6px;border-radius:4px;font-weight:600;font-size:0.65rem;"><?= htmlspecialchars($b) ?></span>
         <?php endforeach; endif; ?>
     </div>
-    <button onclick='openH2H("<?= htmlspecialchars($p['match_name'] ?? '', ENT_QUOTES) ?>")' style="border:1px solid var(--primary);background:transparent;color:var(--primary);padding:3px 10px;border-radius:5px;font-weight:600;font-size:0.7rem;text-decoration:none;white-space:nowrap;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--primary-light)';this.style.color='var(--primary-light)'" onmouseout="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'">Match Details</button>
     <div style="text-align:right;min-width:36px;">
         <div style="font-size:0.55rem;color:var(--text-muted);font-weight:500;line-height:1;">Confidence</div>
         <span style="font-weight:700;font-size:0.85rem;color:<?= $confColor ?>;"><?= $conf ?>%</span>
@@ -1929,103 +1936,6 @@ function escapeHtml(t) {
     var d = document.createElement('div');
     d.textContent = t;
     return d.innerHTML;
-}
-</script>
-
-<!-- H2H Modal -->
-<div class="modal fade" id="h2hModal" tabindex="-1" aria-hidden="true">
-<div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-<div class="modal-content" style="background:#1A1D24;border:1px solid var(--border-color);border-radius:16px;">
-<div class="modal-header border-0">
-    <h5 class="modal-title fw-bold" style="color:#fff;"><i class="fas fa-history me-2" style="color:var(--accent);"></i><span id="h2hTitle">Match History</span></h5>
-    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-</div>
-<div class="modal-body" id="h2hBody">
-    <div class="text-center py-4" id="h2hLoader" style="color:var(--text-muted);"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</div>
-    <div id="h2hContent" style="display:none;"></div>
-</div>
-</div>
-</div>
-</div>
-
-<script>
-function openH2H(matchName) {
-    var titleEl = document.getElementById('h2hTitle');
-    var loader = document.getElementById('h2hLoader');
-    var content = document.getElementById('h2hContent');
-    titleEl.textContent = matchName + ' — Match History';
-    loader.style.display = '';
-    content.style.display = 'none';
-    content.innerHTML = '';
-    new bootstrap.Modal(document.getElementById('h2hModal')).show();
-
-    fetch('ajax_h2h.php?match_name=' + encodeURIComponent(matchName))
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
-            loader.style.display = 'none';
-            if (d.error) { content.innerHTML = '<p class="text-danger">' + d.error + '</p>'; content.style.display = ''; return; }
-            var html = '<div class="row g-3">';
-
-            // H2H section
-            html += '<div class="col-12"><h6 style="color:var(--accent);font-weight:700;"><i class="fas fa-swords me-1"></i>Head to Head: ' + escapeHtml(d.home_team) + ' vs ' + escapeHtml(d.away_team) + '</h6>';
-            if (d.h2h.length === 0) { html += '<p class="text-muted small">No previous meetings found.</p>'; }
-            else { html += '<div style="max-height:300px;overflow-y:auto;">';
-            d.h2h.forEach(function(m) {
-                var isHome = m.home_team === d.home_team;
-                var hs = parseInt(m.home_score), as = parseInt(m.away_score);
-                var winner = hs > as ? m.home_team : (hs < as ? m.away_team : 'Draw');
-                var badge = winner === d.home_team ? '<span style="color:#22C55E;font-weight:700;">W</span>' : (winner === d.away_team ? '<span style="color:#EF4444;font-weight:700;">L</span>' : '<span style="color:#FBBF24;font-weight:700;">D</span>');
-                html += '<div style="display:flex;align-items:center;gap:10px;padding:6px 8px;border-bottom:1px solid var(--border-color);font-size:0.82rem;">';
-                html += '<span style="color:var(--text-muted);min-width:80px;font-size:0.75rem;">' + (m.match_date || '') + '</span>';
-                html += '<span style="flex:1;">' + escapeHtml(m.home_team) + ' <strong>' + hs + '-' + as + '</strong> ' + escapeHtml(m.away_team) + '</span>';
-                html += '<span>' + badge + '</span></div>';
-            });
-            html += '</div>'; }
-            html += '</div>';
-
-            // Home team recent
-            html += '<div class="col-md-6"><h6 style="color:#22C55E;font-weight:700;font-size:0.85rem;"><i class="fas fa-home me-1"></i>' + escapeHtml(d.home_team) + ' — Recent 10</h6>';
-            if (d.home_recent.length === 0) { html += '<p class="text-muted small">No recent matches.</p>'; }
-            else { html += '<div style="max-height:300px;overflow-y:auto;">';
-            d.home_recent.forEach(function(m) {
-                var hs = parseInt(m.home_score), as = parseInt(m.away_score);
-                var isHome = m.home_team === d.home_team;
-                var result = isHome ? (hs > as ? 'W' : (hs < as ? 'L' : 'D')) : (as > hs ? 'W' : (as < hs ? 'L' : 'D'));
-                var color = result === 'W' ? '#22C55E' : (result === 'L' ? '#EF4444' : '#FBBF24');
-                html += '<div style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-bottom:1px solid var(--border-color);font-size:0.78rem;">';
-                html += '<span style="color:' + color + ';font-weight:700;min-width:20px;">' + result + '</span>';
-                html += '<span style="flex:1;">' + escapeHtml(m.home_team) + ' <strong>' + hs + '-' + as + '</strong> ' + escapeHtml(m.away_team) + '</span>';
-                html += '<span style="color:var(--text-muted);font-size:0.7rem;min-width:80px;text-align:right;">' + (m.match_date || '') + '</span></div>';
-            });
-            html += '</div>'; }
-            html += '</div>';
-
-            // Away team recent
-            html += '<div class="col-md-6"><h6 style="color:#EF4444;font-weight:700;font-size:0.85rem;"><i class="fas fa-arrow-right me-1"></i>' + escapeHtml(d.away_team) + ' — Recent 10</h6>';
-            if (d.away_recent.length === 0) { html += '<p class="text-muted small">No recent matches.</p>'; }
-            else { html += '<div style="max-height:300px;overflow-y:auto;">';
-            d.away_recent.forEach(function(m) {
-                var hs = parseInt(m.home_score), as = parseInt(m.away_score);
-                var isHome = m.home_team === d.away_team;
-                var result = isHome ? (hs > as ? 'W' : (hs < as ? 'L' : 'D')) : (as > hs ? 'W' : (as < hs ? 'L' : 'D'));
-                var color = result === 'W' ? '#22C55E' : (result === 'L' ? '#EF4444' : '#FBBF24');
-                html += '<div style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-bottom:1px solid var(--border-color);font-size:0.78rem;">';
-                html += '<span style="color:' + color + ';font-weight:700;min-width:20px;">' + result + '</span>';
-                html += '<span style="flex:1;">' + escapeHtml(m.home_team) + ' <strong>' + hs + '-' + as + '</strong> ' + escapeHtml(m.away_team) + '</span>';
-                html += '<span style="color:var(--text-muted);font-size:0.7rem;min-width:80px;text-align:right;">' + (m.match_date || '') + '</span></div>';
-            });
-            html += '</div>'; }
-            html += '</div>';
-
-            html += '</div>';
-            content.innerHTML = html;
-            content.style.display = '';
-        })
-        .catch(function(e) {
-            loader.style.display = 'none';
-            content.innerHTML = '<p class="text-danger">Error loading data.</p>';
-            content.style.display = '';
-        });
 }
 </script>
 </body>

@@ -9,7 +9,7 @@ jobs:
   collect-stats:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger stats collection
+      - name: Trigger stats collection (1 match, synchronous)
         run: |
-          curl -s "https://predixa.co.tz/cron/run_stats.php?key=${{ secrets.STATS_SECRET_KEY }}" | python3 -m json.tool || echo "Collection failed"
+          curl -s "https://predixa.co.tz/cron/run_stats.php?key=${{ secrets.STATS_SECRET_KEY }}&limit=1" | python3 -m json.tool || echo "Collection failed"
         continue-on-error: true

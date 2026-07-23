@@ -105,7 +105,7 @@ $insertStmt = $db->prepare("INSERT INTO match_statistics
      home_expected_goals, away_expected_goals,
      home_goals_prevented, away_goals_prevented,
      raw_statistics, raw_fixture)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     ON DUPLICATE KEY UPDATE
      home_shots_on_goal=VALUES(home_shots_on_goal), away_shots_on_goal=VALUES(away_shots_on_goal),
      home_shots_off_goal=VALUES(home_shots_off_goal), away_shots_off_goal=VALUES(away_shots_off_goal),
@@ -183,18 +183,8 @@ foreach ($fixtures as $f) {
         }
     }
 
-    $referee = null;
-    $venue = null;
-    if ($requestCount > 0) {
-        sleep($sleepSec);
-    }
-    $detResp = apiGet('/fixtures', ['id' => $fid]);
-    $requestCount++;
-    if ($detResp && !empty($detResp['response'])) {
-        $det = $detResp['response'][0]['fixture'] ?? [];
-        $referee = $det['referee'] ?? null;
-        $venue = $det['venue']['name'] ?? null;
-    }
+    $referee = $f['fixture']['referee'] ?? null;
+    $venue = $f['fixture']['venue']['name'] ?? null;
 
     try {
         $insertStmt->execute([
@@ -220,7 +210,7 @@ foreach ($fixtures as $f) {
             parseStatDec($homeStats, 'expected_goals'), parseStatDec($awayStats, 'expected_goals'),
             parseStatDec($homeStats, 'goals_prevented'), parseStatDec($awayStats, 'goals_prevented'),
             json_encode($statsResp['response']),
-            json_encode($detResp['response'][0] ?? null),
+            json_encode($f),
         ]);
         $collected++;
         apiLog("  Stored OK");

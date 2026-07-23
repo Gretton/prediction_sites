@@ -9,35 +9,16 @@ if ($key !== STATS_SECRET_KEY) {
 }
 
 $date = $_GET['date'] ?? date('Y-m-d', strtotime('-1 day'));
-$limit = isset($_GET['limit']) ? (int)$_GET['limit'] : null;
+$limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 1;
+
+// Run collector inline (nohup doesn't work on shared hosting)
+$cmd = 'php ' . __DIR__ . '/collect_match_stats.php --date ' . escapeshellarg($date) . ' --limit ' . (int)$limit;
+$output = shell_exec($cmd . ' 2>&1');
 
 header('Content-Type: application/json');
 echo json_encode([
-    'status' => 'started',
+    'status' => 'completed',
     'date' => $date,
     'limit' => $limit,
+    'output' => trim($output),
 ]);
-
-if (function_exists('fastcgi_finish_request')) {
-    fastcgi_finish_request();
-} else {
-    @ob_end_flush();
-    @flush();
-}
-
-$cmd = 'php ' . __DIR__ . '/collect_match_stats.php --date ' . escapeshellarg($date);
-if ($limit) $cmd .= ' --limit ' . (int)$limit;
-
-$logFile = __DIR__ . '/../logs/stats_collector_' . $date . '.log';
-$logDir = dirname($logFile);
-if (!is_dir($logDir)) mkdir($logDir, 0755, true);
-
-ignore_user_abort(true);
-
-if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-    $bgCmd = 'start /B cmd /c "' . $cmd . ' >> ' . escapeshellarg($logFile) . ' 2>&1"';
-    exec($bgCmd);
-} else {
-    $bgCmd = 'nohup ' . $cmd . ' >> ' . escapeshellarg($logFile) . ' 2>&1 &';
-    exec($bgCmd);
-}

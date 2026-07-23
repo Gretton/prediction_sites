@@ -39,6 +39,7 @@ Deny from 203.91.74.210
   RewriteCond %{REQUEST_URI} !/prediction\.php [NC]
   RewriteCond %{REQUEST_URI} !/sitemap\.php [NC]
   RewriteCond %{REQUEST_URI} !/dropping-odds\.php [NC]
+  RewriteCond %{REQUEST_URI} !/h2h\.php [NC]
   RewriteCond %{REQUEST_URI} !/odds-signals\.php [NC]
   RewriteCond %{REQUEST_URI} !/betting_school\.php [NC]
   RewriteCond %{REQUEST_URI} !/pikka\.php [NC]
@@ -46,6 +47,7 @@ Deny from 203.91.74.210
   RewriteCond %{REQUEST_URI} !/terms\.php [NC]
   RewriteCond %{REQUEST_URI} !/run_stats\.php [NC]
   RewriteCond %{REQUEST_URI} !/collect_match_stats\.php [NC]
+  RewriteCond %{REQUEST_URI} !/api/h2h\.php [NC]
   RewriteRule ^(.+)\.php$ /$1 [R=301,L,QSA]
 
   # SEO match prediction pages
@@ -56,6 +58,9 @@ Deny from 203.91.74.210
 
   # Dropping Odds free tool
   RewriteRule ^dropping-odds$ dropping-odds.php [L,QSA]
+
+  # H2H Head to Head
+  RewriteRule ^h2h$ h2h.php [L,QSA]
 
   # Odds Signals private tool
   RewriteRule ^odds-signals$ odds-signals.php [L,QSA]
