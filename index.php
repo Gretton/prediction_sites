@@ -119,10 +119,10 @@ try { $approvedSlips = getApprovedSlips(); } catch (Exception $e) {}
         footer h5, footer h6 { color: var(--text-light); font-weight: 700; }
         footer a { color: var(--text-muted); text-decoration: none; transition: all 0.3s; }
         footer a:hover { color: var(--primary); }
-        .modal-content .form-control { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-light); padding: 12px 15px; border-radius: 8px; }
-        .modal-content .form-control:focus { background: rgba(255,255,255,0.08); border-color: var(--primary); box-shadow: 0 0 0 0.25rem rgba(139, 92, 246, 0.25); color: var(--text-light); }
-        .modal-content .btn-premium { background: var(--primary); color: white; border: none; font-weight: 700; padding: 14px 30px; border-radius: 8px; width: 100%; transition: all 0.3s; }
-        .modal-content .btn-premium:hover { background: var(--primary-dark); color: white; transform: translateY(-2px); box-shadow: 0 5px 20px rgba(139, 92, 246, 0.4); }
+        .modal-content .form-control { background: rgba(22,27,34,0.7); border: 1.5px solid rgba(139,92,246,0.45); color: var(--text-light); padding: 12px 15px; border-radius: 8px; }
+        .modal-content .form-control:focus { background: rgba(22,27,34,0.9); border-color: var(--primary); box-shadow: 0 0 0 0.25rem rgba(139, 92, 246, 0.2); color: var(--text-light); }
+        .modal-content .btn-premium { background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); color: white; border: none; font-weight: 700; padding: 14px 30px; border-radius: 8px; width: 100%; transition: all 0.3s; }
+        .modal-content .btn-premium:hover { background: linear-gradient(135deg, var(--primary-dark) 0%, #0891B2 100%); color: white; transform: translateY(-2px); box-shadow: 0 5px 20px rgba(139, 92, 246, 0.4); }
         .modal-content .login-link { color: var(--primary); text-decoration: none; font-weight: 600; }
         .modal-content .login-link:hover { color: var(--accent); text-decoration: underline; }
         @media (max-width: 768px) { .hero-title { font-size: 2rem; } .hero-section { padding: 80px 0 40px; } .stats-row { flex-direction: column; gap: 15px; } .stat-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color); } .stat-number { font-size: 1.75rem; } }
@@ -756,7 +756,7 @@ try { $approvedSlips = getApprovedSlips(); } catch (Exception $e) {}
     <!-- Signup Modal -->
     <div class="modal fade" id="signupModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="background: var(--secondary); border: 1px solid var(--border-color); border-radius: 16px;">
+            <div class="modal-content" style="background: linear-gradient(135deg, rgba(139,92,246,0.2) 0%, rgba(6,182,212,0.1) 100%); border: 1px solid rgba(139,92,246,0.3); border-radius: 16px; box-shadow: 0 10px 40px rgba(139,92,246,0.12);">
                 <div class="modal-header border-0 pb-0">
                     <div class="text-center w-100">
                         <h5 class="modal-title fw-bold" style="background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Join Predixa</h5>
