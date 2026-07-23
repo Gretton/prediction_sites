@@ -158,7 +158,7 @@ try { $approvedSlips = getApprovedSlips(); } catch (Exception $e) {}
                         <ul class="dropdown-menu dropdown-menu-dark" style="background:var(--secondary);border:1px solid var(--border-color);">
                             <li><a class="dropdown-item" href="dropping-odds"><i class="fas fa-arrow-trend-down me-2" style="color:#EF4444;"></i>Dropping Odds</a></li>
                             <li><a class="dropdown-item" href="signals"><i class="fas fa-microchip me-2" style="color:#22C55E;"></i>Smart Picks</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-chart-line me-2" style="color:#FBBF24;"></i>Performance</a></li>
+                            <li><a class="dropdown-item" href="track-record"><i class="fas fa-chart-line me-2" style="color:#FBBF24;"></i>Performance</a></li>
                             <li><a class="dropdown-item" href="betting-school"><i class="fas fa-book me-2" style="color:#8B5CF6;"></i>Betting School</a></li>
                             <li><a class="dropdown-item" href="pikka"><i class="fas fa-futbol me-2" style="color:#6366F1;"></i>Pikka</a></li>
                         </ul>
@@ -224,15 +224,6 @@ try { $approvedSlips = getApprovedSlips(); } catch (Exception $e) {}
                         </ul>
                     </div>
                 </div>
-            </div>
-            <div style="background:linear-gradient(135deg,#0B1D3A 0%,#1A3A6B 30%,#2D5F8A 60%,#0B1D3A 100%);border-radius:12px;margin-top:1.5rem;padding:0.75rem 1.5rem;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0.75rem;border:1px solid rgba(255,215,0,0.25);box-shadow:0 2px 12px rgba(255,215,0,0.08);">
-              <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
-                <div style="width:40px;height:40px;background:linear-gradient(135deg,#FFD700,#FFA500);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.2rem;color:#0B1D3A;flex-shrink:0;">WC</div>
-                <div>
-                  <div style="font-weight:700;font-size:0.95rem;color:#FFD700;line-height:1.3;"><i class="fas fa-futbol me-1" style="color:#FFD700;"></i>World Cup 2026 — <span style="color:#fff;">AI-powered predictions, parlay codes &amp; expert picks</span></div>
-                </div>
-              </div>
-              <a href="#" data-bs-toggle="modal" data-bs-target="#signupModal" style="display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,#FFD700,#FFA500);color:#0B1D3A;padding:6px 20px;border-radius:6px;font-weight:700;font-size:0.85rem;text-decoration:none;white-space:nowrap;transition:all .2s;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'"><i class="fas fa-rocket"></i> Get Started Free</a>
             </div>
         </div>
     </section>
@@ -800,6 +791,15 @@ try { $approvedSlips = getApprovedSlips(); } catch (Exception $e) {}
                             <label class="form-label text-white-50 small">Confirm Password *</label>
                             <input type="password" name="confirm_password" class="form-control" placeholder="Repeat password" required>
                         </div>
+                        <div class="mb-3">
+                            <label style="display:flex;align-items:flex-start;gap:10px;background:rgba(22,27,34,0.5);border:1px solid rgba(139,92,246,0.3);border-radius:8px;padding:12px 15px;cursor:pointer;">
+                                <input type="checkbox" name="accept_terms" value="1" required
+                                       style="margin-top:3px;accent-color:var(--primary);flex-shrink:0;width:18px;height:18px;cursor:pointer;">
+                                <span style="color:var(--text-light);font-size:0.88rem;">
+                                    I agree to the <a href="terms" target="_blank" style="color:var(--accent);text-decoration:underline;">Terms &amp; Conditions</a> and <a href="privacy" target="_blank" style="color:var(--accent);text-decoration:underline;">Privacy Policy</a>
+                                </span>
+                            </label>
+                        </div>
                         <button type="submit" class="btn btn-premium w-100" id="modalSignupBtn">
                             Create Free Account
                         </button>
@@ -863,7 +863,7 @@ try { $approvedSlips = getApprovedSlips(); } catch (Exception $e) {}
                     <ul class="list-unstyled">
                         <li class="mb-2"><a href="dropping-odds"><i class="fas fa-arrow-trend-down me-1" style="color:#EF4444;"></i> Dropping Odds</a></li>
                         <li class="mb-2"><a href="signals"><i class="fas fa-microchip me-1" style="color:#22C55E;"></i> Smart Picks</a></li>
-                        <li class="mb-2"><a href="#"><i class="fas fa-chart-line me-1" style="color:#FBBF24;"></i> Performance</a></li>
+                        <li class="mb-2"><a href="track-record"><i class="fas fa-chart-line me-1" style="color:#FBBF24;"></i> Performance</a></li>
                         <li class="mb-2"><a href="betting-school"><i class="fas fa-book me-1" style="color:#8B5CF6;"></i> Betting School</a></li>
                         <li class="mb-2"><a href="pikka"><i class="fas fa-futbol me-1" style="color:#6366F1;"></i> Pikka</a></li>
                     </ul>
