@@ -72,7 +72,7 @@ try { $approvedSlips = getApprovedSlips(); } catch (Exception $e) {}
             --accent: #06B6D4; --accent-dark: #0891B2;
             --secondary: #161b22; --text-light: #e0e0e0; --text-muted: #8b949e; --border-color: #2a2e35;
         }
-        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #0f1115 0%, #1a1f2e 100%); color: var(--text-light); min-height: 100vh; }
+        body { font-family: 'Inter', sans-serif; background: #0f1115; background-image: radial-gradient(ellipse at 15% 10%, rgba(139,92,246,0.12) 0%, transparent 50%), radial-gradient(ellipse at 85% 20%, rgba(6,182,212,0.1) 0%, transparent 50%), radial-gradient(ellipse at 50% 80%, rgba(245,158,11,0.06) 0%, transparent 50%); background-attachment: fixed; color: var(--text-light); min-height: 100vh; }
         .navbar { background: rgba(15, 17, 21, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border-color); }
         .navbar-brand { font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
         .nav-link { color: var(--text-muted) !important; transition: all 0.3s; }
