@@ -816,7 +816,7 @@ try { $approvedSlips = getApprovedSlips(); } catch (Exception $e) {}
     <!-- Exit-Intent Popup -->
     <div class="modal fade" id="exitModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="background: linear-gradient(135deg, var(--secondary), #1a1f2e); border: 2px solid var(--primary); border-radius: 16px;">
+            <div class="modal-content" style="background: linear-gradient(135deg, rgba(30,20,50,0.95) 0%, rgba(20,30,40,0.95) 100%); border: 2px solid var(--primary); border-radius: 16px;">
                 <div class="modal-header border-0 pb-0">
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
