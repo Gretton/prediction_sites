@@ -1,15 +1,15 @@
 {
-  "generated_at": "2026-07-22T23:00:54.200Z",
-  "started_at": "2026-07-22T23:00:30.470Z",
+  "generated_at": "2026-07-23T08:26:32.226Z",
+  "started_at": "2026-07-23T08:26:11.110Z",
   "min_agreement": 2,
   "sources": {
     "allnigeriafootball": {
       "status": "ok",
-      "count": 15
+      "count": 28
     },
     "adibet": {
       "status": "ok",
-      "count": 39
+      "count": 36
     },
     "zulubet": {
       "status": "ok",
@@ -29,82 +29,226 @@
       "source": "allnigeriafootball",
       "picks": [
         {
-          "match": "AC Omonia Nicosia vs FC Kairat Almaty",
-          "home": "AC Omonia Nicosia",
-          "away": "FC Kairat Almaty",
+          "match": "FC St. Gallen vs Benfica",
+          "home": "FC St. Gallen",
+          "away": "Benfica",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "UEFA Europa League",
+          "time": "19:00"
+        },
+        {
+          "match": "FC Twente Enschede vs Ferencvarosi",
+          "home": "FC Twente Enschede",
+          "away": "Ferencvarosi",
           "pick": "1X",
           "odds": "",
-          "league": "UEFA Champions League",
+          "league": "UEFA Europa League",
+          "time": "19:00"
+        },
+        {
+          "match": "FK Liepaja vs FK Austria Wien",
+          "home": "FK Liepaja",
+          "away": "FK Austria Wien",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "UEFA Conference League",
+          "time": "16:00"
+        },
+        {
+          "match": "HJK Helsinki vs Coleraine FC",
+          "home": "HJK Helsinki",
+          "away": "Coleraine FC",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "UEFA Conference League",
+          "time": "17:00"
+        },
+        {
+          "match": "Paide Linnameeskond vs Zira FK",
+          "home": "Paide Linnameeskond",
+          "away": "Zira FK",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "UEFA Conference League",
+          "time": "17:00"
+        },
+        {
+          "match": "DAC 1904 Dunajska Streda vs FK Velez Mostar",
+          "home": "DAC 1904 Dunajska Streda",
+          "away": "FK Velez Mostar",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "UEFA Conference League",
+          "time": "17:30"
+        },
+        {
+          "match": "Bate Borisov vs FC Sion",
+          "home": "Bate Borisov",
+          "away": "FC Sion",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "UEFA Conference League",
           "time": "18:00"
         },
         {
-          "match": "Istanbul BB vs FC Inter Turku",
-          "home": "Istanbul BB",
-          "away": "FC Inter Turku",
+          "match": "FC Santa Coloma vs SK Rapid",
+          "home": "FC Santa Coloma",
+          "away": "SK Rapid",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "UEFA Conference League",
+          "time": "18:00"
+        },
+        {
+          "match": "FC Vaduz vs Atletic Club d&#8217;Escaldes",
+          "home": "FC Vaduz",
+          "away": "Atletic Club d&#8217;Escaldes",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "UEFA Conference League",
+          "time": "18:30"
+        },
+        {
+          "match": "Fotbal Club FCSB vs FK Auda Riga",
+          "home": "Fotbal Club FCSB",
+          "away": "FK Auda Riga",
           "pick": "Home(1)",
           "odds": "",
           "league": "UEFA Conference League",
           "time": "18:45"
         },
         {
-          "match": "FK Zeleznicar Pancevo vs Braga",
-          "home": "FK Zeleznicar Pancevo",
-          "away": "Braga",
-          "pick": "Away(2)",
+          "match": "FK Vojvodina vs Ajax",
+          "home": "FK Vojvodina",
+          "away": "Ajax",
+          "pick": "Home(DNB)Ajax",
+          "odds": "",
+          "league": "UEFA Conference League",
+          "time": "19:00"
+        },
+        {
+          "match": "Paksi FC vs Panathinaikos",
+          "home": "Paksi FC",
+          "away": "Panathinaikos",
+          "pick": "X2",
+          "odds": "",
+          "league": "UEFA Conference League",
+          "time": "19:00"
+        },
+        {
+          "match": "FK Borac Banja Luka vs Petrocub Hincesti",
+          "home": "FK Borac Banja Luka",
+          "away": "Petrocub Hincesti",
+          "pick": "Home(DNB)Borac Banja",
+          "odds": "",
+          "league": "UEFA Conference League",
+          "time": "19:30"
+        },
+        {
+          "match": "Lugano vs KF Dukagjini",
+          "home": "Lugano",
+          "away": "KF Dukagjini",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "UEFA Conference League",
+          "time": "19:30"
+        },
+        {
+          "match": "HNK Rijeka vs Derry City FC",
+          "home": "HNK Rijeka",
+          "away": "Derry City FC",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "UEFA Conference League",
+          "time": "19:45"
+        },
+        {
+          "match": "Motherwell FC vs HB Torshavn",
+          "home": "Motherwell FC",
+          "away": "HB Torshavn",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "UEFA Conference League",
+          "time": "19:45"
+        },
+        {
+          "match": "FK Partizan Belgrade vs FC Una Strassen",
+          "home": "FK Partizan Belgrade",
+          "away": "FC Una Strassen",
+          "pick": "Home(1)",
           "odds": "",
           "league": "UEFA Conference League",
           "time": "20:00"
         },
         {
-          "match": "Bodoe/Glimt vs HamKam",
-          "home": "Bodoe/Glimt",
-          "away": "HamKam",
-          "pick": "Over 2.5",
-          "odds": "",
-          "league": "Norway Eliteserien",
-          "time": "18:00"
-        },
-        {
-          "match": "Lillestroem SK vs Viking FK",
-          "home": "Lillestroem SK",
-          "away": "Viking FK",
-          "pick": "Over 1.5",
-          "odds": "",
-          "league": "Norway Eliteserien",
-          "time": "18:00"
-        },
-        {
-          "match": "Coritiba FC vs Palmeiras SP",
-          "home": "Coritiba FC",
-          "away": "Palmeiras SP",
-          "pick": "X2",
+          "match": "Botafogo RJ vs Vitória BA",
+          "home": "Botafogo RJ",
+          "away": "Vitória BA",
+          "pick": "1X",
           "odds": "",
           "league": "Brazil Brasileiro Serie A",
           "time": "23:30"
         },
         {
-          "match": "Ceará SC CE vs CR Brasil AL",
-          "home": "Ceará SC CE",
-          "away": "CR Brasil AL",
-          "pick": "Under 3.5",
+          "match": "CA Sarmiento Junín vs Argentinos Juniors",
+          "home": "CA Sarmiento Junín",
+          "away": "Argentinos Juniors",
+          "pick": "Under 2.5",
           "odds": "",
-          "league": "Brazil Brasileiro Serie B",
+          "league": "Argentina Primera LPF",
           "time": "23:30"
         },
         {
-          "match": "Operário Ferroviário vs AA Ponte Preta SP",
-          "home": "Operário Ferroviário",
-          "away": "AA Ponte Preta SP",
+          "match": "Athletic Club MG vs Sao Bernardo FC",
+          "home": "Athletic Club MG",
+          "away": "Sao Bernardo FC",
           "pick": "Under 3.5",
           "odds": "",
-          "league": "Brazil Brasileiro Serie B",
+          "league": "Brazil Brasileiro Série B",
           "time": "23:30"
+        },
+        {
+          "match": "Cuiabá EC MT vs AC Goianiense GO",
+          "home": "Cuiabá EC MT",
+          "away": "AC Goianiense GO",
+          "pick": "Under 3.5",
+          "odds": "",
+          "league": "Brazil Brasileiro Série B",
+          "time": "00:30"
+        },
+        {
+          "match": "Botafogo FC SP vs Juventude RS",
+          "home": "Botafogo FC SP",
+          "away": "Juventude RS",
+          "pick": "Under 3.5",
+          "odds": "",
+          "league": "Brazil Brasileiro Série B",
+          "time": "00:30"
+        },
+        {
+          "match": "Leones Fútbol Club vs Guayaquil City",
+          "home": "Leones Fútbol Club",
+          "away": "Guayaquil City",
+          "pick": "Under 3.5",
+          "odds": "",
+          "league": "Ecuador LigaPro Primera A",
+          "time": "22:30"
+        },
+        {
+          "match": "Caps United FC vs FC Hunters",
+          "home": "Caps United FC",
+          "away": "FC Hunters",
+          "pick": "Home(DNB)Caps United",
+          "odds": "",
+          "league": "Zimbabwe Premier Soccer League",
+          "time": "14:00"
         },
         {
           "match": "Goias EC GO vs SC Recife PE",
           "home": "Goias EC GO",
           "away": "SC Recife PE",
-          "pick": "Under 3.5",
+          "pick": "Under 3.5 Won",
           "odds": "",
           "league": "Brazil Brasileiro Serie B",
           "time": "00:30"
@@ -113,25 +257,16 @@
           "match": "Lexington SC vs Oakland Roots SC",
           "home": "Lexington SC",
           "away": "Oakland Roots SC",
-          "pick": "Over 1.5",
+          "pick": "Over 1.5 Won",
           "odds": "",
           "league": "USA USL Championship",
           "time": "00:00"
         },
         {
-          "match": "Carolina Core FC vs Inter Miami CF II",
-          "home": "Carolina Core FC",
-          "away": "Inter Miami CF II",
-          "pick": "Over 2.5",
-          "odds": "",
-          "league": "USA MLS Next Pro",
-          "time": "23:30"
-        },
-        {
           "match": "Portland Hearts of Pine vs Union Omaha SC",
           "home": "Portland Hearts of Pine",
           "away": "Union Omaha SC",
-          "pick": "Over 1.5",
+          "pick": "Over 1.5 Won",
           "odds": "",
           "league": "USA USL League One",
           "time": "00:00"
@@ -140,34 +275,214 @@
           "match": "Westchester SC vs New York Cosmos",
           "home": "Westchester SC",
           "away": "New York Cosmos",
-          "pick": "Over 1.5",
+          "pick": "Over 1.5 Won",
           "odds": "",
           "league": "USA USL League One",
           "time": "00:00"
-        },
-        {
-          "match": "CSD Independiente del Valle vs CD Técnico Universitario",
-          "home": "CSD Independiente del Valle",
-          "away": "CD Técnico Universitario",
-          "pick": "Home(1)",
-          "odds": "",
-          "league": "Ecuador LigaPro Primera A",
-          "time": "22:30"
-        },
-        {
-          "match": "Chicken Inn FC vs Telone FC",
-          "home": "Chicken Inn FC",
-          "away": "Telone FC",
-          "pick": "Under 2.5",
-          "odds": "",
-          "league": "Zimbabwe Premier Soccer League",
-          "time": "14:00"
         }
       ]
     },
     {
       "source": "adibet",
       "picks": [
+        {
+          "match": "Dyn. Kyiv vs PAOK",
+          "home": "Dyn. Kyiv",
+          "away": "PAOK",
+          "pick": "1X",
+          "odds": "",
+          "league": "Euro Competitions",
+          "time": ""
+        },
+        {
+          "match": "Hammarby vs Anderlecht",
+          "home": "Hammarby",
+          "away": "Anderlecht",
+          "pick": "1X",
+          "odds": "",
+          "league": "Euro Competitions",
+          "time": ""
+        },
+        {
+          "match": "Tromso vs Hradec Kralove",
+          "home": "Tromso",
+          "away": "Hradec Kralove",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "Euro Competitions",
+          "time": ""
+        },
+        {
+          "match": "Besiktas vs Midtjylland",
+          "home": "Besiktas",
+          "away": "Midtjylland",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "Euro Competitions",
+          "time": ""
+        },
+        {
+          "match": "Besiktas vs Midtjylland",
+          "home": "Besiktas",
+          "away": "Midtjylland",
+          "pick": "GG(BTTS)",
+          "odds": "",
+          "league": "Euro Competitions",
+          "time": ""
+        },
+        {
+          "match": "St. Gallen vs Benfica",
+          "home": "St. Gallen",
+          "away": "Benfica",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "Euro Competitions",
+          "time": ""
+        },
+        {
+          "match": "Twente vs Ferencvaros",
+          "home": "Twente",
+          "away": "Ferencvaros",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "Euro Competitions",
+          "time": ""
+        },
+        {
+          "match": "Twente vs Ferencvaros",
+          "home": "Twente",
+          "away": "Ferencvaros",
+          "pick": "GG(BTTS)",
+          "odds": "",
+          "league": "Euro Competitions",
+          "time": ""
+        },
+        {
+          "match": "Hajduk Split vs Pafos",
+          "home": "Hajduk Split",
+          "away": "Pafos",
+          "pick": "1X",
+          "odds": "",
+          "league": "Euro Competitions",
+          "time": ""
+        },
+        {
+          "match": "Alashkert vs CFR Cluj",
+          "home": "Alashkert",
+          "away": "CFR Cluj",
+          "pick": "X2",
+          "odds": "",
+          "league": "Euro Competitions",
+          "time": ""
+        },
+        {
+          "match": "FK Liepaja vs Austria Vienna",
+          "home": "FK Liepaja",
+          "away": "Austria Vienna",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "Euro Competitions",
+          "time": ""
+        },
+        {
+          "match": "HJK vs Coleraine",
+          "home": "HJK",
+          "away": "Coleraine",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "Euro Competitions",
+          "time": ""
+        },
+        {
+          "match": "Dun. Streda vs Velez Mostar",
+          "home": "Dun. Streda",
+          "away": "Velez Mostar",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "Euro Competitions",
+          "time": ""
+        },
+        {
+          "match": "Rakow vs Valetta",
+          "home": "Rakow",
+          "away": "Valetta",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "Euro Competitions",
+          "time": ""
+        },
+        {
+          "match": "Rakow vs Valetta",
+          "home": "Rakow",
+          "away": "Valetta",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "Euro Competitions",
+          "time": ""
+        },
+        {
+          "match": "FCSB vs Auda",
+          "home": "FCSB",
+          "away": "Auda",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "Euro Competitions",
+          "time": ""
+        },
+        {
+          "match": "Borac Banja Luka vs Petrocub",
+          "home": "Borac Banja Luka",
+          "away": "Petrocub",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "Euro Competitions",
+          "time": ""
+        },
+        {
+          "match": "Hapoel Tel Aviv vs Ludogorets",
+          "home": "Hapoel Tel Aviv",
+          "away": "Ludogorets",
+          "pick": "X2",
+          "odds": "",
+          "league": "Euro Competitions",
+          "time": ""
+        },
+        {
+          "match": "Lugano vs Dukagjini",
+          "home": "Lugano",
+          "away": "Dukagjini",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "Euro Competitions",
+          "time": ""
+        },
+        {
+          "match": "Lugano vs Dukagjini",
+          "home": "Lugano",
+          "away": "Dukagjini",
+          "pick": "Over 1.5",
+          "odds": "",
+          "league": "Euro Competitions",
+          "time": ""
+        },
+        {
+          "match": "Rijeka vs Derry City",
+          "home": "Rijeka",
+          "away": "Derry City",
+          "pick": "Over 2.5",
+          "odds": "",
+          "league": "Euro Competitions",
+          "time": ""
+        },
+        {
+          "match": "Partizan vs UNA Strassen",
+          "home": "Partizan",
+          "away": "UNA Strassen",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "Euro Competitions",
+          "time": ""
+        },
         {
           "match": "Egnatia vs Celje",
           "home": "Egnatia",
@@ -290,231 +605,6 @@
           "home": "Queen of South",
           "away": "Aberdeen",
           "pick": "Over 1.5",
-          "odds": "",
-          "league": "Scotland",
-          "time": ""
-        },
-        {
-          "match": "Shanghai Shenhua vs Qingdao Hainiu",
-          "home": "Shanghai Shenhua",
-          "away": "Qingdao Hainiu",
-          "pick": "Home(1)",
-          "odds": "",
-          "league": "China",
-          "time": ""
-        },
-        {
-          "match": "Shanghai Shenhua vs Qingdao Hainiu",
-          "home": "Shanghai Shenhua",
-          "away": "Qingdao Hainiu",
-          "pick": "Over 1.5",
-          "odds": "",
-          "league": "China",
-          "time": ""
-        },
-        {
-          "match": "Ararat-Armenia vs Shamrock Rovers",
-          "home": "Ararat-Armenia",
-          "away": "Shamrock Rovers",
-          "pick": "1X",
-          "odds": "",
-          "league": "Euro Competitions",
-          "time": ""
-        },
-        {
-          "match": "Iberia 1999 vs Slovan Bratislava",
-          "home": "Iberia 1999",
-          "away": "Slovan Bratislava",
-          "pick": "X2",
-          "odds": "",
-          "league": "Euro Competitions",
-          "time": ""
-        },
-        {
-          "match": "Sabah Baku vs KuPS",
-          "home": "Sabah Baku",
-          "away": "KuPS",
-          "pick": "Home(1)",
-          "odds": "",
-          "league": "Euro Competitions",
-          "time": ""
-        },
-        {
-          "match": "Aarhus vs Lech Poznan",
-          "home": "Aarhus",
-          "away": "Lech Poznan",
-          "pick": "1X",
-          "odds": "",
-          "league": "Euro Competitions",
-          "time": ""
-        },
-        {
-          "match": "Fenerbahce vs Gornik Zabrze",
-          "home": "Fenerbahce",
-          "away": "Gornik Zabrze",
-          "pick": "Home(1)",
-          "odds": "",
-          "league": "Euro Competitions",
-          "time": ""
-        },
-        {
-          "match": "Fenerbahce vs Gornik Zabrze",
-          "home": "Fenerbahce",
-          "away": "Gornik Zabrze",
-          "pick": "Over 2.5",
-          "odds": "",
-          "league": "Euro Competitions",
-          "time": ""
-        },
-        {
-          "match": "Thun vs D. Zagreb",
-          "home": "Thun",
-          "away": "D. Zagreb",
-          "pick": "X2",
-          "odds": "",
-          "league": "Euro Competitions",
-          "time": ""
-        },
-        {
-          "match": "Sturm Graz vs Hearts",
-          "home": "Sturm Graz",
-          "away": "Hearts",
-          "pick": "Over 1.5",
-          "odds": "",
-          "league": "Euro Competitions",
-          "time": ""
-        },
-        {
-          "match": "Larne vs Crvena Zvezda",
-          "home": "Larne",
-          "away": "Crvena Zvezda",
-          "pick": "Away(2)",
-          "odds": "",
-          "league": "Euro Competitions",
-          "time": ""
-        },
-        {
-          "match": "Larne vs Crvena Zvezda",
-          "home": "Larne",
-          "away": "Crvena Zvezda",
-          "pick": "Over 1.5",
-          "odds": "",
-          "league": "Euro Competitions",
-          "time": ""
-        },
-        {
-          "match": "Vikingur Reykjavik vs H. Beer Sheva",
-          "home": "Vikingur Reykjavik",
-          "away": "H. Beer Sheva",
-          "pick": "X2",
-          "odds": "",
-          "league": "Euro Competitions",
-          "time": ""
-        },
-        {
-          "match": "Floriana vs Drita",
-          "home": "Floriana",
-          "away": "Drita",
-          "pick": "X2",
-          "odds": "",
-          "league": "Euro Competitions",
-          "time": ""
-        },
-        {
-          "match": "Bissen vs Gyor",
-          "home": "Bissen",
-          "away": "Gyor",
-          "pick": "Away(2)",
-          "odds": "",
-          "league": "Euro Competitions",
-          "time": ""
-        },
-        {
-          "match": "Alloa vs Falkirk",
-          "home": "Alloa",
-          "away": "Falkirk",
-          "pick": "Away(2)",
-          "odds": "",
-          "league": "Scotland",
-          "time": ""
-        },
-        {
-          "match": "Alloa vs Falkirk",
-          "home": "Alloa",
-          "away": "Falkirk",
-          "pick": "Over 1.5",
-          "odds": "",
-          "league": "Scotland",
-          "time": ""
-        },
-        {
-          "match": "Dundee Utd vs Spartans",
-          "home": "Dundee Utd",
-          "away": "Spartans",
-          "pick": "Home(1)",
-          "odds": "",
-          "league": "Scotland",
-          "time": ""
-        },
-        {
-          "match": "Dundee Utd vs Spartans",
-          "home": "Dundee Utd",
-          "away": "Spartans",
-          "pick": "Over 2.5",
-          "odds": "",
-          "league": "Scotland",
-          "time": ""
-        },
-        {
-          "match": "Dunfermline vs Cove Rangers",
-          "home": "Dunfermline",
-          "away": "Cove Rangers",
-          "pick": "Home(1)",
-          "odds": "",
-          "league": "Scotland",
-          "time": ""
-        },
-        {
-          "match": "Kelty Hearts vs Brora Rangers",
-          "home": "Kelty Hearts",
-          "away": "Brora Rangers",
-          "pick": "Home(1)",
-          "odds": "",
-          "league": "Scotland",
-          "time": ""
-        },
-        {
-          "match": "Kilmarnock vs Hamilton",
-          "home": "Kilmarnock",
-          "away": "Hamilton",
-          "pick": "Home(1)",
-          "odds": "",
-          "league": "Scotland",
-          "time": ""
-        },
-        {
-          "match": "Raith vs Peterhead",
-          "home": "Raith",
-          "away": "Peterhead",
-          "pick": "Home(1)",
-          "odds": "",
-          "league": "Scotland",
-          "time": ""
-        },
-        {
-          "match": "St. Mirren vs East Kilbride",
-          "home": "St. Mirren",
-          "away": "East Kilbride",
-          "pick": "Home(1)",
-          "odds": "",
-          "league": "Scotland",
-          "time": ""
-        },
-        {
-          "match": "St. Mirren vs East Kilbride",
-          "home": "St. Mirren",
-          "away": "East Kilbride",
-          "pick": "Over 2.5",
           "odds": "",
           "league": "Scotland",
           "time": ""
@@ -1372,234 +1462,234 @@
       "source": "wp_tables",
       "picks": [
         {
-          "match": "Omonia vs Kairat",
-          "home": "Omonia",
-          "away": "Kairat",
+          "match": "Qarabag vs CSKA Sofia",
+          "home": "Qarabag",
+          "away": "CSKA Sofia",
           "pick": "Draw(X)",
           "odds": "",
-          "league": "Champions League Qualifications",
+          "league": "Europa League Qualifications",
           "time": ""
         },
         {
-          "match": "Levski Sofia vs U.Craiova",
-          "home": "Levski Sofia",
-          "away": "U.Craiova",
+          "match": "Tromso vs Hradec Karlove",
+          "home": "Tromso",
+          "away": "Hradec Karlove",
           "pick": "Draw(X)",
           "odds": "",
-          "league": "Champions League Qualifications",
+          "league": "Europa League Qualifications",
           "time": ""
         },
         {
-          "match": "Istanbul B vs Inter Turku",
-          "home": "Istanbul B",
-          "away": "Inter Turku",
+          "match": "Hammarby vs Anderlecht",
+          "home": "Hammarby",
+          "away": "Anderlecht",
           "pick": "Draw(X)",
           "odds": "",
-          "league": "Europa League Conference Qualifications",
+          "league": "Europa League Qualifications",
           "time": ""
         },
         {
-          "match": "Spartak Trnava vs CSKA 1948",
-          "home": "Spartak Trnava",
-          "away": "CSKA 1948",
+          "match": "St.Gallen vs Benfica",
+          "home": "St.Gallen",
+          "away": "Benfica",
           "pick": "Draw(X)",
           "odds": "",
-          "league": "Europa League Conference Qualifications",
+          "league": "Europa League Qualifications",
           "time": ""
         },
         {
-          "match": "Istanbul B vs Inter Turku",
-          "home": "Istanbul B",
-          "away": "Inter Turku",
-          "pick": "Home(1)",
-          "odds": "",
-          "league": "Europa League Conference Qualifications",
-          "time": ""
-        },
-        {
-          "match": "Spartak Trnava vs CSKA 1948",
-          "home": "Spartak Trnava",
-          "away": "CSKA 1948",
-          "pick": "1X",
-          "odds": "",
-          "league": "Europa League Conference Qualifications",
-          "time": ""
-        },
-        {
-          "match": "Omonia vs Kairat",
-          "home": "Omonia",
-          "away": "Kairat",
-          "pick": "Home(1)",
-          "odds": "",
-          "league": "Champions League Qualifications",
-          "time": ""
-        },
-        {
-          "match": "Levski Sofia vs U.Craiova",
-          "home": "Levski Sofia",
-          "away": "U.Craiova",
+          "match": "St.Gallen vs Benfica",
+          "home": "St.Gallen",
+          "away": "Benfica",
           "pick": "Away(2)",
           "odds": "",
-          "league": "Champions League Qualifications",
+          "league": "Europa League Qualifications",
           "time": ""
         },
         {
-          "match": "Omonia vs Kairat",
-          "home": "Omonia",
-          "away": "Kairat",
-          "pick": "Draw(X)",
-          "odds": "",
-          "league": "Champions League Qualifications",
-          "time": ""
-        },
-        {
-          "match": "Levski Sofia vs U.Craiova",
-          "home": "Levski Sofia",
-          "away": "U.Craiova",
-          "pick": "Draw(X)",
-          "odds": "",
-          "league": "Champions League Qualifications",
-          "time": ""
-        },
-        {
-          "match": "Egnatia vs Celje",
-          "home": "Egnatia",
-          "away": "Celje",
-          "pick": "Home(1)",
-          "odds": "",
-          "league": "Champions League Qualifications",
-          "time": ""
-        },
-        {
-          "match": "Istanbul B vs Inter Turku",
-          "home": "Istanbul B",
-          "away": "Inter Turku",
-          "pick": "Home(1)",
-          "odds": "",
-          "league": "Europa League Conference Qualifications",
-          "time": ""
-        },
-        {
-          "match": "Spartak Trnava vs CSKA 1948",
-          "home": "Spartak Trnava",
-          "away": "CSKA 1948",
-          "pick": "1X",
-          "odds": "",
-          "league": "Europa League Conference Qualifications",
-          "time": ""
-        },
-        {
-          "match": "Omonia vs Kairat",
-          "home": "Omonia",
-          "away": "Kairat",
-          "pick": "Home(1)",
-          "odds": "",
-          "league": "Champions League Qualifications",
-          "time": ""
-        },
-        {
-          "match": "Levski Sofia vs U.Craiova",
-          "home": "Levski Sofia",
-          "away": "U.Craiova",
+          "match": "Liepaja vs Austria Viena",
+          "home": "Liepaja",
+          "away": "Austria Viena",
           "pick": "Away(2)",
           "odds": "",
-          "league": "Champions League Qualifications",
+          "league": "Europa League Conference Qualifications",
           "time": ""
         },
         {
-          "match": "Omonia vs Kairat",
-          "home": "Omonia",
-          "away": "Kairat",
-          "pick": "Draw(X)",
+          "match": "Hammarby vs Anderlecht",
+          "home": "Hammarby",
+          "away": "Anderlecht",
+          "pick": "Away(2)",
           "odds": "",
-          "league": "Champions League Qualifications",
+          "league": "Europa League Qualifications",
           "time": ""
         },
         {
-          "match": "Levski Sofia vs U.Craiova",
-          "home": "Levski Sofia",
-          "away": "U.Craiova",
-          "pick": "Draw(X)",
+          "match": "Twente vs Ferencvaros",
+          "home": "Twente",
+          "away": "Ferencvaros",
+          "pick": "Away(2)",
           "odds": "",
-          "league": "Champions League Qualifications",
+          "league": "Europa League Qualifications",
           "time": ""
         },
         {
-          "match": "Egnatia vs Celje",
-          "home": "Egnatia",
-          "away": "Celje",
-          "pick": "Home(1)",
-          "odds": "",
-          "league": "Champions League Qualifications",
-          "time": ""
-        },
-        {
-          "match": "Omonia vs Kairat",
-          "home": "Omonia",
-          "away": "Kairat",
-          "pick": "Draw(X)",
-          "odds": "",
-          "league": "Champions League Qualifications",
-          "time": ""
-        },
-        {
-          "match": "Levski Sofia vs U.Craiova",
-          "home": "Levski Sofia",
-          "away": "U.Craiova",
-          "pick": "Draw(X)",
-          "odds": "",
-          "league": "Champions League Qualifications",
-          "time": ""
-        },
-        {
-          "match": "Istanbul B vs Inter Turku",
-          "home": "Istanbul B",
-          "away": "Inter Turku",
-          "pick": "Draw(X)",
+          "match": "Liepaja vs Austria Viena",
+          "home": "Liepaja",
+          "away": "Austria Viena",
+          "pick": "Away(2)",
           "odds": "",
           "league": "Europa League Conference Qualifications",
           "time": ""
         },
         {
-          "match": "Spartak Trnava vs CSKA 1948",
-          "home": "Spartak Trnava",
-          "away": "CSKA 1948",
-          "pick": "Draw(X)",
+          "match": "FCSB vs Auda",
+          "home": "FCSB",
+          "away": "Auda",
+          "pick": "Home(1)",
           "odds": "",
           "league": "Europa League Conference Qualifications",
           "time": ""
         },
         {
-          "match": "Lanzhou Longyuan vs Shaanxi Union",
-          "home": "Lanzhou Longyuan",
-          "away": "Shaanxi Union",
+          "match": "Dynamo Kiev vs PAOK",
+          "home": "Dynamo Kiev",
+          "away": "PAOK",
           "pick": "Home(1)",
           "odds": "",
-          "league": "",
+          "league": "Europa League Qualifications",
           "time": ""
         },
         {
-          "match": "Nantes vs La Roche",
-          "home": "Nantes",
-          "away": "La Roche",
-          "pick": "Home(1)",
+          "match": "St.Gallen vs Benfica",
+          "home": "St.Gallen",
+          "away": "Benfica",
+          "pick": "Away(2)",
           "odds": "",
-          "league": "World",
+          "league": "Europa League Qualifications",
           "time": ""
         },
         {
-          "match": "Narva vs Flora U21",
-          "home": "Narva",
-          "away": "Flora U21",
-          "pick": "Home(1)",
+          "match": "Liepaja vs Austria Viena",
+          "home": "Liepaja",
+          "away": "Austria Viena",
+          "pick": "Away(2)",
           "odds": "",
-          "league": "",
+          "league": "Europa League Conference Qualifications",
           "time": ""
         },
         {
-          "match": "Rodriguez L. J. vs Zeitune M.",
-          "home": "Rodriguez L. J.",
-          "away": "Zeitune M.",
+          "match": "Hammarby vs Anderlecht",
+          "home": "Hammarby",
+          "away": "Anderlecht",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "Europa League Qualifications",
+          "time": ""
+        },
+        {
+          "match": "Twente vs Ferencvaros",
+          "home": "Twente",
+          "away": "Ferencvaros",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "Europa League Qualifications",
+          "time": ""
+        },
+        {
+          "match": "Liepaja vs Austria Viena",
+          "home": "Liepaja",
+          "away": "Austria Viena",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "Europa League Conference Qualifications",
+          "time": ""
+        },
+        {
+          "match": "FCSB vs Auda",
+          "home": "FCSB",
+          "away": "Auda",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "Europa League Conference Qualifications",
+          "time": ""
+        },
+        {
+          "match": "Dynamo Kiev vs PAOK",
+          "home": "Dynamo Kiev",
+          "away": "PAOK",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "Europa League Qualifications",
+          "time": ""
+        },
+        {
+          "match": "Qarabag vs CSKA Sofia",
+          "home": "Qarabag",
+          "away": "CSKA Sofia",
+          "pick": "Draw(X)",
+          "odds": "",
+          "league": "Europa League Qualifications",
+          "time": ""
+        },
+        {
+          "match": "Tromso vs Hradec Karlove",
+          "home": "Tromso",
+          "away": "Hradec Karlove",
+          "pick": "Draw(X)",
+          "odds": "",
+          "league": "Europa League Qualifications",
+          "time": ""
+        },
+        {
+          "match": "Hammarby vs Anderlecht",
+          "home": "Hammarby",
+          "away": "Anderlecht",
+          "pick": "Draw(X)",
+          "odds": "",
+          "league": "Europa League Qualifications",
+          "time": ""
+        },
+        {
+          "match": "St.Gallen vs Benfica",
+          "home": "St.Gallen",
+          "away": "Benfica",
+          "pick": "Draw(X)",
+          "odds": "",
+          "league": "Europa League Qualifications",
+          "time": ""
+        },
+        {
+          "match": "LNZ Cherkasy vs Gent",
+          "home": "LNZ Cherkasy",
+          "away": "Gent",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "Europe",
+          "time": ""
+        },
+        {
+          "match": "ML Vitebsk vs Sutjeska",
+          "home": "ML Vitebsk",
+          "away": "Sutjeska",
+          "pick": "Home(1)",
+          "odds": "",
+          "league": "Europe",
+          "time": ""
+        },
+        {
+          "match": "Malisheva vs Hibernian",
+          "home": "Malisheva",
+          "away": "Hibernian",
+          "pick": "Away(2)",
+          "odds": "",
+          "league": "Europe",
+          "time": ""
+        },
+        {
+          "match": "Fearnley J. vs Boyer T.",
+          "home": "Fearnley J.",
+          "away": "Boyer T.",
           "pick": "Home(1)",
           "odds": "",
           "league": "",
@@ -1610,33 +1700,89 @@
   ],
   "intersections": [
     {
-      "match": "FK Zeleznicar Pancevo vs Braga",
-      "home": "FK Zeleznicar Pancevo",
-      "away": "Braga",
-      "pick": "Away(2)",
+      "match": "Fotbal Club FCSB vs FK Auda Riga",
+      "home": "Fotbal Club FCSB",
+      "away": "FK Auda Riga",
+      "pick": "Home(1)",
       "sources": [
         "allnigeriafootball",
         "adibet",
-        "bet_sites"
+        "wp_tables"
       ],
       "source_count": 3,
       "odds": "",
       "league": "UEFA Conference League",
-      "time": "20:00"
+      "time": "18:45"
     },
     {
-      "match": "Istanbul BB vs FC Inter Turku",
-      "home": "Istanbul BB",
-      "away": "FC Inter Turku",
-      "pick": "Home(1)",
+      "match": "FC St. Gallen vs Benfica",
+      "home": "FC St. Gallen",
+      "away": "Benfica",
+      "pick": "Away(2)",
       "sources": [
         "allnigeriafootball",
-        "wp_tables"
+        "adibet"
+      ],
+      "source_count": 2,
+      "odds": "",
+      "league": "UEFA Europa League",
+      "time": "19:00"
+    },
+    {
+      "match": "FK Liepaja vs FK Austria Wien",
+      "home": "FK Liepaja",
+      "away": "FK Austria Wien",
+      "pick": "Away(2)",
+      "sources": [
+        "allnigeriafootball",
+        "adibet"
       ],
       "source_count": 2,
       "odds": "",
       "league": "UEFA Conference League",
-      "time": "18:45"
+      "time": "16:00"
+    },
+    {
+      "match": "HJK Helsinki vs Coleraine FC",
+      "home": "HJK Helsinki",
+      "away": "Coleraine FC",
+      "pick": "Home(1)",
+      "sources": [
+        "allnigeriafootball",
+        "adibet"
+      ],
+      "source_count": 2,
+      "odds": "",
+      "league": "UEFA Conference League",
+      "time": "17:00"
+    },
+    {
+      "match": "Lugano vs KF Dukagjini",
+      "home": "Lugano",
+      "away": "KF Dukagjini",
+      "pick": "Home(1)",
+      "sources": [
+        "allnigeriafootball",
+        "adibet"
+      ],
+      "source_count": 2,
+      "odds": "",
+      "league": "UEFA Conference League",
+      "time": "19:30"
+    },
+    {
+      "match": "FK Partizan Belgrade vs FC Una Strassen",
+      "home": "FK Partizan Belgrade",
+      "away": "FC Una Strassen",
+      "pick": "Home(1)",
+      "sources": [
+        "allnigeriafootball",
+        "adibet"
+      ],
+      "source_count": 2,
+      "odds": "",
+      "league": "UEFA Conference League",
+      "time": "20:00"
     },
     {
       "match": "Egnatia vs Celje",
@@ -1667,6 +1813,20 @@
       "time": ""
     },
     {
+      "match": "Zeleznicar vs Braga",
+      "home": "Zeleznicar",
+      "away": "Braga",
+      "pick": "Away(2)",
+      "sources": [
+        "adibet",
+        "bet_sites"
+      ],
+      "source_count": 2,
+      "odds": "",
+      "league": "Euro Competitions",
+      "time": ""
+    },
+    {
       "match": "Bodo/Glimt vs HamKam",
       "home": "Bodo/Glimt",
       "away": "HamKam",
@@ -1685,34 +1845,6 @@
       "home": "Queen of South",
       "away": "Aberdeen",
       "pick": "Over 1.5",
-      "sources": [
-        "adibet",
-        "bet_sites"
-      ],
-      "source_count": 2,
-      "odds": "",
-      "league": "Scotland",
-      "time": ""
-    },
-    {
-      "match": "Aarhus vs Lech Poznan",
-      "home": "Aarhus",
-      "away": "Lech Poznan",
-      "pick": "1X",
-      "sources": [
-        "adibet",
-        "bet_sites"
-      ],
-      "source_count": 2,
-      "odds": "",
-      "league": "Euro Competitions",
-      "time": ""
-    },
-    {
-      "match": "Kilmarnock vs Hamilton",
-      "home": "Kilmarnock",
-      "away": "Hamilton",
-      "pick": "Home(1)",
       "sources": [
         "adibet",
         "bet_sites"
