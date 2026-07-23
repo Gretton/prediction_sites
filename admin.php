@@ -942,6 +942,9 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-soft); color: var(
     <a href="admin/h2h-test" target="_blank" style="display: inline-flex; align-items: center; gap: 4px; background: #EEF2FF; color: #4338CA; padding: 4px 12px; border-radius: 6px; text-decoration: none; font-size: 0.8rem; font-weight: 600;">
         <i class="fas fa-swords"></i> H2H Test
     </a>
+    <a href="h2h" target="_blank" style="display: inline-flex; align-items: center; gap: 4px; background: #F0FDFA; color: #0891B2; padding: 4px 12px; border-radius: 6px; text-decoration: none; font-size: 0.8rem; font-weight: 600;">
+        <i class="fas fa-exchange-alt"></i> H2H Page
+    </a>
     <a href="admin/test-stats-collector" target="_blank" style="display: inline-flex; align-items: center; gap: 4px; background: #ECFDF5; color: #047857; padding: 4px 12px; border-radius: 6px; text-decoration: none; font-size: 0.8rem; font-weight: 600;">
         <i class="fas fa-chart-bar"></i> Stats Collector
     </a>
