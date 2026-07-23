@@ -147,9 +147,9 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-soft); color: var(
     <div class="header-content">
         <a href="/" class="brand"><i class="fas fa-chart-line"></i> Predixa</a>
         <div class="header-links">
-            <a href="/"><i class="fas fa-home me-1"></i> Home</a>
-            <a href="/h2h.php"><i class="fas fa-exchange-alt me-1"></i> H2H</a>
-            <a href="/signals.php"><i class="fas fa-signal me-1"></i> Signals</a>
+            <a href="dashboard"><i class="fas fa-home me-1"></i> Home</a>
+            <a href="h2h"><i class="fas fa-exchange-alt me-1"></i> H2H</a>
+            <a href="signals"><i class="fas fa-signal me-1"></i> Signals</a>
         </div>
     </div>
 </div>
@@ -209,7 +209,7 @@ function loadH2H(a, b) {
     const results = document.getElementById('results');
     results.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading H2H data...</p></div>';
 
-    fetch('/api/h2h.php?team_a=' + encodeURIComponent(a) + '&team_b=' + encodeURIComponent(b))
+    fetch('api/h2h.php?team_a=' + encodeURIComponent(a) + '&team_b=' + encodeURIComponent(b))
         .then(r => r.json())
         .then(data => {
             if (data.error) { results.innerHTML = '<div class="no-data"><i class="fas fa-exclamation-triangle"></i><p>' + data.error + '</p></div>'; return; }
