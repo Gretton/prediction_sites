@@ -13,7 +13,7 @@ $dateRangeStats = [];
 
 try {
     $totalRows = $db->query("SELECT COUNT(*) FROM match_statistics")->fetchColumn();
-    $recentDates = $db->query("SELECT match_date, COUNT(*) as cnt FROM match_statistics GROUP BY match_date ORDER BY match_date DESC LIMIT 30")->fetchAll();
+    $recentMonths = $db->query("SELECT DATE_FORMAT(match_date, '%Y-%m') as month_key, DATE_FORMAT(match_date, '%b %Y') as month_label, MIN(match_date) as month_start, LAST_DAY(MAX(match_date)) as month_end, SUM(cnt) as cnt FROM (SELECT match_date, COUNT(*) as cnt FROM match_statistics GROUP BY match_date) t GROUP BY month_key ORDER BY month_key DESC LIMIT 24")->fetchAll();
     $leagues = $db->query("SELECT league_name, COUNT(*) as cnt FROM match_statistics GROUP BY league_name ORDER BY cnt DESC")->fetchAll();
 
     if ($dateFrom === $dateTo) {
@@ -157,10 +157,10 @@ if ($stats) {
             <div class="stat-card"><div class="stat-big" style="color:var(--primary);"><?= number_format($totalRows) ?></div><div class="stat-label">Total Matches</div></div>
         </div>
         <div class="col-md-3 col-6">
-            <div class="stat-card"><div class="stat-big" style="color:var(--accent);"><?= count($recentDates) > 0 ? $recentDates[0]['match_date'] : 'N/A' ?></div><div class="stat-label">Latest Date</div></div>
+            <div class="stat-card"><div class="stat-big" style="color:var(--accent);"><?= count($recentMonths) > 0 ? $recentMonths[0]['month_label'] : 'N/A' ?></div><div class="stat-label">Latest Month</div></div>
         </div>
         <div class="col-md-3 col-6">
-            <div class="stat-card"><div class="stat-big" style="color:#22C55E;"><?= count($recentDates) > 0 ? number_format($recentDates[0]['cnt']) : 0 ?></div><div class="stat-label">Matches (Latest)</div></div>
+            <div class="stat-card"><div class="stat-big" style="color:#22C55E;"><?= count($recentMonths) > 0 ? number_format($recentMonths[0]['cnt']) : 0 ?></div><div class="stat-label">Matches (Latest)</div></div>
         </div>
         <div class="col-md-3 col-6">
             <div class="stat-card"><div class="stat-big" style="color:#FBBF24;"><?= count($leagues) ?></div><div class="stat-label">Leagues Covered</div></div>
@@ -168,12 +168,12 @@ if ($stats) {
     </div>
 
     <div class="card">
-        <h6 class="mb-3" style="font-weight:700;"><i class="fas fa-calendar-alt me-2" style="color:var(--primary);"></i>Collections by Date</h6>
+        <h6 class="mb-3" style="font-weight:700;"><i class="fas fa-calendar-alt me-2" style="color:var(--primary);"></i>Collections by Month</h6>
         <div class="date-pills" id="datePills">
-            <?php foreach ($recentDates as $rd): ?>
-                <a href="?date_from=<?= $rd['match_date'] ?>&date_to=<?= $rd['match_date'] ?>" class="date-pill <?= ($rd['match_date'] === $dateFrom && $dateFrom === $dateTo) ? 'active' : '' ?>"><?= $rd['match_date'] ?><span class="cnt"><?= $rd['cnt'] ?></span></a>
+            <?php foreach ($recentMonths as $rm): ?>
+                <a href="?date_from=<?= $rm['month_start'] ?>&date_to=<?= $rm['month_end'] ?>" class="date-pill <?= ($dateFrom >= $rm['month_start'] && $dateTo <= $rm['month_end']) ? 'active' : '' ?>"><?= $rm['month_label'] ?><span class="cnt"><?= $rm['cnt'] ?></span></a>
             <?php endforeach; ?>
-            <?php if (empty($recentDates)): ?><span class="text-muted">No data collected yet.</span><?php endif; ?>
+            <?php if (empty($recentMonths)): ?><span class="text-muted">No data collected yet.</span><?php endif; ?>
         </div>
     </div>
 
