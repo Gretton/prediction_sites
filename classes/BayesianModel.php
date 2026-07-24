@@ -1268,18 +1268,18 @@ class BayesianModel {
             SELECT bp.prob_1, bp.prob_x, bp.prob_2, bp.over_25, bp.under_25, bp.btts_yes, bp.btts_no,
                    bp.home_team, bp.away_team, bp.league,
                    mr.home_score, mr.away_score,
-                   CASE WHEN mr.home_team_id = bpHome.team_id THEN 0 ELSE 1 END as swapped
+                   CASE WHEN mr.home_team_id = bpHome.id THEN 0 ELSE 1 END as swapped
             FROM bayesian_predictions bp
             LEFT JOIN teams bpHome ON bpHome.name = bp.home_team
+            LEFT JOIN teams bpAway ON bpAway.name = bp.away_team
             JOIN match_results mr ON (
-                (bpHome.team_id IS NOT NULL AND (
-                    (mr.home_team_id = bpHome.team_id AND mr.away_team_id = bpAway.team_id) OR
-                    (mr.home_team_id = bpAway.team_id AND mr.away_team_id = bpHome.team_id)
+                (bpHome.id IS NOT NULL AND bpAway.id IS NOT NULL AND (
+                    (mr.home_team_id = bpHome.id AND mr.away_team_id = bpAway.id) OR
+                    (mr.home_team_id = bpAway.id AND mr.away_team_id = bpHome.id)
                 )) OR
                 (bp.home_team = mr.home_team AND bp.away_team = mr.away_team) OR
                 (bp.home_team = mr.away_team AND bp.away_team = mr.home_team)
             )
-            LEFT JOIN teams bpAway ON bpAway.name = bp.away_team
             WHERE bp.result = 'pending'
               AND mr.home_score IS NOT NULL
               AND bp.match_date >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
