@@ -54,82 +54,99 @@ if ($stats) {
     <title>Match Stats Collector</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         *{box-sizing:border-box;}
-        :root { --bg: #0B0E14; --surface: #151A24; --surface2: #1c2130; --border: #1E2736; --text: #E2E8F0; --muted: #8899AA; --primary: #6366F1; --accent: #06B6D4; }
-        body { background: var(--bg); min-height: 100vh; color: var(--text); font-family: system-ui, -apple-system, sans-serif; padding: 16px; }
+        :root { --primary: #8B5CF6; --primary-light: #A78BFA; --accent: #06B6D4; --text: #E2E8F0; --muted: #8899AA; --border: #2a2e35; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: linear-gradient(135deg, #111318 0%, #1c2130 100%); min-height: 100vh; color: var(--text); padding: 16px; }
         .container-fluid { max-width: 1400px; margin: 0 auto; }
         h4 { font-weight: 800; }
-        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
-        .stat-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
-        .stat-big { font-size: 1.8rem; font-weight: 800; }
-        .stat-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); }
-        .form-control, .form-select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); }
-        .form-control:focus, .form-select:focus { border-color: var(--primary); box-shadow: 0 0 0 0.2rem rgba(99,102,241,0.15); color: var(--text); background: var(--surface2); }
+        h4 i { color: var(--primary); }
+        .card { background: rgba(21,26,36,0.85); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+
+        .stat-card { background: linear-gradient(135deg, rgba(139,92,246,0.15) 0%, rgba(6,182,212,0.08) 100%); border: 1px solid rgba(139,92,246,0.25); border-radius: 10px; padding: 16px; text-align: center; transition: all .2s; }
+        .stat-card:hover { border-color: var(--primary); transform: translateY(-1px); }
+        .stat-big { font-size: 1.6rem; font-weight: 800; }
+        .stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-top: 4px; }
+
+        .form-control, .form-select { background: rgba(22,27,34,0.8); border: 1px solid var(--border); color: var(--text); }
+        .form-control:focus, .form-select:focus { border-color: var(--primary); box-shadow: 0 0 0 0.2rem rgba(139,92,246,0.15); color: var(--text); background: rgba(22,27,34,0.9); }
         .form-control::placeholder { color: #6B7280; }
-        .btn-outline-secondary { background: var(--surface); border: 1px solid var(--border); color: var(--muted); }
+        .btn-outline-secondary { background: rgba(21,26,36,0.8); border: 1px solid var(--border); color: var(--muted); }
         .btn-outline-secondary:hover { border-color: var(--primary); color: var(--primary); }
-        .log-box { background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.78rem; max-height: 400px; overflow-y: auto; white-space: pre-wrap; color: var(--muted); }
-        .league-group { border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
-        .league-header { background: rgba(99,102,241,0.12); padding: 10px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; transition: background 0.15s; }
-        .league-header:hover { background: rgba(99,102,241,0.2); }
-        .league-header .league-name { font-weight: 600; font-size: 0.9rem; }
-        .league-header .match-count { font-size: 0.75rem; background: rgba(99,102,241,0.3); padding: 2px 10px; border-radius: 12px; }
+
+        .league-group { border: 1px solid rgba(139,92,246,0.25); border-radius: 12px; margin-bottom: 14px; overflow: hidden; background: linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(6,182,212,0.04) 100%); }
+        .league-header { padding: 12px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; transition: background 0.15s; background: linear-gradient(135deg, rgba(139,92,246,0.12) 0%, rgba(6,182,212,0.06) 100%); }
+        .league-header:hover { background: linear-gradient(135deg, rgba(139,92,246,0.2) 0%, rgba(6,182,212,0.1) 100%); }
+        .league-header .league-name { font-weight: 700; font-size: 0.9rem; }
+        .league-header .match-count { font-size: 0.72rem; background: rgba(139,92,246,0.3); padding: 2px 10px; border-radius: 12px; font-weight: 600; }
         .league-header .chevron { transition: transform 0.2s; }
         .league-header.collapsed .chevron { transform: rotate(-90deg); }
-        .league-body { display: block; }
+        .league-body { display: block; padding: 8px; }
         .league-body.collapsed { display: none; }
-        .match-table { width: 100%; font-size: 0.82rem; table-layout: fixed; }
-        .match-table th { background: var(--surface2); position: sticky; top: 0; z-index: 1; padding: 8px 8px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); border-bottom: 2px solid var(--border); cursor: pointer; white-space: nowrap; }
-        .match-table th:hover { color: #c4b5fd; }
-        .match-table th .sort-icon { margin-left: 3px; opacity: 0.4; }
-        .match-table th.sorted-asc .sort-icon, .match-table th.sorted-desc .sort-icon { opacity: 1; color: #a78bfa; }
-        .match-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-        .match-table tr:hover td { background: rgba(99,102,241,0.05); }
-        .match-table .match-row { cursor: pointer; }
-        .match-table .match-row:hover td { background: rgba(99,102,241,0.1); }
-        .detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px 16px; padding: 10px 16px; background: rgba(99,102,241,0.06); border-top: 1px solid var(--border); }
-        .detail-item { font-size: 0.78rem; padding: 3px 0; }
-        .detail-label { color: var(--muted); margin-right: 6px; font-size: 0.72rem; text-transform: uppercase; }
-        .match-table .team-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .match-table .score { font-weight: 700; font-size: 0.95rem; color: var(--text); text-align: center; }
-        .match-table .date-cell { font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
-        .match-table .stat-cell { text-align: center; color: #94a3b8; font-size: 0.78rem; white-space: nowrap; }
-        .match-table .home-val { color: #a78bfa; }
-        .match-table .away-val { color: #22d3ee; }
-        .no-results { padding: 40px; text-align: center; color: var(--muted); }
-        .no-results i { font-size: 2rem; margin-bottom: 12px; display: block; }
-        .search-highlight { background: rgba(250,204,21,0.25); border-radius: 2px; padding: 0 2px; }
+
+        .match-card { background: linear-gradient(135deg, rgba(139,92,246,0.2) 0%, rgba(6,182,212,0.1) 100%); border: 1px solid rgba(139,92,246,0.25); border-radius: 10px; padding: 14px 16px; margin-bottom: 8px; transition: all .2s; cursor: pointer; }
+        .match-card:hover { border-color: var(--primary); transform: translateY(-1px); box-shadow: 0 4px 15px rgba(139,92,246,0.15); }
+        .match-card .teams-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .match-card .team { font-weight: 700; font-size: 0.88rem; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .match-card .team.home { text-align: right; color: #c4b5fd; }
+        .match-card .team.away { text-align: left; color: #67e8f9; }
+        .match-card .vs-badge { flex-shrink: 0; text-align: center; }
+        .match-card .score-display { font-weight: 800; font-size: 1.1rem; color: #fff; background: rgba(139,92,246,0.25); border: 1px solid rgba(139,92,246,0.3); border-radius: 8px; padding: 4px 12px; min-width: 52px; }
+        .match-card .date-badge { font-size: 0.68rem; color: var(--muted); text-align: center; margin-top: 2px; }
+
+        .match-card .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 4px 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(139,92,246,0.15); }
+        .match-card .stat-item { text-align: center; padding: 4px 0; }
+        .match-card .stat-item .stat-label-small { font-size: 0.6rem; text-transform: uppercase; color: var(--muted); letter-spacing: 0.3px; margin-bottom: 1px; }
+        .match-card .stat-item .stat-values { font-size: 0.78rem; font-weight: 600; }
+        .match-card .home-val { color: var(--primary-light); }
+        .match-card .away-val { color: var(--accent); }
+
+        .match-card .detail-section { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(139,92,246,0.15); }
+        .match-card .detail-section.open { display: block; }
+        .match-card .detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px 12px; }
+        .match-card .detail-item { font-size: 0.75rem; padding: 2px 0; }
+        .match-card .detail-label { color: var(--muted); font-size: 0.68rem; text-transform: uppercase; }
+
+        .log-box { background: rgba(13,17,23,0.9); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.78rem; max-height: 400px; overflow-y: auto; white-space: pre-wrap; color: var(--muted); }
+
         .date-pills { display: flex; flex-wrap: wrap; gap: 6px; max-height: 80px; overflow-y: auto; }
-        .date-pill { padding: 4px 12px; border-radius: 8px; font-size: 0.78rem; font-weight: 500; text-decoration: none; border: 1px solid var(--border); color: var(--muted); background: var(--surface2); transition: all 0.15s; white-space: nowrap; }
-        .date-pill:hover { background: rgba(99,102,241,0.15); color: var(--text); border-color: rgba(99,102,241,0.4); }
-        .date-pill.active { background: rgba(99,102,241,0.35); color: #fff; border-color: var(--primary); }
+        .date-pill { padding: 4px 12px; border-radius: 8px; font-size: 0.78rem; font-weight: 500; text-decoration: none; border: 1px solid rgba(139,92,246,0.2); color: var(--muted); background: rgba(21,26,36,0.7); transition: all 0.15s; white-space: nowrap; }
+        .date-pill:hover { background: rgba(139,92,246,0.15); color: var(--text); border-color: rgba(139,92,246,0.4); }
+        .date-pill.active { background: linear-gradient(135deg, rgba(139,92,246,0.35) 0%, rgba(6,182,212,0.15) 100%); color: #fff; border-color: var(--primary); }
         .date-pill .cnt { opacity: 0.7; margin-left: 4px; }
+
         .results-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
-        .search-wrap { position: relative; display: flex; align-items: center; gap: 0; }
+        .search-wrap { position: relative; display: flex; align-items: center; }
         .search-wrap .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #6B7280; font-size: 0.8rem; pointer-events: none; z-index: 2; }
         .search-wrap .form-control { padding-left: 30px; }
-        .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; z-index: 100; max-height: 240px; overflow-y: auto; background: var(--surface2); border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; display: none; }
+        .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; z-index: 100; max-height: 240px; overflow-y: auto; background: rgba(21,26,36,0.95); border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; display: none; }
         .autocomplete-list.show { display: block; }
-        .autocomplete-item { padding: 6px 12px; font-size: 0.8rem; cursor: pointer; color: #CBD5E1; border-bottom: 1px solid var(--border); }
-        .autocomplete-item:hover, .autocomplete-item.active { background: rgba(99,102,241,0.2); color: #fff; }
+        .autocomplete-item { padding: 6px 12px; font-size: 0.8rem; cursor: pointer; color: #CBD5E1; border-bottom: 1px solid rgba(42,46,53,0.5); }
+        .autocomplete-item:hover, .autocomplete-item.active { background: rgba(139,92,246,0.2); color: #fff; }
         .autocomplete-item .league-tag { font-size: 0.65rem; color: var(--muted); margin-left: 6px; }
+
+        .search-highlight { background: rgba(250,204,21,0.25); border-radius: 2px; padding: 0 2px; }
+        .no-results { padding: 40px; text-align: center; color: var(--muted); }
+        .no-results i { font-size: 2rem; margin-bottom: 12px; display: block; }
+
         .pagination-bar { display: flex; justify-content: center; align-items: center; gap: 4px; padding: 8px 0; }
-        .pagination-bar button { background: rgba(99,102,241,0.15); border: 1px solid var(--border); color: var(--muted); padding: 3px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; transition: all 0.15s; }
-        .pagination-bar button:hover:not(:disabled) { background: rgba(99,102,241,0.3); color: var(--text); }
+        .pagination-bar button { background: rgba(139,92,246,0.15); border: 1px solid var(--border); color: var(--muted); padding: 3px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; transition: all 0.15s; }
+        .pagination-bar button:hover:not(:disabled) { background: rgba(139,92,246,0.3); color: var(--text); }
         .pagination-bar button:disabled { opacity: 0.3; cursor: not-allowed; }
         .pagination-bar .page-info { font-size: 0.75rem; color: var(--muted); padding: 0 8px; }
+
         .date-range-form { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
         .date-range-form label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; margin-bottom: 0; }
         .text-muted { color: var(--muted) !important; }
-        @media(max-width:768px) { .match-table { font-size: 0.72rem; } .stat-big { font-size: 1.3rem; } }
+        @media(max-width:768px) { .match-card .team { font-size: 0.78rem; } .stat-big { font-size: 1.2rem; } .match-card .stats-grid { grid-template-columns: repeat(3, 1fr); } }
     </style>
 </head>
 <body>
-<div class="container-fluid px-3 py-3">
+<div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <h4 class="mb-0"><i class="fas fa-chart-bar me-2" style="color:#a78bfa;"></i>Match Stats Collector</h4>
+            <h4 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Match Stats Collector</h4>
             <small class="text-muted">Match statistics from API-Football</small>
         </div>
         <a href="../admin.php" class="btn btn-sm btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Admin</a>
@@ -137,21 +154,21 @@ if ($stats) {
 
     <div class="row g-3 mb-4">
         <div class="col-md-3 col-6">
-            <div class="stat-card text-center"><div class="stat-big" style="color:#a78bfa;"><?= number_format($totalRows) ?></div><div class="stat-label">Total Matches</div></div>
+            <div class="stat-card"><div class="stat-big" style="color:var(--primary);"><?= number_format($totalRows) ?></div><div class="stat-label">Total Matches</div></div>
         </div>
         <div class="col-md-3 col-6">
-            <div class="stat-card text-center"><div class="stat-big" style="color:#22d3ee;"><?= count($recentDates) > 0 ? $recentDates[0]['match_date'] : 'N/A' ?></div><div class="stat-label">Latest Date</div></div>
+            <div class="stat-card"><div class="stat-big" style="color:var(--accent);"><?= count($recentDates) > 0 ? $recentDates[0]['match_date'] : 'N/A' ?></div><div class="stat-label">Latest Date</div></div>
         </div>
         <div class="col-md-3 col-6">
-            <div class="stat-card text-center"><div class="stat-big" style="color:#34d399;"><?= count($recentDates) > 0 ? number_format($recentDates[0]['cnt']) : 0 ?></div><div class="stat-label">Matches (Latest)</div></div>
+            <div class="stat-card"><div class="stat-big" style="color:#22C55E;"><?= count($recentDates) > 0 ? number_format($recentDates[0]['cnt']) : 0 ?></div><div class="stat-label">Matches (Latest)</div></div>
         </div>
         <div class="col-md-3 col-6">
-            <div class="stat-card text-center"><div class="stat-big" style="color:#fbbf24;"><?= count($leagues) ?></div><div class="stat-label">Leagues Covered</div></div>
+            <div class="stat-card"><div class="stat-big" style="color:#FBBF24;"><?= count($leagues) ?></div><div class="stat-label">Leagues Covered</div></div>
         </div>
     </div>
 
-    <div class="card p-3 mb-4">
-        <h6 class="mb-3"><i class="fas fa-calendar-alt me-2"></i>Collections by Date</h6>
+    <div class="card">
+        <h6 class="mb-3" style="font-weight:700;"><i class="fas fa-calendar-alt me-2" style="color:var(--primary);"></i>Collections by Date</h6>
         <div class="date-pills" id="datePills">
             <?php foreach ($recentDates as $rd): ?>
                 <a href="?date_from=<?= $rd['match_date'] ?>&date_to=<?= $rd['match_date'] ?>" class="date-pill <?= ($rd['match_date'] === $dateFrom && $dateFrom === $dateTo) ? 'active' : '' ?>"><?= $rd['match_date'] ?><span class="cnt"><?= $rd['cnt'] ?></span></a>
@@ -160,15 +177,15 @@ if ($stats) {
         </div>
     </div>
 
-    <div class="card p-3 mb-4">
+    <div class="card">
         <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
-            <h6 class="mb-0"><i class="fas fa-table me-2"></i><?= htmlspecialchars($dateFrom) ?><?= $dateFrom !== $dateTo ? ' — ' . htmlspecialchars($dateTo) : '' ?> <span class="text-muted" style="font-size:0.8rem;font-weight:400;">(<?= count($stats) ?> matches)</span></h6>
+            <h6 class="mb-0" style="font-weight:700;"><i class="fas fa-futbol me-2" style="color:var(--accent);"></i><?= htmlspecialchars($dateFrom) ?><?= $dateFrom !== $dateTo ? ' — ' . htmlspecialchars($dateTo) : '' ?> <span class="text-muted" style="font-size:0.8rem;font-weight:400;">(<?= count($stats) ?> matches)</span></h6>
             <form class="date-range-form" method="get">
                 <label>From</label>
                 <input type="date" name="date_from" value="<?= htmlspecialchars($dateFrom) ?>" class="form-control form-control-sm" style="width:155px">
                 <label>To</label>
                 <input type="date" name="date_to" value="<?= htmlspecialchars($dateTo) ?>" class="form-control form-control-sm" style="width:155px">
-                <button type="submit" class="btn btn-sm" style="background:rgba(139,92,246,0.4);border-color:rgba(139,92,246,0.6);color:#fff;"><i class="fas fa-filter me-1"></i>Filter</button>
+                <button type="submit" class="btn btn-sm" style="background:linear-gradient(135deg,rgba(139,92,246,0.5),rgba(6,182,212,0.3));border:1px solid rgba(139,92,246,0.5);color:#fff;"><i class="fas fa-filter me-1"></i>Filter</button>
             </form>
         </div>
 
@@ -197,8 +214,8 @@ if ($stats) {
     </div>
 
     <?php if ($logContent): ?>
-    <div class="card p-3 mb-4">
-        <h6 class="mb-3"><i class="fas fa-terminal me-2"></i>Collector Log (<?= $dateFrom ?>)</h6>
+    <div class="card">
+        <h6 class="mb-3" style="font-weight:700;"><i class="fas fa-terminal me-2" style="color:var(--muted);"></i>Collector Log (<?= $dateFrom ?>)</h6>
         <div class="log-box"><?= htmlspecialchars($logContent) ?></div>
     </div>
     <?php endif; ?>
@@ -218,6 +235,7 @@ let leagueSearch = '';
 let sortState = {};
 let leaguePages = {};
 let autocompleteIdx = -1;
+let expandedCards = {};
 
 const searchInput = document.getElementById('searchInput');
 const autocompleteList = document.getElementById('autocompleteList');
@@ -226,10 +244,6 @@ const leagueAutocomplete = document.getElementById('leagueAutocomplete');
 const resultCount = document.getElementById('resultCount');
 const leagueContainer = document.getElementById('leagueContainer');
 const noResults = document.getElementById('noResults');
-
-function init() {
-    render();
-}
 
 function getFiltered() {
     let data = MATCH_DATA;
@@ -279,16 +293,11 @@ function render() {
                 if (['sot','shots','corners','fouls','yc','poss','xg'].includes(sortKey)) {
                     va = parseFloat((a['home_' + sortKey] || 0)) + parseFloat((a['away_' + sortKey] || 0));
                     vb = parseFloat((b['home_' + sortKey] || 0)) + parseFloat((b['away_' + sortKey] || 0));
-                } else if (sortKey === 'home') {
-                    va = a.home_team_api.toLowerCase(); vb = b.home_team_api.toLowerCase();
-                } else if (sortKey === 'away') {
-                    va = a.away_team_api.toLowerCase(); vb = b.away_team_api.toLowerCase();
-                } else if (sortKey === 'score') {
-                    va = parseInt(a.home_score) + parseInt(a.away_score);
-                    vb = parseInt(b.home_score) + parseInt(b.away_score);
-                } else if (sortKey === 'date') {
-                    va = a.match_date; vb = b.match_date;
-                } else { return 0; }
+                } else if (sortKey === 'home') { va = a.home_team_api.toLowerCase(); vb = b.home_team_api.toLowerCase(); }
+                else if (sortKey === 'away') { va = a.away_team_api.toLowerCase(); vb = b.away_team_api.toLowerCase(); }
+                else if (sortKey === 'score') { va = parseInt(a.home_score) + parseInt(a.away_score); vb = parseInt(b.home_score) + parseInt(b.away_score); }
+                else if (sortKey === 'date') { va = a.match_date; vb = b.match_date; }
+                else { return 0; }
                 if (va < vb) return sortAsc ? -1 : 1;
                 if (va > vb) return sortAsc ? 1 : -1;
                 return 0;
@@ -301,7 +310,6 @@ function render() {
         const page = leaguePages[lname];
         const start = page * PER_PAGE;
         const pageMatches = matches.slice(start, start + PER_PAGE);
-
         const isCollapsed = sortState['collapsed_' + lname] ? 'collapsed' : '';
 
         html += '<div class="league-group" data-league="' + esc(lname) + '">';
@@ -311,57 +319,34 @@ function render() {
         html += '<span class="match-count">' + matches.length + ' matches</span></div>';
         html += '<div class="league-body' + (isCollapsed ? ' collapsed' : '') + '">';
 
-        const activeSortKey = sortState[lname + '_key'];
-        const activeSortAsc = sortState[lname + '_asc'];
-        html += '<div style="max-height:500px;overflow-y:auto;">';
-        html += '<table class="match-table"><thead><tr>';
-        const cols = [
-            {k:'home',l:'Home',w:IS_RANGE ? '14%' : '18%'},
-            {k:'score',l:'Score',w:IS_RANGE ? '6%' : '7%',n:true},
-            {k:'away',l:'Away',w:IS_RANGE ? '14%' : '18%'},
-        ];
-        if (IS_RANGE) cols.push({k:'date',l:'Date',w:'9%'});
-        cols.push(
-            {k:'sot',l:'SOT',w:'8%'},
-            {k:'shots',l:'Shots',w:'9%'},
-            {k:'corners',l:'Corners',w:'9%'},
-            {k:'fouls',l:'Fouls',w:'8%'},
-            {k:'yc',l:'YC',w:'6%'},
-            {k:'poss',l:'Poss',w:'7%'},
-            {k:'xg',l:'xG',w:'8%'},
-            {k:'ref',l:'Referee',w:IS_RANGE ? '7%' : '9%',n:true},
-            {k:'expand',l:'',w:'3%',n:true}
-        );
-        cols.forEach(c => {
-            const sorted = activeSortKey === c.k;
-            const cls = sorted ? (activeSortAsc ? 'sorted-asc' : 'sorted-desc') : '';
-            const icon = sorted ? (activeSortAsc ? 'fa-sort-up' : 'fa-sort-down') : 'fa-sort';
-            const clickable = c.n ? '' : ' onclick="sortLeague(\'' + escJS(lname) + '\',\'' + c.k + '\')"';
-            html += '<th' + clickable + ' class="' + cls + '" style="width:' + c.w + (c.n ? ';cursor:default' : '') + '">';
-            html += c.l + ' <i class="fas ' + icon + ' sort-icon"></i></th>';
-        });
-        html += '</tr></thead><tbody>';
-
         pageMatches.forEach(m => {
             const q = searchTerm.toLowerCase();
+            const cardId = m.home_team_api + '_' + m.away_team_api + '_' + m.match_date;
+            const isExpanded = expandedCards[cardId] ? 'open' : '';
 
-            html += '<tr class="match-row" onclick="toggleDetail(this)" style="cursor:pointer;">';
-            html += '<td class="team-name" title="' + esc(m.home_team_api) + '">' + hl(m.home_team_api, q) + '</td>';
-            html += '<td class="score">' + m.home_score + '-' + m.away_score + '</td>';
-            html += '<td class="team-name" title="' + esc(m.away_team_api) + '">' + hl(m.away_team_api, q) + '</td>';
-            if (IS_RANGE) html += '<td class="date-cell">' + m.match_date + '</td>';
-            html += '<td class="stat-cell"><span class="home-val">' + nv(m.home_shots_on_goal) + '</span> / <span class="away-val">' + nv(m.away_shots_on_goal) + '</span></td>';
-            html += '<td class="stat-cell"><span class="home-val">' + nv(m.home_total_shots) + '</span> / <span class="away-val">' + nv(m.away_total_shots) + '</span></td>';
-            html += '<td class="stat-cell"><span class="home-val">' + nv(m.home_corner_kicks) + '</span> / <span class="away-val">' + nv(m.away_corner_kicks) + '</span></td>';
-            html += '<td class="stat-cell"><span class="home-val">' + nv(m.home_fouls) + '</span> / <span class="away-val">' + nv(m.away_fouls) + '</span></td>';
-            html += '<td class="stat-cell">' + ((m.home_yellow_cards||0)*1 + (m.away_yellow_cards||0)*1 > 0 ? '<span class="home-val">' + nv(m.home_yellow_cards) + '</span> / <span class="away-val">' + nv(m.away_yellow_cards) + '</span>' : '-') + '</td>';
-            html += '<td class="stat-cell"><small><span class="home-val">' + (m.home_ball_possession || '-') + '</span> / <span class="away-val">' + (m.away_ball_possession || '-') + '</span></small></td>';
-            html += '<td class="stat-cell"><small>' + (m.home_expected_goals != null ? '<span class="home-val">' + parseFloat(m.home_expected_goals).toFixed(2) + '</span> / <span class="away-val">' + parseFloat(m.away_expected_goals).toFixed(2) + '</span>' : '-') + '</small></td>';
-            html += '<td><small class="text-muted">' + esc(m.referee || '-') + '</small></td>';
-            html += '<td class="text-center" style="width:30px;"><i class="fas fa-chevron-down" style="font-size:0.6rem;color:#64748b;"></i></td>';
-            html += '</tr>';
+            html += '<div class="match-card" onclick="toggleCard(this, \'' + escJS(cardId) + '\')">';
+            html += '<div class="teams-row">';
+            html += '<div class="team home" title="' + esc(m.home_team_api) + '">' + hl(m.home_team_api, q) + '</div>';
+            html += '<div class="vs-badge">';
+            html += '<div class="score-display">' + m.home_score + ' - ' + m.away_score + '</div>';
+            if (IS_RANGE) html += '<div class="date-badge">' + m.match_date + '</div>';
+            html += '</div>';
+            html += '<div class="team away" title="' + esc(m.away_team_api) + '">' + hl(m.away_team_api, q) + '</div>';
+            html += '</div>';
 
-            html += '<tr class="detail-row" style="display:none;"><td colspan="' + (IS_RANGE ? 13 : 12) + '" style="padding:0;">';
+            html += '<div class="stats-grid">';
+            html += '<div class="stat-item"><div class="stat-label-small">SOT</div><div class="stat-values"><span class="home-val">' + nv(m.home_shots_on_goal) + '</span> / <span class="away-val">' + nv(m.away_shots_on_goal) + '</span></div></div>';
+            html += '<div class="stat-item"><div class="stat-label-small">Shots</div><div class="stat-values"><span class="home-val">' + nv(m.home_total_shots) + '</span> / <span class="away-val">' + nv(m.away_total_shots) + '</span></div></div>';
+            html += '<div class="stat-item"><div class="stat-label-small">Corners</div><div class="stat-values"><span class="home-val">' + nv(m.home_corner_kicks) + '</span> / <span class="away-val">' + nv(m.away_corner_kicks) + '</span></div></div>';
+            html += '<div class="stat-item"><div class="stat-label-small">Fouls</div><div class="stat-values"><span class="home-val">' + nv(m.home_fouls) + '</span> / <span class="away-val">' + nv(m.away_fouls) + '</span></div></div>';
+            const ycTotal = (m.home_yellow_cards||0)*1 + (m.away_yellow_cards||0)*1;
+            html += '<div class="stat-item"><div class="stat-label-small">YC</div><div class="stat-values">' + (ycTotal > 0 ? '<span class="home-val">' + nv(m.home_yellow_cards) + '</span> / <span class="away-val">' + nv(m.away_yellow_cards) + '</span>' : '-') + '</div></div>';
+            html += '<div class="stat-item"><div class="stat-label-small">Poss</div><div class="stat-values"><span class="home-val">' + (m.home_ball_possession || '-') + '</span> / <span class="away-val">' + (m.away_ball_possession || '-') + '</span></div></div>';
+            html += '<div class="stat-item"><div class="stat-label-small">xG</div><div class="stat-values">' + (m.home_expected_goals != null ? '<span class="home-val">' + parseFloat(m.home_expected_goals).toFixed(2) + '</span> / <span class="away-val">' + parseFloat(m.away_expected_goals).toFixed(2) + '</span>' : '-') + '</div></div>';
+            html += '<div class="stat-item"><div class="stat-label-small">Ref</div><div class="stat-values" style="font-size:0.7rem;color:var(--muted);">' + esc(m.referee || '-') + '</div></div>';
+            html += '</div>';
+
+            html += '<div class="detail-section ' + isExpanded + '" id="detail-' + escJS(cardId) + '">';
             html += '<div class="detail-grid">';
             const detailRows = [
                 ['Shots Off Target', nv(m.home_shots_off_goal), nv(m.away_shots_off_goal)],
@@ -370,27 +355,27 @@ function render() {
                 ['Shots Outside Box', nv(m.home_shots_outside_box), nv(m.away_shots_outside_box)],
                 ['Offsides', nv(m.home_offsides), nv(m.away_offsides)],
                 ['Free Kicks', nv(m.home_free_kicks), nv(m.away_free_kicks)],
-                ['Red Cards', ((m.home_red_cards||0)*1 + (m.away_red_cards||0)*1 > 0 ? nv(m.home_red_cards) + ' / ' + nv(m.away_red_cards) : '-')],
+                ['Red Cards', ((m.home_red_cards||0)*1 + (m.away_red_cards||0)*1 > 0 ? nv(m.home_red_cards) + ' / ' + nv(m.away_red_cards) : null)],
                 ['GK Saves', nv(m.home_goalkeeper_saves), nv(m.away_goalkeeper_saves)],
                 ['Total Passes', nv(m.home_total_passes), nv(m.away_total_passes)],
                 ['Passes Accurate', nv(m.home_passes_accurate), nv(m.away_passes_accurate)],
                 ['Pass Accuracy', nv(m.home_pass_accuracy), nv(m.away_pass_accuracy)],
-                ['Goals Prevented', m.home_goals_prevented != null ? parseFloat(m.home_goals_prevented).toFixed(2) : '-', m.away_goals_prevented != null ? parseFloat(m.away_goals_prevented).toFixed(2) : '-'],
+                ['Goals Prevented', m.home_goals_prevented != null ? parseFloat(m.home_goals_prevented).toFixed(2) : null, m.away_goals_prevented != null ? parseFloat(m.away_goals_prevented).toFixed(2) : null],
                 ['Venue', esc(m.venue || '-'), ''],
             ];
             detailRows.forEach(dr => {
-                if (dr.length === 3 && dr[1] === '-' && dr[2] === '-') return;
-                html += '<div class="detail-item"><span class="detail-label">' + dr[0] + '</span>';
-                if (dr.length === 3 && dr[2] !== '') {
+                if (dr[1] === null || (dr.length === 3 && dr[1] === '-' && dr[2] === '-')) return;
+                html += '<div class="detail-item"><span class="detail-label">' + dr[0] + '</span><br>';
+                if (dr.length === 3 && dr[2] !== '' && dr[2] !== null) {
                     html += '<span class="home-val">' + dr[1] + '</span> / <span class="away-val">' + dr[2] + '</span>';
                 } else {
                     html += '<span>' + dr[1] + '</span>';
                 }
                 html += '</div>';
             });
-            html += '</div></td></tr>';
+            html += '</div></div>';
+            html += '</div>';
         });
-        html += '</tbody></table></div>';
 
         if (totalPages > 1) {
             html += '<div class="pagination-bar">';
@@ -442,20 +427,17 @@ function goPage(name, page) {
     render();
 }
 function sortLeague(name, key) {
-    if (sortState[name + '_key'] === key) {
-        sortState[name + '_asc'] = !sortState[name + '_asc'];
-    } else {
-        sortState[name + '_key'] = key;
-        sortState[name + '_asc'] = true;
-    }
+    if (sortState[name + '_key'] === key) { sortState[name + '_asc'] = !sortState[name + '_asc']; }
+    else { sortState[name + '_key'] = key; sortState[name + '_asc'] = true; }
     render();
 }
 
-function toggleDetail(row) {
-    const detail = row.nextElementSibling;
-    if (detail && detail.classList.contains('detail-row')) {
-        detail.style.display = detail.style.display === 'none' ? '' : 'none';
-    }
+function toggleCard(cardEl, cardId) {
+    const detail = cardEl.querySelector('.detail-section');
+    if (!detail) return;
+    const isOpen = detail.classList.contains('open');
+    detail.classList.toggle('open');
+    expandedCards[cardId] = !isOpen;
 }
 
 searchInput.addEventListener('input', function() {
