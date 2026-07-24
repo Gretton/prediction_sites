@@ -146,6 +146,10 @@ foreach ($fixtures as $f) {
     $homeName = $f['teams']['home']['name'] ?? '';
     $awayName = $f['teams']['away']['name'] ?? '';
     $leagueName = $f['league']['name'] ?? '';
+    $leagueCountry = $f['league']['country'] ?? '';
+    if ($leagueCountry && !str_contains($leagueName, $leagueCountry)) {
+        $leagueName .= ' (' . $leagueCountry . ')';
+    }
     $leagueIdApi = $f['league']['id'] ?? null;
     $homeScore = $f['goals']['home'] ?? null;
     $awayScore = $f['goals']['away'] ?? null;
