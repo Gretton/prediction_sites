@@ -185,11 +185,8 @@ class BayesianModel {
         $name = preg_replace('/[^a-z0-9\s\-\']/', '', $name);
         $name = preg_replace('/\s+/', ' ', $name);
 
-        // Strip common prefixes (these are safe str_replace since they have trailing space)
-        $prefixes = ['fc ','cf ','ac ','sc ','rc ','ss ','cd ','as ',
-                     'sk ','fk ','nk ','ud ','ca ','cr ','ec ','aa ',
-                     'ae ','ssc ','if ','bk '];
-        $name = str_replace($prefixes, '', $name);
+        // Strip common prefixes — anchored at start of string to avoid corrupting "afc" → "abournemouth" etc.
+        $name = preg_replace('/^(fc|cf|ac|sc|rc|ss|cd|as|sk|fk|nk|ud|ca|cr|ec|aa|ae|ssc|if|bk)\s+/i', '', $name);
 
         // Abbreviation expansion — only apply if expanded form not already in the name
         // Use word-boundary regex to avoid false matches (e.g. "inter" in "international")
@@ -198,7 +195,7 @@ class BayesianModel {
             'man united'    => 'manchester united',
             'man city'      => 'manchester city',
             'manchester cty' => 'manchester city',
-            'inter'         => 'inter milan',
+            'inter'         => ['inter milan', '/\binter\b(?!\s+(?:miami|salt|nacional|napoli))/i'],
             'milan'         => 'ac milan',
             'bayern'        => 'bayern munich',
             'psg'           => 'paris saint germain',
@@ -206,8 +203,16 @@ class BayesianModel {
             'bvb'           => 'borussia dortmund',
         ];
         foreach ($expansions as $abbr => $expanded) {
-            if (strpos($name, $expanded) === false) {
-                $name = preg_replace('/\b' . preg_quote($abbr, '/') . '\b/', $expanded, $name);
+            if (is_array($expanded)) {
+                $target = $expanded[0];
+                $regex = $expanded[1];
+                if (strpos($name, $target) === false) {
+                    $name = preg_replace($regex, $target, $name);
+                }
+            } else {
+                if (strpos($name, $expanded) === false && !($abbr === 'milan' && strpos($name, 'inter milan') !== false)) {
+                    $name = preg_replace('/\b' . preg_quote($abbr, '/') . '\b/', $expanded, $name);
+                }
             }
         }
 
@@ -390,18 +395,6 @@ class BayesianModel {
             if ($t2 > 0) { $postHome /= $t2; $postDraw /= $t2; $postAway /= $t2; }
         }
 
-        if ($homeDefense && $awayDefense && $homeDefense['total_matches'] >= 5 && $awayDefense['total_matches'] >= 5) {
-            $homeDefStrength = max(0, 1 - ($homeDefense['avg_conceded'] / 2));
-            $awayDefStrength = max(0, 1 - ($awayDefense['avg_conceded'] / 2));
-            $defDiff = $homeDefStrength - $awayDefStrength;
-            $defAdj = $defDiff * 0.04;
-            $postHome = max(0.01, $postHome + $defAdj);
-            $postAway = max(0.01, $postAway - $defAdj);
-            $postDraw = max(0.01, 1 - $postHome - $postAway);
-            $tDef = $postHome + $postDraw + $postAway;
-            if ($tDef > 0) { $postHome /= $tDef; $postDraw /= $tDef; $postAway /= $tDef; }
-        }
-
         if ($homeStats && $awayStats) {
             $hWeight = $homeStats['data_weight'];
             $aWeight = $awayStats['data_weight'];
@@ -432,38 +425,50 @@ class BayesianModel {
                         $offRatio = $homeSotRatio / max(0.3, $awaySotRatio);
                     }
                     $offAdj = log(max(0.3, min(3.0, $offRatio))) * 0.08;
-                    $postHome = max(0.01, $postHome + $offAdj);
-                    $postAway = max(0.01, $postAway - $offAdj);
+                    $postHome += $offAdj;
+                    $postAway -= $offAdj;
                     $t4 = $postHome + $postDraw + $postAway;
                     if ($t4 > 0) { $postHome /= $t4; $postDraw /= $t4; $postAway /= $t4; }
+                    $postHome = max(0.01, min(0.99, $postHome));
+                    $postAway = max(0.01, min(0.99, $postAway));
+                    $postDraw = max(0.01, min(0.99, $postDraw));
                 }
 
                 if ($homeDef !== null && $awayDef !== null) {
                     $defDiff2 = ($homeDef - $awayDef);
                     $defAdj2 = $defDiff2 * 0.05;
-                    $postHome = max(0.01, $postHome + $defAdj2);
-                    $postAway = max(0.01, $postAway - $defAdj2);
+                    $postHome += $defAdj2;
+                    $postAway -= $defAdj2;
                     $t5 = $postHome + $postDraw + $postAway;
                     if ($t5 > 0) { $postHome /= $t5; $postDraw /= $t5; $postAway /= $t5; }
+                    $postHome = max(0.01, min(0.99, $postHome));
+                    $postAway = max(0.01, min(0.99, $postAway));
+                    $postDraw = max(0.01, min(0.99, $postDraw));
                 }
 
                 if ($homeCtrl !== null && $awayCtrl !== null) {
                     $ctrlDiff = ($homeCtrl - $awayCtrl);
                     $ctrlAdj = $ctrlDiff * 0.03;
-                    $postHome = max(0.01, $postHome + $ctrlAdj);
-                    $postAway = max(0.01, $postAway - $ctrlAdj);
+                    $postHome += $ctrlAdj;
+                    $postAway -= $ctrlAdj;
                     $t6 = $postHome + $postDraw + $postAway;
                     if ($t6 > 0) { $postHome /= $t6; $postDraw /= $t6; $postAway /= $t6; }
+                    $postHome = max(0.01, min(0.99, $postHome));
+                    $postAway = max(0.01, min(0.99, $postAway));
+                    $postDraw = max(0.01, min(0.99, $postDraw));
                 }
 
                 $homeDiscipline = $homeStats['cards_per_game'];
                 $awayDiscipline = $awayStats['cards_per_game'];
                 if ($homeDiscipline > 4 || $awayDiscipline > 4) {
                     $homeDiscAdj = ($awayDiscipline - $homeDiscipline) * 0.005;
-                    $postHome = max(0.01, $postHome + $homeDiscAdj);
-                    $postAway = max(0.01, $postAway - $homeDiscAdj);
+                    $postHome += $homeDiscAdj;
+                    $postAway -= $homeDiscAdj;
                     $t7 = $postHome + $postDraw + $postAway;
                     if ($t7 > 0) { $postHome /= $t7; $postDraw /= $t7; $postAway /= $t7; }
+                    $postHome = max(0.01, min(0.99, $postHome));
+                    $postAway = max(0.01, min(0.99, $postAway));
+                    $postDraw = max(0.01, min(0.99, $postDraw));
                 }
             }
         }
@@ -666,6 +671,7 @@ class BayesianModel {
                 }
 
                 if (!$matchRow) { $unmatched++; continue; }
+                $matched++;
 
                 $hs = (int)$matchRow['home_score'];
                 $as = (int)$matchRow['away_score'];
@@ -675,26 +681,39 @@ class BayesianModel {
 
                 $correct = true;
                 $recPick = $bp['recommended_pick'] ?? '';
+                $recPickParts = array_map('trim', explode(',', $recPick));
 
-                if (str_contains($recPick, '1:') && !str_contains($recPick, '1X:') && !str_contains($recPick, '12:')) {
-                    if ($actualWinner !== '1') $correct = false;
-                } elseif (str_contains($recPick, 'X:')) {
-                    if ($actualWinner !== 'X') $correct = false;
-                } elseif (str_contains($recPick, '2:')) {
-                    if ($actualWinner !== '2') $correct = false;
-                } elseif (str_contains($recPick, '1X:')) {
-                    if ($actualWinner === '2') $correct = false;
-                } elseif (str_contains($recPick, 'X2:')) {
-                    if ($actualWinner === '1') $correct = false;
-                } elseif (str_contains($recPick, '12:')) {
-                    if ($actualWinner === 'X') $correct = false;
+                $settled1x2 = false;
+                $settledOu = false;
+                $settledBtts = false;
+                foreach ($recPickParts as $rpPart) {
+                    $rpTrim = trim($rpPart);
+                    $rpColon = strpos($rpTrim, ':');
+                    $rpType = $rpColon !== false ? trim(substr($rpTrim, 0, $rpColon)) : $rpTrim;
+
+                    if (!$settled1x2) {
+                        if ($rpType === '1X') { if ($actualWinner === '2') $correct = false; $settled1x2 = true; }
+                        elseif ($rpType === 'X2') { if ($actualWinner === '1') $correct = false; $settled1x2 = true; }
+                        elseif ($rpType === '12') { if ($actualWinner === 'X') $correct = false; $settled1x2 = true; }
+                        elseif ($rpType === '1') { if ($actualWinner !== '1') $correct = false; $settled1x2 = true; }
+                        elseif ($rpType === 'X') { if ($actualWinner !== 'X') $correct = false; $settled1x2 = true; }
+                        elseif ($rpType === '2') { if ($actualWinner !== '2') $correct = false; $settled1x2 = true; }
+                    }
+
+                    if (!$settledOu) {
+                        if ($rpType === 'Over 2.5' && $totalG <= 2) { $correct = false; $settledOu = true; }
+                        elseif ($rpType === 'Under 2.5' && $totalG > 2) { $correct = false; $settledOu = true; }
+                        elseif ($rpType === 'Over 1.5' && $totalG <= 1) { $correct = false; $settledOu = true; }
+                        elseif ($rpType === 'Under 1.5' && $totalG > 1) { $correct = false; $settledOu = true; }
+                        elseif ($rpType === 'Under 3.5' && $totalG > 3) { $correct = false; $settledOu = true; }
+                        elseif ($rpType === 'Over 3.5' && $totalG <= 3) { $correct = false; $settledOu = true; }
+                    }
+
+                    if (!$settledBtts) {
+                        if ($rpType === 'GG' && !$bttsActual) { $correct = false; $settledBtts = true; }
+                        elseif ($rpType === 'NG' && $bttsActual) { $correct = false; $settledBtts = true; }
+                    }
                 }
-                if (str_contains($recPick, 'Over 2.5') && $totalG <= 2) $correct = false;
-                if (str_contains($recPick, 'Under 2.5') && $totalG > 2) $correct = false;
-                if (str_contains($recPick, 'Over 1.5') && $totalG <= 1) $correct = false;
-                if (str_contains($recPick, 'Under 3.5') && $totalG > 3) $correct = false;
-                if (str_contains($recPick, 'GG') && !$bttsActual) $correct = false;
-                if (str_contains($recPick, 'NG') && $bttsActual) $correct = false;
 
                 $outcome = $correct ? 'correct' : 'incorrect';
                 $updateStmt->execute([$outcome, $hs, $as, $bp['id']]);
@@ -1191,7 +1210,7 @@ class BayesianModel {
 
         $k = $this->priorStrength;
         // BTTS = P(home scores) * P(away scores) OR P(away scores) * P(home scores) — both must happen
-        $bttsFromForm = $homeScored * $awayConceded;
+        $bttsFromForm = $homeScored * $awayScored;
         $bttsPost = ($bttsPrior * $k + $h2h['btts_rate'] / 100 * $h2h['matches'] + $bttsFromForm * 2) / ($k + $h2h['matches'] + 2);
         $bttsPost = min(0.95, max(0.05, $bttsPost));
 
@@ -1248,10 +1267,19 @@ class BayesianModel {
         $histStmt = $this->db->query("
             SELECT bp.prob_1, bp.prob_x, bp.prob_2, bp.over_25, bp.under_25, bp.btts_yes, bp.btts_no,
                    bp.home_team, bp.away_team, bp.league,
-                   mr.home_score, mr.away_score
+                   mr.home_score, mr.away_score,
+                   CASE WHEN mr.home_team_id = bpHome.team_id THEN 0 ELSE 1 END as swapped
             FROM bayesian_predictions bp
-            JOIN match_results mr ON bp.match_name = CONCAT(mr.home_team, ' vs ', mr.away_team)
-                AND bp.match_date = mr.match_date
+            LEFT JOIN teams bpHome ON bpHome.name = bp.home_team
+            JOIN match_results mr ON (
+                (bpHome.team_id IS NOT NULL AND (
+                    (mr.home_team_id = bpHome.team_id AND mr.away_team_id = bpAway.team_id) OR
+                    (mr.home_team_id = bpAway.team_id AND mr.away_team_id = bpHome.team_id)
+                )) OR
+                (bp.home_team = mr.home_team AND bp.away_team = mr.away_team) OR
+                (bp.home_team = mr.away_team AND bp.away_team = mr.home_team)
+            )
+            LEFT JOIN teams bpAway ON bpAway.name = bp.away_team
             WHERE bp.result = 'pending'
               AND mr.home_score IS NOT NULL
               AND bp.match_date >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
@@ -1271,14 +1299,20 @@ class BayesianModel {
                 if (!$pick) continue;
                 $hs = (int)$tc['home_score'];
                 $as = (int)$tc['away_score'];
+                $swapped = (int)($tc['swapped'] ?? 0);
+                if ($swapped) {
+                    $effHs = $as; $effAs = $hs;
+                } else {
+                    $effHs = $hs; $effAs = $as;
+                }
                 $correctPick = false;
                 switch ($pick) {
-                    case '1': $correctPick = $hs > $as; break;
-                    case 'X': $correctPick = $hs === $as; break;
-                    case '2': $correctPick = $hs < $as; break;
-                    case '1X': $correctPick = $hs >= $as; break;
-                    case 'X2': $correctPick = $hs <= $as; break;
-                    case '12': $correctPick = $hs !== $as; break;
+                    case '1': $correctPick = $effHs > $effAs; break;
+                    case 'X': $correctPick = $effHs === $effAs; break;
+                    case '2': $correctPick = $effHs < $effAs; break;
+                    case '1X': $correctPick = $effHs >= $effAs; break;
+                    case 'X2': $correctPick = $effHs <= $effAs; break;
+                    case '12': $correctPick = $effHs !== $effAs; break;
                     case 'Over 2.5': $correctPick = ($hs + $as) > 2.5; break;
                     case 'Under 2.5': $correctPick = ($hs + $as) < 2.5; break;
                     case 'Over 1.5': $correctPick = ($hs + $as) > 1.5; break;
@@ -1478,13 +1512,15 @@ class BayesianModel {
                     $stats[$type]['total']++;
                     $stats[$type]['sum_prob'] += $prob;
                     $correct = false;
+                    $effHs = $swapped ? $as : $hs;
+                    $effAs = $swapped ? $hs : $as;
                     switch ($type) {
-                        case '1': $correct = $hs > $as; break;
-                        case 'X': $correct = $hs === $as; break;
-                        case '2': $correct = $hs < $as; break;
-                        case '1X': $correct = $hs >= $as; break;
-                        case 'X2': $correct = $hs <= $as; break;
-                        case '12': $correct = $hs !== $as; break;
+                        case '1': $correct = $effHs > $effAs; break;
+                        case 'X': $correct = $effHs === $effAs; break;
+                        case '2': $correct = $effHs < $effAs; break;
+                        case '1X': $correct = $effHs >= $effAs; break;
+                        case 'X2': $correct = $effHs <= $effAs; break;
+                        case '12': $correct = $effHs !== $effAs; break;
                         case 'Over 2.5': $correct = $totalG > 2.5; break;
                         case 'Under 2.5': $correct = $totalG < 2.5; break;
                         case 'Over 1.5': $correct = $totalG > 1.5; break;

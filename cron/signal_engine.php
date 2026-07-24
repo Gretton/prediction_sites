@@ -104,7 +104,6 @@ try {
         elseif (str_contains($notesStr, 'RISING ODDS')) $badge = 'RISING ODDS';
         
         $insStmt->execute([
-            $pickTypeFinal,
             $tip['match'] ?? '',
             $pickText,
             $tip['actual_odds'] ?? 0,
