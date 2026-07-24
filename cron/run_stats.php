@@ -9,11 +9,17 @@ if ($key !== STATS_SECRET_KEY) {
 }
 
 $date = $_GET['date'] ?? date('Y-m-d', strtotime('-1 day'));
-$limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 1;
+$limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 30;
 
-// Run collector inline (nohup doesn't work on shared hosting)
-$cmd = 'php ' . __DIR__ . '/collect_match_stats.php --date ' . escapeshellarg($date) . ' --limit ' . (int)$limit;
-$output = shell_exec($cmd . ' 2>&1');
+// Pass params to collect_match_stats.php via global (shell_exec blocked on Namecheap)
+$GLOBALS['_collector_opts'] = [];
+$GLOBALS['_collector_opts']['date'] = $date;
+$GLOBALS['_collector_opts']['limit'] = (string)$limit;
+if (isset($_GET['test'])) $GLOBALS['_collector_opts']['test'] = true;
+
+ob_start();
+include __DIR__ . '/collect_match_stats.php';
+$output = ob_get_clean();
 
 header('Content-Type: application/json');
 echo json_encode([

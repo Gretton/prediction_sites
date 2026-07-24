@@ -6,6 +6,10 @@ $API_BASE = 'https://v3.football.api-sports.io';
 $RATE_LIMIT_SEC = 65;
 
 $opts = getopt('', ['date:', 'test', 'limit:', 'help']);
+// Allow web include to pass params via globals
+if (!empty($GLOBALS['_collector_opts'])) {
+    $opts = $GLOBALS['_collector_opts'];
+}
 if (isset($opts['help'])) {
     echo "Usage: php collect_match_stats.php [--date YYYY-MM-DD] [--test] [--limit N]\n";
     echo "  --date   Collect stats for a specific date (default: yesterday)\n";

@@ -11,5 +11,5 @@ jobs:
     steps:
       - name: Trigger stats collection (1 match, synchronous)
         run: |
-          curl -s "https://predixa.co.tz/cron/run_stats.php?key=${{ secrets.STATS_SECRET_KEY }}&limit=1" | python3 -m json.tool || echo "Collection failed"
+          curl -s "https://predixa.co.tz/cron/run_stats.php?key=${{ secrets.STATS_SECRET_KEY }}&limit=30" | python3 -m json.tool || echo "Collection failed"
         continue-on-error: true
