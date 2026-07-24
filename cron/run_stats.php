@@ -9,7 +9,7 @@ if ($key !== STATS_SECRET_KEY) {
 }
 
 $date = $_GET['date'] ?? date('Y-m-d', strtotime('-1 day'));
-$limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 30;
+$limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 9999;
 
 // Pass params to collect_match_stats.php via global (shell_exec blocked on Namecheap)
 $GLOBALS['_collector_opts'] = [];
