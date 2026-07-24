@@ -2,26 +2,36 @@
 require_once __DIR__ . '/../config.php';
 $db = getDB();
 
-$date = $_GET['date'] ?? date('Y-m-d', strtotime('-1 day'));
+$dateFrom = $_GET['date_from'] ?? ($_GET['date'] ?? date('Y-m-d', strtotime('-1 day')));
+$dateTo = $_GET['date_to'] ?? $dateFrom;
 
 $recentDates = [];
 $totalRows = 0;
 $leagues = [];
 $stats = [];
+$dateRangeStats = [];
 
 try {
     $totalRows = $db->query("SELECT COUNT(*) FROM match_statistics")->fetchColumn();
     $recentDates = $db->query("SELECT match_date, COUNT(*) as cnt FROM match_statistics GROUP BY match_date ORDER BY match_date DESC LIMIT 30")->fetchAll();
     $leagues = $db->query("SELECT league_name, COUNT(*) as cnt FROM match_statistics GROUP BY league_name ORDER BY cnt DESC")->fetchAll();
-    $stmt = $db->prepare("SELECT * FROM match_statistics WHERE match_date = ? ORDER BY league_name, home_team_api");
-    $stmt->execute([$date]);
+
+    if ($dateFrom === $dateTo) {
+        $stmt = $db->prepare("SELECT * FROM match_statistics WHERE match_date = ? ORDER BY league_name, home_team_api");
+        $stmt->execute([$dateFrom]);
+    } else {
+        $stmt = $db->prepare("SELECT * FROM match_statistics WHERE match_date BETWEEN ? AND ? ORDER BY match_date, league_name, home_team_api");
+        $stmt->execute([$dateFrom, $dateTo]);
+    }
     $stats = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $dateRangeStats = $db->query("SELECT match_date, COUNT(*) as cnt FROM match_statistics GROUP BY match_date ORDER BY match_date DESC")->fetchAll();
 } catch (Exception $e) {
     $error = $e->getMessage();
 }
 
 $logContent = null;
-$logFile = __DIR__ . '/../logs/stats_collector_' . $date . '.log';
+$logFile = __DIR__ . '/../logs/stats_collector_' . $dateFrom . '.log';
 if (file_exists($logFile)) {
     $logContent = file_get_contents($logFile);
 }
@@ -46,64 +56,72 @@ if ($stats) {
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <style>
         *{box-sizing:border-box;}
-        body { background: linear-gradient(135deg, #111318 0%, #1c2130 100%); min-height: 100vh; color: #e2e8f0; }
-        .card { background: linear-gradient(135deg, rgba(139,92,246,0.12), rgba(6,182,212,0.06)); border: 1px solid rgba(139,92,246,0.25); }
-        .stat-card { background: rgba(22,27,34,0.7); border: 1px solid rgba(139,92,246,0.2); border-radius: 12px; padding: 16px; }
-        .stat-big { font-size: 1.8rem; font-weight: 700; }
-        .stat-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; }
-        .form-control, .form-select { background: rgba(22,27,34,0.8); border-color: rgba(139,92,246,0.3); color: #e2e8f0; }
-        .form-control:focus, .form-select:focus { border-color: rgba(139,92,246,0.6); box-shadow: 0 0 0 0.2rem rgba(139,92,246,0.15); color: #e2e8f0; }
-        .form-control::placeholder { color: #64748b; }
-        .log-box { background: #0d1117; border: 1px solid rgba(139,92,246,0.2); border-radius: 8px; padding: 12px; font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.78rem; max-height: 400px; overflow-y: auto; white-space: pre-wrap; color: #94a3b8; }
-        .league-group { border: 1px solid rgba(139,92,246,0.15); border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
-        .league-header { background: rgba(139,92,246,0.15); padding: 10px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; transition: background 0.15s; }
-        .league-header:hover { background: rgba(139,92,246,0.25); }
+        :root { --bg: #0B0E14; --surface: #151A24; --surface2: #1c2130; --border: #1E2736; --text: #E2E8F0; --muted: #8899AA; --primary: #6366F1; --accent: #06B6D4; }
+        body { background: var(--bg); min-height: 100vh; color: var(--text); font-family: system-ui, -apple-system, sans-serif; padding: 16px; }
+        .container-fluid { max-width: 1400px; margin: 0 auto; }
+        h4 { font-weight: 800; }
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+        .stat-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+        .stat-big { font-size: 1.8rem; font-weight: 800; }
+        .stat-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); }
+        .form-control, .form-select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); }
+        .form-control:focus, .form-select:focus { border-color: var(--primary); box-shadow: 0 0 0 0.2rem rgba(99,102,241,0.15); color: var(--text); background: var(--surface2); }
+        .form-control::placeholder { color: #6B7280; }
+        .btn-outline-secondary { background: var(--surface); border: 1px solid var(--border); color: var(--muted); }
+        .btn-outline-secondary:hover { border-color: var(--primary); color: var(--primary); }
+        .log-box { background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.78rem; max-height: 400px; overflow-y: auto; white-space: pre-wrap; color: var(--muted); }
+        .league-group { border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
+        .league-header { background: rgba(99,102,241,0.12); padding: 10px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; transition: background 0.15s; }
+        .league-header:hover { background: rgba(99,102,241,0.2); }
         .league-header .league-name { font-weight: 600; font-size: 0.9rem; }
-        .league-header .match-count { font-size: 0.75rem; background: rgba(139,92,246,0.3); padding: 2px 10px; border-radius: 12px; }
+        .league-header .match-count { font-size: 0.75rem; background: rgba(99,102,241,0.3); padding: 2px 10px; border-radius: 12px; }
         .league-header .chevron { transition: transform 0.2s; }
         .league-header.collapsed .chevron { transform: rotate(-90deg); }
         .league-body { display: block; }
         .league-body.collapsed { display: none; }
         .match-table { width: 100%; font-size: 0.82rem; table-layout: fixed; }
-        .match-table th { background: rgba(22,27,34,0.9); position: sticky; top: 0; z-index: 1; padding: 8px 8px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; color: #94a3b8; border-bottom: 1px solid rgba(139,92,246,0.2); cursor: pointer; white-space: nowrap; }
+        .match-table th { background: var(--surface2); position: sticky; top: 0; z-index: 1; padding: 8px 8px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); border-bottom: 2px solid var(--border); cursor: pointer; white-space: nowrap; }
         .match-table th:hover { color: #c4b5fd; }
-        .match-table th.no-sort { cursor: default; }
         .match-table th .sort-icon { margin-left: 3px; opacity: 0.4; }
         .match-table th.sorted-asc .sort-icon, .match-table th.sorted-desc .sort-icon { opacity: 1; color: #a78bfa; }
-        .match-table td { padding: 6px 8px; border-bottom: 1px solid rgba(139,92,246,0.08); vertical-align: middle; }
-        .match-table tr:hover td { background: rgba(139,92,246,0.08); }
+        .match-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        .match-table tr:hover td { background: rgba(99,102,241,0.05); }
         .match-table .match-row { cursor: pointer; }
-        .match-table .match-row:hover td { background: rgba(139,92,246,0.12); }
-        .detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px 16px; padding: 10px 16px; background: rgba(139,92,246,0.06); border-top: 1px solid rgba(139,92,246,0.15); }
+        .match-table .match-row:hover td { background: rgba(99,102,241,0.1); }
+        .detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px 16px; padding: 10px 16px; background: rgba(99,102,241,0.06); border-top: 1px solid var(--border); }
         .detail-item { font-size: 0.78rem; padding: 3px 0; }
-        .detail-label { color: #64748b; margin-right: 6px; font-size: 0.72rem; text-transform: uppercase; }
+        .detail-label { color: var(--muted); margin-right: 6px; font-size: 0.72rem; text-transform: uppercase; }
         .match-table .team-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .match-table .score { font-weight: 700; font-size: 0.95rem; color: #e2e8f0; text-align: center; }
+        .match-table .score { font-weight: 700; font-size: 0.95rem; color: var(--text); text-align: center; }
+        .match-table .date-cell { font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
         .match-table .stat-cell { text-align: center; color: #94a3b8; font-size: 0.78rem; white-space: nowrap; }
         .match-table .home-val { color: #a78bfa; }
         .match-table .away-val { color: #22d3ee; }
-        .no-results { padding: 40px; text-align: center; color: #64748b; }
+        .no-results { padding: 40px; text-align: center; color: var(--muted); }
         .no-results i { font-size: 2rem; margin-bottom: 12px; display: block; }
         .search-highlight { background: rgba(250,204,21,0.25); border-radius: 2px; padding: 0 2px; }
         .date-pills { display: flex; flex-wrap: wrap; gap: 6px; max-height: 80px; overflow-y: auto; }
-        .date-pill { padding: 4px 12px; border-radius: 8px; font-size: 0.78rem; font-weight: 500; text-decoration: none; border: 1px solid rgba(139,92,246,0.2); color: #94a3b8; background: rgba(22,27,34,0.5); transition: all 0.15s; white-space: nowrap; }
-        .date-pill:hover { background: rgba(139,92,246,0.2); color: #e2e8f0; border-color: rgba(139,92,246,0.4); }
-        .date-pill.active { background: rgba(139,92,246,0.4); color: #fff; border-color: rgba(139,92,246,0.6); }
+        .date-pill { padding: 4px 12px; border-radius: 8px; font-size: 0.78rem; font-weight: 500; text-decoration: none; border: 1px solid var(--border); color: var(--muted); background: var(--surface2); transition: all 0.15s; white-space: nowrap; }
+        .date-pill:hover { background: rgba(99,102,241,0.15); color: var(--text); border-color: rgba(99,102,241,0.4); }
+        .date-pill.active { background: rgba(99,102,241,0.35); color: #fff; border-color: var(--primary); }
         .date-pill .cnt { opacity: 0.7; margin-left: 4px; }
         .results-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
-        .search-wrap { position: relative; }
+        .search-wrap { position: relative; display: flex; align-items: center; gap: 0; }
+        .search-wrap .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #6B7280; font-size: 0.8rem; pointer-events: none; z-index: 2; }
         .search-wrap .form-control { padding-left: 30px; }
-        .search-wrap .fa-search { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 0.8rem; pointer-events: none; }
-        .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; z-index: 100; max-height: 240px; overflow-y: auto; background: #1a1f2e; border: 1px solid rgba(139,92,246,0.3); border-top: none; border-radius: 0 0 8px 8px; display: none; }
+        .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; z-index: 100; max-height: 240px; overflow-y: auto; background: var(--surface2); border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; display: none; }
         .autocomplete-list.show { display: block; }
-        .autocomplete-item { padding: 6px 12px; font-size: 0.8rem; cursor: pointer; color: #cbd5e1; border-bottom: 1px solid rgba(139,92,246,0.08); }
-        .autocomplete-item:hover, .autocomplete-item.active { background: rgba(139,92,246,0.2); color: #fff; }
-        .autocomplete-item .league-tag { font-size: 0.65rem; color: #64748b; margin-left: 6px; }
+        .autocomplete-item { padding: 6px 12px; font-size: 0.8rem; cursor: pointer; color: #CBD5E1; border-bottom: 1px solid var(--border); }
+        .autocomplete-item:hover, .autocomplete-item.active { background: rgba(99,102,241,0.2); color: #fff; }
+        .autocomplete-item .league-tag { font-size: 0.65rem; color: var(--muted); margin-left: 6px; }
         .pagination-bar { display: flex; justify-content: center; align-items: center; gap: 4px; padding: 8px 0; }
-        .pagination-bar button { background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.2); color: #94a3b8; padding: 3px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; transition: all 0.15s; }
-        .pagination-bar button:hover:not(:disabled) { background: rgba(139,92,246,0.3); color: #e2e8f0; }
+        .pagination-bar button { background: rgba(99,102,241,0.15); border: 1px solid var(--border); color: var(--muted); padding: 3px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; transition: all 0.15s; }
+        .pagination-bar button:hover:not(:disabled) { background: rgba(99,102,241,0.3); color: var(--text); }
         .pagination-bar button:disabled { opacity: 0.3; cursor: not-allowed; }
-        .pagination-bar .page-info { font-size: 0.75rem; color: #64748b; padding: 0 8px; }
+        .pagination-bar .page-info { font-size: 0.75rem; color: var(--muted); padding: 0 8px; }
+        .date-range-form { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .date-range-form label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; margin-bottom: 0; }
+        .text-muted { color: var(--muted) !important; }
         @media(max-width:768px) { .match-table { font-size: 0.72rem; } .stat-big { font-size: 1.3rem; } }
     </style>
 </head>
@@ -136,7 +154,7 @@ if ($stats) {
         <h6 class="mb-3"><i class="fas fa-calendar-alt me-2"></i>Collections by Date</h6>
         <div class="date-pills" id="datePills">
             <?php foreach ($recentDates as $rd): ?>
-                <a href="?date=<?= $rd['match_date'] ?>" class="date-pill <?= $rd['match_date'] === $date ? 'active' : '' ?>"><?= $rd['match_date'] ?><span class="cnt"><?= $rd['cnt'] ?></span></a>
+                <a href="?date_from=<?= $rd['match_date'] ?>&date_to=<?= $rd['match_date'] ?>" class="date-pill <?= ($rd['match_date'] === $dateFrom && $dateFrom === $dateTo) ? 'active' : '' ?>"><?= $rd['match_date'] ?><span class="cnt"><?= $rd['cnt'] ?></span></a>
             <?php endforeach; ?>
             <?php if (empty($recentDates)): ?><span class="text-muted">No data collected yet.</span><?php endif; ?>
         </div>
@@ -144,23 +162,28 @@ if ($stats) {
 
     <div class="card p-3 mb-4">
         <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
-            <h6 class="mb-0"><i class="fas fa-table me-2"></i><?= htmlspecialchars($date) ?></h6>
-            <form class="d-flex gap-2" method="get">
-                <input type="date" name="date" value="<?= htmlspecialchars($date) ?>" class="form-control form-control-sm" style="width:155px">
-                <button type="submit" class="btn btn-sm" style="background:rgba(139,92,246,0.4);border-color:rgba(139,92,246,0.6);color:#fff;">View</button>
+            <h6 class="mb-0"><i class="fas fa-table me-2"></i><?= htmlspecialchars($dateFrom) ?><?= $dateFrom !== $dateTo ? ' — ' . htmlspecialchars($dateTo) : '' ?> <span class="text-muted" style="font-size:0.8rem;font-weight:400;">(<?= count($stats) ?> matches)</span></h6>
+            <form class="date-range-form" method="get">
+                <label>From</label>
+                <input type="date" name="date_from" value="<?= htmlspecialchars($dateFrom) ?>" class="form-control form-control-sm" style="width:155px">
+                <label>To</label>
+                <input type="date" name="date_to" value="<?= htmlspecialchars($dateTo) ?>" class="form-control form-control-sm" style="width:155px">
+                <button type="submit" class="btn btn-sm" style="background:rgba(139,92,246,0.4);border-color:rgba(139,92,246,0.6);color:#fff;"><i class="fas fa-filter me-1"></i>Filter</button>
             </form>
         </div>
 
         <div class="results-bar mb-3">
             <div class="d-flex gap-2 align-items-center flex-wrap">
                 <div class="search-wrap">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Search team name..." style="width:240px;" autocomplete="off">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Search team..." style="width:200px;" autocomplete="off">
                     <div class="autocomplete-list" id="autocompleteList"></div>
                 </div>
-                <select id="leagueFilter" class="form-select form-select-sm" style="width:200px;">
-                    <option value="">All Leagues</option>
-                </select>
+                <div class="search-wrap">
+                    <i class="fas fa-futbol search-icon"></i>
+                    <input type="text" id="leagueInput" class="form-control form-control-sm" placeholder="Search league..." style="width:200px;" autocomplete="off">
+                    <div class="autocomplete-list" id="leagueAutocomplete"></div>
+                </div>
                 <span id="resultCount" class="text-muted" style="font-size:0.8rem;"></span>
             </div>
             <div class="d-flex gap-2">
@@ -175,49 +198,46 @@ if ($stats) {
 
     <?php if ($logContent): ?>
     <div class="card p-3 mb-4">
-        <h6 class="mb-3"><i class="fas fa-terminal me-2"></i>Collector Log (<?= $date ?>)</h6>
+        <h6 class="mb-3"><i class="fas fa-terminal me-2"></i>Collector Log (<?= $dateFrom ?>)</h6>
         <div class="log-box"><?= htmlspecialchars($logContent) ?></div>
     </div>
     <?php endif; ?>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 const MATCH_DATA = <?= json_encode($stats, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
 const TEAM_NAMES = <?= json_encode($teamNames, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+const ALL_LEAGUES = <?= json_encode(array_map(function($l) { return ['name' => $l['league_name'], 'cnt' => $l['cnt']]; }, $leagues), JSON_HEX_TAG) ?>;
 const PER_PAGE = 25;
+const IS_RANGE = <?= $dateFrom !== $dateTo ? 'true' : 'false' ?>;
 
 let filteredByLeague = null;
 let searchTerm = '';
+let leagueSearch = '';
 let sortState = {};
 let leaguePages = {};
 let autocompleteIdx = -1;
 
 const searchInput = document.getElementById('searchInput');
 const autocompleteList = document.getElementById('autocompleteList');
-const leagueFilter = document.getElementById('leagueFilter');
+const leagueInput = document.getElementById('leagueInput');
+const leagueAutocomplete = document.getElementById('leagueAutocomplete');
 const resultCount = document.getElementById('resultCount');
 const leagueContainer = document.getElementById('leagueContainer');
 const noResults = document.getElementById('noResults');
 
 function init() {
-    const leagueMap = {};
-    MATCH_DATA.forEach(m => {
-        if (!leagueMap[m.league_name]) leagueMap[m.league_name] = 0;
-        leagueMap[m.league_name]++;
-    });
-    const sorted = Object.entries(leagueMap).sort((a,b) => b[1] - a[1]);
-    sorted.forEach(([name, cnt]) => {
-        const opt = document.createElement('option');
-        opt.value = name;
-        opt.textContent = name + ' (' + cnt + ')';
-        leagueFilter.appendChild(opt);
-    });
     render();
 }
 
 function getFiltered() {
     let data = MATCH_DATA;
     if (filteredByLeague) data = data.filter(m => m.league_name === filteredByLeague);
+    if (leagueSearch && !filteredByLeague) {
+        const q = leagueSearch.toLowerCase();
+        data = data.filter(m => m.league_name.toLowerCase().includes(q));
+    }
     if (searchTerm) {
         const q = searchTerm.toLowerCase();
         data = data.filter(m => m.home_team_api.toLowerCase().includes(q) || m.away_team_api.toLowerCase().includes(q));
@@ -266,6 +286,8 @@ function render() {
                 } else if (sortKey === 'score') {
                     va = parseInt(a.home_score) + parseInt(a.away_score);
                     vb = parseInt(b.home_score) + parseInt(b.away_score);
+                } else if (sortKey === 'date') {
+                    va = a.match_date; vb = b.match_date;
                 } else { return 0; }
                 if (va < vb) return sortAsc ? -1 : 1;
                 if (va > vb) return sortAsc ? 1 : -1;
@@ -294,9 +316,12 @@ function render() {
         html += '<div style="max-height:500px;overflow-y:auto;">';
         html += '<table class="match-table"><thead><tr>';
         const cols = [
-            {k:'home',l:'Home',w:'18%'},
-            {k:'score',l:'Score',w:'7%',n:true},
-            {k:'away',l:'Away',w:'18%'},
+            {k:'home',l:'Home',w:IS_RANGE ? '14%' : '18%'},
+            {k:'score',l:'Score',w:IS_RANGE ? '6%' : '7%',n:true},
+            {k:'away',l:'Away',w:IS_RANGE ? '14%' : '18%'},
+        ];
+        if (IS_RANGE) cols.push({k:'date',l:'Date',w:'9%'});
+        cols.push(
             {k:'sot',l:'SOT',w:'8%'},
             {k:'shots',l:'Shots',w:'9%'},
             {k:'corners',l:'Corners',w:'9%'},
@@ -304,9 +329,9 @@ function render() {
             {k:'yc',l:'YC',w:'6%'},
             {k:'poss',l:'Poss',w:'7%'},
             {k:'xg',l:'xG',w:'8%'},
-            {k:'ref',l:'Referee',w:'9%',n:true},
-            {k:'expand',l:'',w:'3%',n:true},
-        ];
+            {k:'ref',l:'Referee',w:IS_RANGE ? '7%' : '9%',n:true},
+            {k:'expand',l:'',w:'3%',n:true}
+        );
         cols.forEach(c => {
             const sorted = activeSortKey === c.k;
             const cls = sorted ? (activeSortAsc ? 'sorted-asc' : 'sorted-desc') : '';
@@ -324,6 +349,7 @@ function render() {
             html += '<td class="team-name" title="' + esc(m.home_team_api) + '">' + hl(m.home_team_api, q) + '</td>';
             html += '<td class="score">' + m.home_score + '-' + m.away_score + '</td>';
             html += '<td class="team-name" title="' + esc(m.away_team_api) + '">' + hl(m.away_team_api, q) + '</td>';
+            if (IS_RANGE) html += '<td class="date-cell">' + m.match_date + '</td>';
             html += '<td class="stat-cell"><span class="home-val">' + nv(m.home_shots_on_goal) + '</span> / <span class="away-val">' + nv(m.away_shots_on_goal) + '</span></td>';
             html += '<td class="stat-cell"><span class="home-val">' + nv(m.home_total_shots) + '</span> / <span class="away-val">' + nv(m.away_total_shots) + '</span></td>';
             html += '<td class="stat-cell"><span class="home-val">' + nv(m.home_corner_kicks) + '</span> / <span class="away-val">' + nv(m.away_corner_kicks) + '</span></td>';
@@ -335,7 +361,7 @@ function render() {
             html += '<td class="text-center" style="width:30px;"><i class="fas fa-chevron-down" style="font-size:0.6rem;color:#64748b;"></i></td>';
             html += '</tr>';
 
-            html += '<tr class="detail-row" style="display:none;"><td colspan="12" style="padding:0;">';
+            html += '<tr class="detail-row" style="display:none;"><td colspan="' + (IS_RANGE ? 13 : 12) + '" style="padding:0;">';
             html += '<div class="detail-grid">';
             const detailRows = [
                 ['Shots Off Target', nv(m.home_shots_off_goal), nv(m.away_shots_off_goal)],
@@ -436,21 +462,39 @@ searchInput.addEventListener('input', function() {
     searchTerm = this.value.trim();
     leaguePages = {};
     render();
-    updateAutocomplete();
+    updateTeamAutocomplete();
 });
 searchInput.addEventListener('keydown', function(e) {
     const items = autocompleteList.querySelectorAll('.autocomplete-item');
     if (!items.length) return;
-    if (e.key === 'ArrowDown') { e.preventDefault(); autocompleteIdx = Math.min(autocompleteIdx + 1, items.length - 1); setACActive(items); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); autocompleteIdx = Math.max(autocompleteIdx - 1, 0); setACActive(items); }
-    else if (e.key === 'Enter' && autocompleteIdx >= 0) { e.preventDefault(); selectACItem(items[autocompleteIdx]); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); autocompleteIdx = Math.min(autocompleteIdx + 1, items.length - 1); setACActive(items, autocompleteList); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); autocompleteIdx = Math.max(autocompleteIdx - 1, 0); setACActive(items, autocompleteList); }
+    else if (e.key === 'Enter' && autocompleteIdx >= 0) { e.preventDefault(); selectTeamAC(items[autocompleteIdx]); }
     else if (e.key === 'Escape') { autocompleteList.classList.remove('show'); autocompleteIdx = -1; }
 });
-document.addEventListener('click', function(e) {
-    if (!e.target.closest('.search-wrap')) autocompleteList.classList.remove('show');
+
+leagueInput.addEventListener('input', function() {
+    leagueSearch = this.value.trim();
+    filteredByLeague = null;
+    leaguePages = {};
+    render();
+    updateLeagueAutocomplete();
+});
+leagueInput.addEventListener('keydown', function(e) {
+    const items = leagueAutocomplete.querySelectorAll('.autocomplete-item');
+    if (!items.length) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); autocompleteIdx = Math.min(autocompleteIdx + 1, items.length - 1); setACActive(items, leagueAutocomplete); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); autocompleteIdx = Math.max(autocompleteIdx - 1, 0); setACActive(items, leagueAutocomplete); }
+    else if (e.key === 'Enter' && autocompleteIdx >= 0) { e.preventDefault(); selectLeagueAC(items[autocompleteIdx]); }
+    else if (e.key === 'Escape') { leagueAutocomplete.classList.remove('show'); autocompleteIdx = -1; }
 });
 
-function updateAutocomplete() {
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#searchInput') && !e.target.closest('#autocompleteList')) autocompleteList.classList.remove('show');
+    if (!e.target.closest('#leagueInput') && !e.target.closest('#leagueAutocomplete')) leagueAutocomplete.classList.remove('show');
+});
+
+function updateTeamAutocomplete() {
     const q = searchTerm.toLowerCase();
     autocompleteIdx = -1;
     if (!q || q.length < 1) { autocompleteList.classList.remove('show'); return; }
@@ -463,30 +507,46 @@ function updateAutocomplete() {
     if (!matches.length) { autocompleteList.classList.remove('show'); return; }
     let html = '';
     matches.forEach(([name, league]) => {
-        html += '<div class="autocomplete-item" data-team="' + esc(name) + '" onclick="selectACItem(this)">' + hl(name, q) + '<span class="league-tag">' + esc(league) + '</span></div>';
+        html += '<div class="autocomplete-item" data-team="' + esc(name) + '" onclick="selectTeamAC(this)">' + hl(name, q) + '<span class="league-tag">' + esc(league) + '</span></div>';
     });
     autocompleteList.innerHTML = html;
     autocompleteList.classList.add('show');
 }
-function setACActive(items) {
+
+function updateLeagueAutocomplete() {
+    const q = leagueSearch.toLowerCase();
+    autocompleteIdx = -1;
+    if (!q || q.length < 1) { leagueAutocomplete.classList.remove('show'); return; }
+    const matches = ALL_LEAGUES.filter(l => l.name.toLowerCase().includes(q)).slice(0, 15);
+    if (!matches.length) { leagueAutocomplete.classList.remove('show'); return; }
+    let html = '';
+    matches.forEach(l => {
+        html += '<div class="autocomplete-item" data-league="' + esc(l.name) + '" onclick="selectLeagueAC(this)">' + hl(l.name, q) + '<span class="league-tag">' + l.cnt + ' matches</span></div>';
+    });
+    leagueAutocomplete.innerHTML = html;
+    leagueAutocomplete.classList.add('show');
+}
+
+function setACActive(items, list) {
     items.forEach((it,i) => it.classList.toggle('active', i === autocompleteIdx));
     if (items[autocompleteIdx]) items[autocompleteIdx].scrollIntoView({ block: 'nearest' });
 }
-function selectACItem(el) {
+function selectTeamAC(el) {
     searchInput.value = el.dataset.team;
     searchTerm = el.dataset.team;
     autocompleteList.classList.remove('show');
     leaguePages = {};
     render();
 }
-
-leagueFilter.addEventListener('change', function() {
-    filteredByLeague = this.value || null;
+function selectLeagueAC(el) {
+    filteredByLeague = el.dataset.league;
+    leagueInput.value = el.dataset.league;
+    leagueAutocomplete.classList.remove('show');
     leaguePages = {};
     render();
-});
+}
 
-init();
+render();
 </script>
 </body>
 </html>
