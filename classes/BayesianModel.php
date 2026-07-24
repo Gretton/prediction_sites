@@ -602,11 +602,11 @@ class BayesianModel {
         // Get distinct matches from scraper_results + web_picks for today
         $stmt = $this->db->query("
             SELECT match_name, league, match_time FROM (
-                SELECT CONVERT(match_name USING utf8mb4) COLLATE utf8mb4_unicode_ci AS match_name, CONVERT(league USING utf8mb4) COLLATE utf8mb4_unicode_ci AS league, match_time FROM scraper_results WHERE DATE(detected_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+                SELECT CONVERT(match_name USING utf8mb4) COLLATE utf8mb4_unicode_ci AS match_name, CONVERT(league USING utf8mb4) COLLATE utf8mb4_unicode_ci AS league, CONVERT(match_time USING utf8mb4) COLLATE utf8mb4_unicode_ci AS match_time FROM scraper_results WHERE DATE(detected_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
                 UNION
-                SELECT CONVERT(match_name USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT(league USING utf8mb4) COLLATE utf8mb4_unicode_ci, match_time FROM web_picks WHERE DATE(detected_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+                SELECT CONVERT(match_name USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT(league USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT(match_time USING utf8mb4) COLLATE utf8mb4_unicode_ci FROM web_picks WHERE DATE(detected_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
                 UNION
-                SELECT CONVERT(match_name USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT(league USING utf8mb4) COLLATE utf8mb4_unicode_ci, NULL as match_time FROM admin_featured_picks WHERE DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+                SELECT CONVERT(match_name USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT(league USING utf8mb4) COLLATE utf8mb4_unicode_ci, CAST(match_time AS CHAR) FROM admin_featured_picks WHERE DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
             ) t LIMIT 100
         ");
 
